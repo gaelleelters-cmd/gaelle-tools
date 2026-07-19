@@ -16,6 +16,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare remote directory
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            mkdir -p /opt/newapp
+            cd /opt/newapp
+            if [ -f docker-compose.yml ]; then
+              docker compose down || true
+            fi
+            chmod -R u+w /opt/newapp 2>/dev/null || true
+            find /opt/newapp -mindepth 1 -delete
+
       - name: Upload site to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -24,8 +41,7 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: ".,!.git,!.github,!.deploy-keys"
           target: /opt/newapp
-          rm: true
-          strip_components: 0
+          rm: false
           overwrite: true
 
       - name: Start / refresh container
@@ -38,6 +54,7 @@ jobs:
           script: |
             set -euo pipefail
             cd /opt/newapp
+            chmod -R u+rwX /opt/newapp
             docker compose up -d --pull always
             docker compose ps
             curl -fsS -o /dev/null http://127.0.0.1:8088/ && echo "Site OK on :8088"
