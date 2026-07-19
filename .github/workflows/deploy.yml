@@ -26,6 +26,9 @@ jobs:
           script: |
             set -euo pipefail
             mkdir -p /opt/newapp
+            # Free the tunnel port (placeholder / previous app)
+            docker rm -f newapp-placeholder 2>/dev/null || true
+            docker rm -f gaelle-tools-web 2>/dev/null || true
             cd /opt/newapp
             if [ -f docker-compose.yml ]; then
               docker compose down || true
@@ -57,4 +60,4 @@ jobs:
             chmod -R u+rwX /opt/newapp
             docker compose up -d --pull always
             docker compose ps
-            curl -fsS -o /dev/null http://127.0.0.1:8088/ && echo "Site OK on :8088"
+            curl -fsS -o /dev/null http://127.0.0.1:8080/ && echo "Site OK on :8080"
