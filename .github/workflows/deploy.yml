@@ -1,0 +1,43 @@
+name: Deploy to hosting
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload site to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: ".,!.git,!.github,!.deploy-keys"
+          target: /opt/newapp
+          rm: true
+          strip_components: 0
+          overwrite: true
+
+      - name: Start / refresh container
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /opt/newapp
+            docker compose up -d --pull always
+            docker compose ps
+            curl -fsS -o /dev/null http://127.0.0.1:8088/ && echo "Site OK on :8088"

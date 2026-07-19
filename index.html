@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gaelle Tools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail" aria-label="Apps">
+      <div class="rail-brand">
+        <span class="rail-mark">G</span>
+        <div class="rail-brand-text">
+          <strong>Gaelle</strong>
+          <span>Tools</span>
+        </div>
+      </div>
+
+      <nav class="app-nav" role="tablist" aria-label="Choose app">
+        <button type="button" class="app-tab is-active" role="tab" aria-selected="true" data-app="whatsapp" data-src="Gaelle%20Whatsapp%20Tool/index.html">
+          <span class="app-tab-label">WhatsApp Tool</span>
+          <span class="app-tab-desc">Send, formulas, bulk &amp; Meta</span>
+        </button>
+        <button type="button" class="app-tab" role="tab" aria-selected="false" data-app="combine" data-src="COMBINE/index.html">
+          <span class="app-tab-label">Excel Combiner</span>
+          <span class="app-tab-desc">Merge donor sheets into one file</span>
+        </button>
+      </nav>
+
+      <p class="rail-note">Both apps run locally in your browser — no server needed.</p>
+    </aside>
+
+    <section class="stage">
+      <header class="stage-bar">
+        <h1 class="stage-title" id="stage-title">WhatsApp Tool</h1>
+        <a class="open-new" id="open-new" href="Gaelle%20Whatsapp%20Tool/index.html" target="_blank" rel="noopener">Open in new tab</a>
+      </header>
+      <div class="frame-wrap">
+        <iframe
+          id="app-frame"
+          class="app-frame"
+          title="WhatsApp Tool"
+          src="Gaelle%20Whatsapp%20Tool/index.html"
+        ></iframe>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var frame = document.getElementById('app-frame');
+      var title = document.getElementById('stage-title');
+      var openNew = document.getElementById('open-new');
+      var tabs = Array.prototype.slice.call(document.querySelectorAll('.app-tab'));
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          tabs.forEach(function (t) {
+            t.classList.remove('is-active');
+            t.setAttribute('aria-selected', 'false');
+          });
+          tab.classList.add('is-active');
+          tab.setAttribute('aria-selected', 'true');
+
+          var src = tab.getAttribute('data-src');
+          var label = tab.querySelector('.app-tab-label').textContent;
+          title.textContent = label;
+          openNew.href = src;
+          frame.title = label;
+          frame.src = src;
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

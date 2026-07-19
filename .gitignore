@@ -1,0 +1,19 @@
+﻿# Local deploy credentials — never commit
+.deploy-keys/
+.gitignore/newapp_dev_ed25519
+.gitignore/newapp_dev_ed25519.pub
+*.pem
+id_ed25519
+id_rsa
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Env / local
+.env
+.env.*
+*.log

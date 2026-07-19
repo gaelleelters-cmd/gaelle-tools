@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Tool — Send, Formula, Bulk & Meta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=1">
+</head>
+<body>
+  <!-- Hero — frosted green aura + bouncing emojis -->
+  <header class="hero" id="hero">
+    <div class="hero-mesh" aria-hidden="true"></div>
+    <div class="hero-orbs" aria-hidden="true">
+      <div class="hero-orb hero-orb--1"></div>
+      <div class="hero-orb hero-orb--2"></div>
+      <div class="hero-orb hero-orb--3"></div>
+    </div>
+    <div class="hero-bubbles" aria-hidden="true">
+      <div class="chat-bubble cb-1"></div>
+      <div class="chat-bubble cb-2"></div>
+      <div class="chat-bubble cb-3"></div>
+    </div>
+    <div class="hero-emoji-field" aria-hidden="true">
+      <span class="jump-emoji je-1">💬</span>
+      <span class="jump-emoji je-2 is-far">📱</span>
+      <span class="jump-emoji je-3">✅</span>
+      <span class="jump-emoji je-4 is-far">👋</span>
+      <span class="jump-emoji je-6">❤️</span>
+      <span class="jump-emoji je-7 is-far">🙏</span>
+      <span class="jump-emoji je-8">📢</span>
+      <span class="jump-emoji je-9 is-far">🌍</span>
+      <span class="jump-emoji je-11">💚</span>
+      <span class="jump-emoji je-12 is-far">📞</span>
+      <span class="jump-emoji je-13">🤝</span>
+      <span class="jump-emoji je-14">😊</span>
+      <span class="jump-emoji je-15 is-far">🔔</span>
+      <span class="jump-emoji je-16">☀️</span>
+    </div>
+    <div class="hero-content">
+      <h1 class="hero-title">
+        <span class="hero-title-whatsapp">WhatsApp</span>
+        <span class="hero-title-tool">Tool</span>
+      </h1>
+    </div>
+  </header>
+
+  <main id="app" class="main">
+    <!-- Navigation Tabs -->
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="single" role="tab" aria-selected="true">
+        <span class="tab-icon">📤</span>
+        Single Sender
+      </button>
+      <button class="tab" data-tab="formula" role="tab" aria-selected="false">
+        <span class="tab-icon">📊</span>
+        WhatsApp Formula
+      </button>
+      <button class="tab" data-tab="bulk" role="tab" aria-selected="false">
+        <span class="tab-icon">📁</span>
+        Bulk Sender
+      </button>
+      <button class="tab" data-tab="meta" role="tab" aria-selected="false">
+        <span class="tab-icon">🔗</span>
+        Meta App
+      </button>
+    </nav>
+
+    <!-- ========== SINGLE SENDER ========== -->
+    <section id="panel-single" class="panel active" role="tabpanel">
+      <div class="card">
+        <div class="form-grid">
+          <div class="field">
+            <label for="single-phone">Phone Number <span class="req">*</span></label>
+            <input type="tel" id="single-phone" placeholder="+971xxxxxxxxx or 971xxxxxxxxx" dir="ltr">
+            <span class="hint">Include country code without spaces</span>
+          </div>
+          <div class="field field-full">
+            <label for="single-message">Message</label>
+            <div class="toolbar" data-target="single-message">
+              <button type="button" class="tb-btn tb-bold" data-fmt="bold" title="Bold">B</button>
+              <button type="button" class="tb-btn tb-italic" data-fmt="italic" title="Italic">I</button>
+              <button type="button" class="tb-btn tb-strike" data-fmt="strike" title="Strikethrough">S</button>
+              <button type="button" class="tb-btn tb-mono" data-fmt="mono" title="Monospace">M</button>
+              <span class="tb-sep"></span>
+              <button type="button" class="tb-btn tb-emoji" data-emoji-target="single-message" title="Insert emoji">😊</button>
+              <button type="button" class="tb-btn" id="single-dir-toggle" title="Toggle RTL/LTR">Aa ⇄</button>
+            </div>
+            <textarea id="single-message" rows="4" placeholder="Type your message… Select text, then click B / I / S to format." class="message-input" data-wysiwyg="true"></textarea>
+            <div class="emoji-picker hidden" id="emoji-picker-single"></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn btn-primary btn-lg" id="single-send">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Send on WhatsApp
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== WHATSAPP FORMULA ========== -->
+    <section id="panel-formula" class="panel" role="tabpanel" hidden>
+      <div class="card">
+        <div class="card-header">
+          <p>Generate WhatsApp link formulas for Excel and Google Sheets — copy whichever you need.</p>
+        </div>
+        <div class="form-grid">
+          <div class="field field-full">
+            <label for="formula-message">Message</label>
+            <div class="param-chips" id="formula-params">
+              <button type="button" class="param-chip" data-param="1">{Param 1}</button>
+              <button type="button" class="param-chip" data-param="2">{Param 2}</button>
+              <button type="button" class="param-chip" data-param="3">{Param 3}</button>
+              <button type="button" class="param-chip param-add" id="add-param" title="Add parameter">+ Param</button>
+            </div>
+            <div class="toolbar" data-target="formula-message">
+              <button type="button" class="tb-btn tb-bold" data-fmt="bold" title="Bold">B</button>
+              <button type="button" class="tb-btn tb-italic" data-fmt="italic" title="Italic">I</button>
+              <button type="button" class="tb-btn tb-strike" data-fmt="strike" title="Strikethrough">S</button>
+              <button type="button" class="tb-btn tb-mono" data-fmt="mono" title="Monospace">M</button>
+              <span class="tb-sep"></span>
+              <button type="button" class="tb-btn tb-emoji" data-emoji-target="formula-message" title="Insert emoji">😊</button>
+              <button type="button" class="tb-btn" id="formula-dir-toggle" title="Toggle RTL/LTR">Aa ⇄</button>
+            </div>
+            <textarea id="formula-message" rows="4" placeholder="Type your message… Select text, then click B / I / S to format." class="message-input" data-wysiwyg="true"></textarea>
+            <div class="emoji-picker hidden" id="emoji-picker-formula"></div>
+            <span class="hint">Click {Param 1}, {Param 2}… above to add them to your message.</span>
+          </div>
+          <div class="field field-full">
+            <label class="column-mapping-label">
+              <span class="column-mapping-title">Column Mapping</span>
+              <span class="hint hint-inline">For each {Param}, type the <strong>column letter</strong> from your Excel or Google Sheet where that information is.</span>
+            </label>
+            <div class="param-mapping" id="param-mapping">
+              <div class="mapping-row" data-param="1">
+                <span class="mapping-label">{Param 1}</span>
+                <input type="text" class="mapping-col" data-param="1" maxlength="3" placeholder="ex. A" dir="ltr" autocomplete="off">
+              </div>
+              <div class="mapping-row" data-param="2">
+                <span class="mapping-label">{Param 2}</span>
+                <input type="text" class="mapping-col" data-param="2" maxlength="3" dir="ltr" autocomplete="off">
+              </div>
+              <div class="mapping-row" data-param="3">
+                <span class="mapping-label">{Param 3}</span>
+                <input type="text" class="mapping-col" data-param="3" maxlength="3" dir="ltr" autocomplete="off">
+              </div>
+            </div>
+          </div>
+          <div class="field field-full formula-meta-row">
+            <div class="field field-compact">
+              <label for="formula-phone-col">Phone Column <span class="req">*</span></label>
+              <input type="text" id="formula-phone-col" maxlength="3" placeholder="" dir="ltr" autocomplete="off">
+            </div>
+            <div class="field field-compact">
+              <label for="formula-row">Row Number</label>
+              <div class="num-stepper">
+                <input type="number" id="formula-row" value="2" min="1" dir="ltr">
+                <div class="num-stepper-btns">
+                  <button type="button" class="num-step-btn" data-step="1" aria-label="Increase row">▲</button>
+                  <button type="button" class="num-step-btn" data-step="-1" aria-label="Decrease row">▼</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn btn-primary btn-lg" id="formula-generate">✨ Generate Formula</button>
+        </div>
+        <div class="formula-results hidden" id="formula-results">
+          <div class="result-block">
+            <div class="result-header">
+              <span class="result-badge sheets">Google Sheets — WhatsApp Web</span>
+              <button type="button" class="btn-copy" data-copy="sheets-formula">Copy</button>
+            </div>
+            <pre id="sheets-formula" class="result-code"></pre>
+          </div>
+          <div class="result-block">
+            <div class="result-header">
+              <span class="result-badge sheets-app">Google Sheets — WhatsApp App</span>
+              <button type="button" class="btn-copy" data-copy="sheets-formula-app">Copy</button>
+            </div>
+            <pre id="sheets-formula-app" class="result-code"></pre>
+          </div>
+          <div class="result-block">
+            <div class="result-header">
+              <span class="result-badge excel">Excel</span>
+              <button type="button" class="btn-copy" data-copy="excel-formula">Copy</button>
+            </div>
+            <pre id="excel-formula" class="result-code"></pre>
+          </div>
+          <div class="result-block">
+            <div class="result-header">
+              <span class="result-badge excel-url">Excel — long URL</span>
+              <button type="button" class="btn-copy" data-copy="excel-url-formula">Copy</button>
+            </div>
+            <pre id="excel-url-formula" class="result-code"></pre>
+            <span class="hint">For long messages: paste in a cell, copy the result, then paste the URL in your browser.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== BULK SENDER ========== -->
+    <section id="panel-bulk" class="panel" role="tabpanel" hidden>
+      <div class="card">
+        <div class="card-header">
+          <h2>Bulk Sender</h2>
+          <p>Upload an Excel or CSV file and generate WhatsApp links for all contacts.</p>
+        </div>
+
+        <div class="dropzone" id="bulk-dropzone">
+          <input type="file" id="bulk-file" accept=".csv,.xlsx,.xls" hidden>
+          <div class="dropzone-content">
+            <div class="dropzone-icon">📂</div>
+            <p class="dropzone-title">Drop your Excel or CSV here</p>
+            <p class="dropzone-sub">or <button type="button" class="link-btn" id="bulk-browse">browse files</button></p>
+            <span class="hint">Supports .csv, .xlsx, .xls — up to 16 MB</span>
+          </div>
+          <div class="dropzone-file hidden" id="bulk-file-info">
+            <span class="file-name" id="bulk-file-name"></span>
+            <button type="button" class="btn-icon" id="bulk-file-remove" title="Remove file">✕</button>
+          </div>
+        </div>
+
+        <div class="bulk-config hidden" id="bulk-config">
+          <div class="form-grid">
+            <div class="field field-full">
+              <label>Message Mode</label>
+              <div class="radio-group">
+                <label class="radio-card">
+                  <input type="radio" name="bulk-mode" value="same" checked>
+                  <span class="radio-card-body">
+                    <strong>Same message</strong>
+                    <small>Send identical text to everyone</small>
+                  </span>
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="bulk-mode" value="custom">
+                  <span class="radio-card-body">
+                    <strong>Custom message</strong>
+                    <small>Use a message column from your file</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+            <div class="field field-full" id="bulk-same-wrap">
+              <label for="bulk-same-message">Message</label>
+              <div class="param-chips" id="bulk-params">
+                <button type="button" class="param-chip" data-param="1">{Param 1}</button>
+                <button type="button" class="param-chip" data-param="2">{Param 2}</button>
+                <button type="button" class="param-chip" data-param="3">{Param 3}</button>
+                <button type="button" class="param-chip param-add" id="bulk-add-param" title="Add parameter">+ Param</button>
+              </div>
+              <div class="toolbar" data-target="bulk-same-message">
+                <button type="button" class="tb-btn tb-bold" data-fmt="bold" title="Bold">B</button>
+                <button type="button" class="tb-btn tb-italic" data-fmt="italic" title="Italic">I</button>
+                <button type="button" class="tb-btn tb-strike" data-fmt="strike" title="Strikethrough">S</button>
+                <button type="button" class="tb-btn tb-mono" data-fmt="mono" title="Monospace">M</button>
+                <span class="tb-sep"></span>
+                <button type="button" class="tb-btn tb-emoji" data-emoji-target="bulk-same-message" title="Insert emoji">😊</button>
+                <button type="button" class="tb-btn" id="bulk-dir-toggle" title="Toggle RTL/LTR">Aa ⇄</button>
+              </div>
+              <textarea id="bulk-same-message" rows="4" placeholder="Type your message… Select text, then click B / I / S to format." class="message-input" data-wysiwyg="true"></textarea>
+              <div class="emoji-picker hidden" id="emoji-picker-bulk"></div>
+              <span class="hint">Click {Param 1}, {Param 2}… above to add them to your message.</span>
+              <label class="column-mapping-label bulk-mapping-label">
+                <span class="column-mapping-title">Column Mapping</span>
+                <span class="hint hint-inline">For each {Param}, choose the column from your uploaded file where that information is.</span>
+              </label>
+              <div class="param-mapping" id="bulk-param-mapping">
+                <div class="mapping-row" data-param="1">
+                  <span class="mapping-label">{Param 1}</span>
+                  <select class="mapping-col-select" data-param="1"></select>
+                </div>
+                <div class="mapping-row" data-param="2">
+                  <span class="mapping-label">{Param 2}</span>
+                  <select class="mapping-col-select" data-param="2"></select>
+                </div>
+                <div class="mapping-row" data-param="3">
+                  <span class="mapping-label">{Param 3}</span>
+                  <select class="mapping-col-select" data-param="3"></select>
+                </div>
+              </div>
+            </div>
+            <div class="field field-compact bulk-phone-field">
+              <label for="bulk-phone-col">Phone Column <span class="req">*</span></label>
+              <select id="bulk-phone-col"></select>
+            </div>
+            <div class="field field-full hidden" id="bulk-custom-wrap">
+              <label for="bulk-message-col">Message Column <span class="req">*</span></label>
+              <select id="bulk-message-col"></select>
+            </div>
+          </div>
+
+          <div class="preview-table-wrap hidden" id="bulk-preview-wrap">
+            <h3>File Preview <span class="badge" id="bulk-row-count"></span></h3>
+            <div class="table-scroll">
+              <table class="data-table" id="bulk-preview-table">
+                <thead></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn btn-primary btn-lg" id="bulk-generate">Generate Links</button>
+          </div>
+        </div>
+
+        <div class="bulk-results hidden" id="bulk-results">
+          <div class="results-header">
+            <h3>Ready to Send <span class="badge success" id="bulk-total-badge"></span></h3>
+            <div class="results-actions">
+              <button type="button" class="btn btn-secondary" id="bulk-open-all">Open All (sequential)</button>
+              <button type="button" class="btn btn-secondary" id="bulk-export-csv">Export CSV</button>
+            </div>
+          </div>
+          <div class="contact-list" id="bulk-contact-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== META APP ========== -->
+    <section id="panel-meta" class="panel" role="tabpanel" hidden>
+      <div class="card">
+        <p class="meta-intro">Connect your <strong>internal WhatsApp API</strong> using the organization’s verified number — the same number already used by another integration.</p>
+
+        <div class="meta-section">
+          <h3 class="meta-section-title">What to request from your organization</h3>
+          <p class="meta-hint">Send this checklist to whoever owns Meta / WhatsApp (IT, comms, or the team running the current API).</p>
+          <ul class="meta-checklist" id="meta-request-checklist">
+            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="business-access"> Access to <strong>Meta Business Manager</strong> and the Meta App on the verified number</label></li>
+            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="ids"> <strong>WABA ID</strong>, <strong>Phone Number ID</strong>, and <strong>App ID</strong> (not the display phone number alone)</label></li>
+            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="token"> A dedicated <strong>System User access token</strong> with <code>whatsapp_business_messaging</code> for your internal tool</label></li>
+            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="shared-number"> Written confirmation that your internal API can use the <strong>same number</strong> without breaking the existing API</label></li>
+            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="webhook"> How <strong>webhooks</strong> will work — separate app, shared endpoint, or events forwarded to you</label></li>
+            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="templates"> Rules for <strong>message templates</strong>, test numbers, and outbound messaging approval</label></li>
+            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="compliance"> Who handles <strong>opt-in, consent, and data protection</strong> for WhatsApp messaging</label></li>
+          </ul>
+        </div>
+
+        <div class="meta-callout">
+          <strong>Ask this first:</strong> The verified number is already on another API — can we connect our internal API to the same number without disrupting production? They may give you access to the existing Meta App, a second app on the same account, or a shared middleware API.
+        </div>
+
+        <div class="meta-section">
+          <h3 class="meta-section-title">Credentials from IT / WhatsApp owner <span class="hint-inline">Saved only in this browser</span></h3>
+          <div class="form-grid meta-ref-grid">
+            <div class="field">
+              <label for="meta-app-id">App ID</label>
+              <input type="text" id="meta-app-id" placeholder="" dir="ltr" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="meta-waba-id">WhatsApp Business Account ID</label>
+              <input type="text" id="meta-waba-id" placeholder="" dir="ltr" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="meta-phone-id">Phone Number ID</label>
+              <input type="text" id="meta-phone-id" placeholder="API ID, not +971…" dir="ltr" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="meta-display-phone">Display phone number</label>
+              <input type="tel" id="meta-display-phone" placeholder="e.g. +971501234567" dir="ltr" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="meta-existing-api">Existing API / integration</label>
+              <input type="text" id="meta-existing-api" placeholder="Name of current API" dir="ltr" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="meta-owner-contact">Internal contact</label>
+              <input type="text" id="meta-owner-contact" placeholder="Team or person who owns access" dir="ltr" autocomplete="off">
+            </div>
+          </div>
+          <span class="hint">Store IDs locally for reference. Access tokens stay in this browser session only — ask IT for a dedicated token, not a shared production secret.</span>
+        </div>
+
+        <div class="meta-section">
+          <h3 class="meta-section-title">Request email</h3>
+          <p class="meta-hint">Fill in the fields above, then copy and send to your internal WhatsApp / Meta owner.</p>
+          <textarea id="meta-request-email" class="meta-request-email" rows="12" readonly dir="ltr"></textarea>
+          <div class="actions meta-inline-actions">
+            <button type="button" class="btn btn-secondary" id="meta-copy-request">Copy email</button>
+            <button type="button" class="btn btn-secondary" id="meta-save-ref">Save credentials</button>
+            <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Meta Developer Portal</a>
+          </div>
+        </div>
+
+        <div class="meta-section meta-divider">
+          <h3 class="meta-section-title">Test Cloud API send</h3>
+          <p class="meta-hint">After IT provides credentials, send a test via the WhatsApp Cloud API from this browser. Recipients must be approved test numbers, or have messaged the business within 24 hours. Token stays in session storage only.</p>
+          <div class="form-grid">
+            <div class="field field-full">
+              <label for="meta-access-token">Access token</label>
+              <input type="password" id="meta-access-token" placeholder="System User or temporary token from IT" dir="ltr" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="meta-test-to">Recipient phone</label>
+              <input type="tel" id="meta-test-to" placeholder="e.g. 971501234567" dir="ltr" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="meta-test-phone-id">Phone Number ID</label>
+              <input type="text" id="meta-test-phone-id" placeholder="From API Setup" dir="ltr" autocomplete="off">
+            </div>
+            <div class="field field-full">
+              <label for="meta-test-message">Message</label>
+              <textarea id="meta-test-message" rows="3" placeholder="Hello from Cloud API test"></textarea>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="meta-send-test">Send test message</button>
+          </div>
+          <div class="result-block hidden" id="meta-send-result">
+            <div class="result-header">
+              <span class="result-badge preview" id="meta-send-result-badge">Response</span>
+            </div>
+            <pre class="result-code" id="meta-send-result-body"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="js/app.js?v=1"></script>
+</body>
+</html>
