@@ -256,16 +256,23 @@
 
   function setAuthUi(user) {
     if (helperOnline) {
-      authStatus.textContent = 'Outlook on this PC is connected — Send uses your desktop Outlook (like Word mail merge).';
+      authStatus.innerHTML = 'Outlook on this PC is connected — Send uses your desktop Outlook (like Word mail merge).';
       btnSignOut.classList.add('hidden');
       return;
     }
     if (user) {
       authStatus.textContent = 'Sending as ' + (user.username || user.name) + ' (your Microsoft mailbox).';
       btnSignOut.classList.remove('hidden');
-    } else {
+      return;
+    }
+    btnSignOut.classList.add('hidden');
+    if (window.MailMassGraph && MailMassGraph.isConfigured()) {
       authStatus.textContent = 'Click Send — uses Outlook on this PC if available, otherwise your Microsoft mailbox sign-in.';
-      btnSignOut.classList.add('hidden');
+    } else {
+      authStatus.innerHTML =
+        'Outlook helper is not running on this PC. ' +
+        '<a href="helper/Start-MailMassHelper.vbs" download="Start-MailMassHelper.vbs">Install Outlook helper</a> ' +
+        '(once), then click Send.';
     }
   }
 
@@ -298,6 +305,13 @@
         };
       })
     };
+    if (sharedAttachment && sharedAttachment.contentBytes) {
+      payload.attachment = {
+        name: sharedAttachment.name,
+        contentType: sharedAttachment.contentType || 'application/octet-stream',
+        contentBytes: sharedAttachment.contentBytes
+      };
+    }
     return fetch(HELPER_URL + '/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -431,7 +445,7 @@
         return sendViaHelper(prepared);
       }
       if (!MailMassGraph.isConfigured()) {
-        throw new Error('Outlook helper is not running and Microsoft sign-in is not set up yet.');
+        throw new Error('Outlook helper is not running. Download and run “Install Outlook helper”, then try Send again.');
       }
       toast('Confirm Microsoft sign-in if asked…');
       return MailMassGraph.signIn().then(function (user) {

@@ -64,47 +64,74 @@ function Insert-IntoBody([string]$fullHtml, [string]$contentHtml) {
   return $contentHtml + $fullHtml
 }
 
+function Resolve-SharedAttachmentPath($payload) {
+  $shared = $payload.attachment
+  if (-not $shared) { return $null }
+  $name = [string]$shared.name
+  $bytesB64 = [string]$shared.contentBytes
+  if ([string]::IsNullOrWhiteSpace($name) -or [string]::IsNullOrWhiteSpace($bytesB64)) { return $null }
+  $safeName = [IO.Path]::GetFileName($name)
+  if ([string]::IsNullOrWhiteSpace($safeName)) { $safeName = 'attachment.bin' }
+  $dir = Join-Path $env:TEMP ('MailMassAttach_' + [Guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Path $dir -Force | Out-Null
+  $path = Join-Path $dir $safeName
+  [IO.File]::WriteAllBytes($path, [Convert]::FromBase64String($bytesB64))
+  return $path
+}
+
 function Send-MailBatch($payload) {
   $displayOnly = [string]$payload.displayOnly -eq '1' -or $payload.displayOnly -eq $true
   $mails = @($payload.mails)
   $sent = 0
   $skipped = 0
+  $tempAttach = $null
+  $tempDir = $null
 
-  $outlook = $null
   try {
-    $outlook = [Runtime.InteropServices.Marshal]::GetActiveObject('Outlook.Application')
-  } catch {
-    $outlook = New-Object -ComObject Outlook.Application
-  }
-  if (-not $outlook) { throw 'Could not start Outlook. Open Outlook and try again.' }
+    $tempAttach = Resolve-SharedAttachmentPath $payload
+    if ($tempAttach) { $tempDir = Split-Path -Parent $tempAttach }
 
-  foreach ($m in $mails) {
-    $email = [string]$m.email
-    $attach = [string]$m.attach
-    if ($attach.Length -ge 2 -and $attach.StartsWith('"') -and $attach.EndsWith('"')) {
-      $attach = $attach.Substring(1, $attach.Length - 2)
+    $outlook = $null
+    try {
+      $outlook = [Runtime.InteropServices.Marshal]::GetActiveObject('Outlook.Application')
+    } catch {
+      $outlook = New-Object -ComObject Outlook.Application
     }
-    if ([string]::IsNullOrWhiteSpace($email)) { $skipped++; continue }
-    if ($attach -and -not (Test-Path -LiteralPath $attach)) { $skipped++; continue }
+    if (-not $outlook) { throw 'Could not start Outlook. Open Outlook and try again.' }
 
-    $mail = $outlook.CreateItem(0)
-    $mail.BodyFormat = 2
-    $inspector = $mail.GetInspector
-    Start-Sleep -Milliseconds 200
-    $body = Build-MessageHtml ([string]$m.greeting) ([string]$m.first) ([string]$m.message)
-    $mail.HTMLBody = Insert-IntoBody ([string]$mail.HTMLBody) $body
-    $mail.To = $email
-    if ($m.cc) { $mail.CC = [string]$m.cc }
-    if ($m.bcc) { $mail.BCC = [string]$m.bcc }
-    $subject = [string]$m.subject
-    if ([string]::IsNullOrWhiteSpace($subject)) { $subject = 'Document Attached' }
-    $mail.Subject = $subject
-    if ($attach) { [void]$mail.Attachments.Add($attach) }
+    foreach ($m in $mails) {
+      $email = [string]$m.email
+      $attach = [string]$m.attach
+      if ($attach.Length -ge 2 -and $attach.StartsWith('"') -and $attach.EndsWith('"')) {
+        $attach = $attach.Substring(1, $attach.Length - 2)
+      }
+      if ([string]::IsNullOrWhiteSpace($attach) -and $tempAttach) { $attach = $tempAttach }
+      if ([string]::IsNullOrWhiteSpace($email)) { $skipped++; continue }
+      if ($attach -and -not (Test-Path -LiteralPath $attach)) { $skipped++; continue }
 
-    try { $inspector.Close(0) } catch {}
-    if ($displayOnly) { $mail.Display() } else { $mail.Send() }
-    $sent++
-    Start-Sleep -Milliseconds 400
+      $mail = $outlook.CreateItem(0)
+      $mail.BodyFormat = 2
+      $inspector = $mail.GetInspector
+      Start-Sleep -Milliseconds 200
+      $body = Build-MessageHtml ([string]$m.greeting) ([string]$m.first) ([string]$m.message)
+      $mail.HTMLBody = Insert-IntoBody ([string]$mail.HTMLBody) $body
+      $mail.To = $email
+      if ($m.cc) { $mail.CC = [string]$m.cc }
+      if ($m.bcc) { $mail.BCC = [string]$m.bcc }
+      $subject = [string]$m.subject
+      if ([string]::IsNullOrWhiteSpace($subject)) { $subject = 'Document Attached' }
+      $mail.Subject = $subject
+      if ($attach) { [void]$mail.Attachments.Add($attach) }
+
+      try { $inspector.Close(0) } catch {}
+      if ($displayOnly) { $mail.Display() } else { $mail.Send() }
+      $sent++
+      Start-Sleep -Milliseconds 400
+    }
+  } finally {
+    if ($tempDir -and (Test-Path -LiteralPath $tempDir)) {
+      try { Remove-Item -LiteralPath $tempDir -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+    }
   }
 
   return @{ processed = $sent; skipped = $skipped }

