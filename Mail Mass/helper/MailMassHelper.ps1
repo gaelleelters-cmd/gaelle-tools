@@ -5,7 +5,7 @@
 $ErrorActionPreference = 'Stop'
 $Port = 19527
 $Prefix = "http://127.0.0.1:$Port/"
-$HelperVersion = 5
+$HelperVersion = 6
 
 function Send-Cors([System.Net.HttpListenerResponse]$res) {
   $res.Headers.Add('Access-Control-Allow-Origin', '*')
@@ -61,8 +61,8 @@ function Get-GreetingFontStyle([string]$message) {
   if ($message -match 'font-size:\s*([^;"''\s]+)') {
     $size = $Matches[1].Trim()
   }
-  # Dear + first name always Calibri, same size as the message body
-  return "margin:0 0 8pt 0;font-family:Calibri,sans-serif;font-size:$size;font-weight:normal;font-style:normal;"
+  # Dear + first name always Calibri, same size as the message body (no extra bottom margin — spacer handles the blank line)
+  return "margin:0;font-family:Calibri,sans-serif;font-size:$size;font-weight:normal;font-style:normal;"
 }
 
 function Build-MessageHtml([string]$greeting, [string]$firstName, [string]$message, [bool]$messageIsHtml = $false) {
@@ -76,6 +76,8 @@ function Build-MessageHtml([string]$greeting, [string]$firstName, [string]$messa
   $parts = New-Object System.Text.StringBuilder
   [void]$parts.Append("<div style=""font-family:Calibri,sans-serif;font-size:11pt;"">")
   [void]$parts.Append("<p style=""$greetStyle""><span style=""$greetStyle"">$open</span></p>")
+  # Exactly one blank line between greeting and body
+  [void]$parts.Append('<p style="margin:0;line-height:12pt;font-size:11pt;">&nbsp;</p>')
 
   if ($messageIsHtml -or (Test-LooksLikeHtml $message)) {
     [void]$parts.Append($message)
@@ -95,12 +97,14 @@ function Build-MessageHtml([string]$greeting, [string]$firstName, [string]$messa
 function Wrap-MailHtml([string]$inner, [string]$signatureHtml) {
   $sig = ''
   if (-not [string]::IsNullOrWhiteSpace($signatureHtml)) {
-    # If signature is a full HTML doc, pull body contents; else append as-is
     $sigBody = $signatureHtml
     if ($signatureHtml -match '(?is)<body[^>]*>(.*)</body>') {
       $sigBody = $Matches[1]
     }
-    $sig = '<br><br>' + $sigBody
+    # Trim leading blank lines / empty paragraphs from signature
+    $sigBody = [regex]::Replace($sigBody, '(?is)^(\s|<br\s*/?>|&nbsp;|<p[^>]*>\s*(&nbsp;|\s|<br\s*/?>)*\s*</p>)+', '')
+    # Exactly one blank line between body and signature
+    $sig = '<p style="margin:0;line-height:12pt;font-size:11pt;">&nbsp;</p>' + $sigBody
   }
 
   return @"

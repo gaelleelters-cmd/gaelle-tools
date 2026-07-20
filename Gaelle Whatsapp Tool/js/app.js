@@ -968,37 +968,6 @@
   const META_TOKEN_SESSION_KEY = 'whatsapp-tool-meta-token';
   const META_GRAPH_VERSION = 'v21.0';
 
-  function buildMetaRequestEmail() {
-    const existingApi = document.getElementById('meta-existing-api')?.value.trim() || '[existing API name]';
-    const displayPhone = document.getElementById('meta-display-phone')?.value.trim() || '[verified number]';
-    const contact = document.getElementById('meta-owner-contact')?.value.trim() || '[WhatsApp / Meta owner]';
-
-    return `Subject: WhatsApp Cloud API access for internal tool
-
-Hello ${contact},
-
-We are building an internal WhatsApp tool and need access to the organization's verified WhatsApp Business number (${displayPhone}), which is already connected to ${existingApi}.
-
-Please provide or arrange:
-
-1. Access to Meta Business Manager and the Meta App on this number
-2. WhatsApp Business Account ID, Phone Number ID, and App ID
-3. A dedicated System User access token with whatsapp_business_messaging for our internal tool
-4. Written confirmation that our internal API can use the same verified number without disrupting the current ${existingApi} integration or webhook
-5. How webhooks should work for us — separate Meta App, shared endpoint, or forwarded events
-6. Rules for message templates, test numbers, and outbound messaging approval
-7. Who handles opt-in, consent, and data protection for WhatsApp messaging
-
-This is for internal messaging automation and testing via the WhatsApp Cloud API.
-
-Thank you.`;
-  }
-
-  function updateMetaRequestEmail() {
-    const ta = document.getElementById('meta-request-email');
-    if (ta) ta.value = buildMetaRequestEmail();
-  }
-
   function saveMetaChecks() {
     const checks = {};
     document.querySelectorAll('[data-meta-check]').forEach((cb) => {
@@ -1014,24 +983,6 @@ Thank you.`;
         if (saved[cb.dataset.metaCheck]) cb.checked = true;
       });
     } catch (_) { /* ignore */ }
-  }
-
-  async function copyText(text, btn) {
-    try {
-      await navigator.clipboard.writeText(text);
-      if (btn) {
-        const prev = btn.textContent;
-        btn.textContent = 'Copied';
-        btn.classList.add('copied');
-        setTimeout(() => {
-          btn.textContent = prev;
-          btn.classList.remove('copied');
-        }, 1500);
-      }
-      toast('Copied to clipboard.', false);
-    } catch (_) {
-      toast('Could not copy.', true);
-    }
   }
 
   function syncMetaPhoneIdFields(source) {
@@ -1052,14 +1003,12 @@ Thank you.`;
     const existingApi = document.getElementById('meta-existing-api');
     const ownerContact = document.getElementById('meta-owner-contact');
     const saveBtn = document.getElementById('meta-save-ref');
-    const copyRequestBtn = document.getElementById('meta-copy-request');
     const accessToken = document.getElementById('meta-access-token');
     const testPhoneId = document.getElementById('meta-test-phone-id');
     const sendBtn = document.getElementById('meta-send-test');
     if (!appId || !wabaId || !phoneId || !saveBtn) return;
 
     loadMetaChecks();
-    updateMetaRequestEmail();
 
     try {
       const saved = JSON.parse(localStorage.getItem(META_STORAGE_KEY) || '{}');
@@ -1074,17 +1023,8 @@ Thank you.`;
       if (saved.ownerContact && ownerContact) ownerContact.value = saved.ownerContact;
     } catch (_) { /* ignore corrupt storage */ }
 
-    [displayPhone, existingApi, ownerContact].forEach((el) => {
-      el?.addEventListener('input', updateMetaRequestEmail);
-    });
-
     document.querySelectorAll('[data-meta-check]').forEach((cb) => {
       cb.addEventListener('change', saveMetaChecks);
-    });
-
-    copyRequestBtn?.addEventListener('click', () => {
-      updateMetaRequestEmail();
-      copyText(document.getElementById('meta-request-email')?.value || '', copyRequestBtn);
     });
 
     if (accessToken) {
@@ -1110,7 +1050,6 @@ Thank you.`;
         ownerContact: ownerContact?.value.trim() || '',
       }));
       if (testPhoneId) testPhoneId.value = phoneId.value.trim();
-      updateMetaRequestEmail();
       toast('Credentials saved in this browser.', false);
     });
 

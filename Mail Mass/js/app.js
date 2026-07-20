@@ -472,12 +472,13 @@
       ? (mail.greeting + ' ' + (mail.first || 'FirstName') + ',')
       : ((mail.first || 'FirstName') + ',');
     var size = detectMessageFontSize(mail.message);
-    var greetStyle = 'margin:0 0 8pt 0;font-family:Calibri,sans-serif;font-size:' + size +
+    var greetStyle = 'margin:0;font-family:Calibri,sans-serif;font-size:' + size +
       ';font-weight:normal;font-style:normal;';
     var wrapOpen = '<div style="font-family:Calibri,sans-serif;font-size:11pt;">' +
       '<p style="' + greetStyle + '"><span style="' + greetStyle + '">' +
       open.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
-      '</span></p>';
+      '</span></p>' +
+      '<p style="margin:0;line-height:12pt;font-size:11pt;">&nbsp;</p>';
     if (mail.messageIsHtml) {
       return wrapOpen + mail.message + '</div>';
     }
@@ -523,7 +524,7 @@
   }
 
   var HELPER_URL = 'http://127.0.0.1:19527';
-  var HELPER_MIN_VERSION = 5;
+  var HELPER_MIN_VERSION = 6;
   var helperOnline = false;
   var helperVersion = 0;
   var outlookPill = $('outlook-pill');

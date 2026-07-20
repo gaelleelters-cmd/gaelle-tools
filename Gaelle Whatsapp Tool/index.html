@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WhatsApp Tool — Send, Formula, Bulk & Meta</title>
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
@@ -342,10 +346,6 @@
           </ul>
         </div>
 
-        <div class="meta-callout">
-          <strong>Ask this first:</strong> The verified number is already on another API — can we connect our internal API to the same number without disrupting production? They may give you access to the existing Meta App, a second app on the same account, or a shared middleware API.
-        </div>
-
         <div class="meta-section">
           <h3 class="meta-section-title">Credentials from IT / WhatsApp owner <span class="hint-inline">Saved only in this browser</span></h3>
           <div class="form-grid meta-ref-grid">
@@ -375,14 +375,7 @@
             </div>
           </div>
           <span class="hint">Store IDs locally for reference. Access tokens stay in this browser session only — ask IT for a dedicated token, not a shared production secret.</span>
-        </div>
-
-        <div class="meta-section">
-          <h3 class="meta-section-title">Request email</h3>
-          <p class="meta-hint">Fill in the fields above, then copy and send to your internal WhatsApp / Meta owner.</p>
-          <textarea id="meta-request-email" class="meta-request-email" rows="12" readonly dir="ltr"></textarea>
           <div class="actions meta-inline-actions">
-            <button type="button" class="btn btn-secondary" id="meta-copy-request">Copy email</button>
             <button type="button" class="btn btn-secondary" id="meta-save-ref">Save credentials</button>
             <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Meta Developer Portal</a>
           </div>
@@ -426,6 +419,6 @@
   <div class="toast-container" id="toast-container"></div>
 
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="js/app.js?v=1"></script>
+  <script src="js/app.js?v=2"></script>
 </body>
 </html>
