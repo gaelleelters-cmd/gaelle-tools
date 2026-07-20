@@ -352,6 +352,28 @@ body {
 
 .actions-hint { margin-top: 0.55rem; }
 
+.client-id-input {
+  flex: 1 1 16rem;
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  min-width: 12rem;
+}
+
+.auth-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+  margin: 0.85rem 0 0.75rem;
+}
+
+.auth-row .hint {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
 .btn {
   font: inherit;
   font-weight: 700;

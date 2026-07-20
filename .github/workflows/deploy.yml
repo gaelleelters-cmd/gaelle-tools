@@ -26,9 +26,8 @@ jobs:
           script: |
             set -euo pipefail
             mkdir -p /opt/newapp
-            # Free the tunnel port (placeholder / previous app)
             docker rm -f newapp-placeholder 2>/dev/null || true
-            docker rm -f gaelle-tools-web 2>/dev/null || true
+            docker rm -f gaelle-tools-web gaelle-tools-mail 2>/dev/null || true
             cd /opt/newapp
             if [ -f docker-compose.yml ]; then
               docker compose down || true
@@ -47,6 +46,34 @@ jobs:
           rm: false
           overwrite: true
 
+      - name: Write SMTP env for mail API
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASS,SMTP_FROM,SMTP_SECURE
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /opt/newapp
+            umask 077
+            {
+              echo "SMTP_HOST=${SMTP_HOST}"
+              echo "SMTP_PORT=${SMTP_PORT:-587}"
+              echo "SMTP_USER=${SMTP_USER}"
+              echo "SMTP_PASS=${SMTP_PASS}"
+              echo "SMTP_FROM=${SMTP_FROM}"
+              echo "SMTP_SECURE=${SMTP_SECURE:-false}"
+            } > .env
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+
       - name: Start / refresh container
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -58,6 +85,7 @@ jobs:
             set -euo pipefail
             cd /opt/newapp
             chmod -R u+rwX /opt/newapp
-            docker compose up -d --pull always
+            docker compose up -d --build --pull missing
             docker compose ps
             curl -fsS -o /dev/null http://127.0.0.1:8080/ && echo "Site OK on :8080"
+            curl -fsS http://127.0.0.1:8080/api/health || true

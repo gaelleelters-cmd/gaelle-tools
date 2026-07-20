@@ -1,10 +1,26 @@
 services:
+  mail-api:
+    build: ./mail-api
+    container_name: gaelle-tools-mail
+    restart: unless-stopped
+    environment:
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      MAIL_MAX_BATCH: ${MAIL_MAX_BATCH:-100}
+    expose:
+      - "3000"
+
   web:
     image: nginx:alpine
     container_name: gaelle-tools-web
     restart: unless-stopped
+    depends_on:
+      - mail-api
     ports:
-      # Cloudflare tunnel -> host :8080 (see README.txt)
       - "8080:80"
     volumes:
       - ./:/usr/share/nginx/html:ro
