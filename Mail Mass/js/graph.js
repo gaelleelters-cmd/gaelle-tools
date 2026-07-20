@@ -112,18 +112,22 @@
       .replace(/"/g, '&quot;');
   }
 
-  function buildBodyHtml(greeting, firstName, message) {
+  function buildBodyHtml(greeting, firstName, message, messageIsHtml) {
     var open = greeting
       ? htmlEsc(greeting) + ' ' + htmlEsc(firstName) + ','
       : htmlEsc(firstName) + ',';
     var html = "<div style=\"font-family:Calibri,sans-serif;font-size:11pt;font-weight:normal;\">" +
       '<p style="margin:0 0 8pt 0;">' + open + '</p>';
-    var norm = String(message || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    norm.split(/\n\n/).forEach(function (para) {
-      var p = para.trim();
-      if (!p) return;
-      html += '<p style="margin:0 0 8pt 0;">' + htmlEsc(p).replace(/\n/g, '<br>') + '</p>';
-    });
+    if (messageIsHtml || /<(p|div|span|br|b|i|u|strong|em|font|ul|ol|li)\b/i.test(String(message || ''))) {
+      html += String(message || '');
+    } else {
+      var norm = String(message || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      norm.split(/\n\n/).forEach(function (para) {
+        var p = para.trim();
+        if (!p) return;
+        html += '<p style="margin:0 0 8pt 0;">' + htmlEsc(p).replace(/\n/g, '<br>') + '</p>';
+      });
+    }
     return html + '</div>';
   }
 
@@ -139,7 +143,7 @@
       subject: mail.subject || 'Document Attached',
       body: {
         contentType: 'HTML',
-        content: buildBodyHtml(mail.greeting, mail.first, mail.message)
+        content: buildBodyHtml(mail.greeting, mail.first, mail.message, mail.messageIsHtml)
       },
       toRecipients: recipientList(mail.email)
     };

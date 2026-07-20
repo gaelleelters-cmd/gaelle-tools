@@ -27,6 +27,15 @@
     workspace.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     history.replaceState({ view: 'tool', src: src, label: label }, '', '#' + encodeURIComponent(label));
+    if (label === 'Mail Mass') {
+      try {
+        var wake = document.createElement('iframe');
+        wake.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0';
+        wake.src = 'mailmass://start';
+        document.body.appendChild(wake);
+        setTimeout(function () { try { wake.remove(); } catch (e) {} }, 3000);
+      } catch (e) {}
+    }
   }
 
   document.querySelectorAll('.tool-panel').forEach(function (btn) {

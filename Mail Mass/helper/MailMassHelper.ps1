@@ -1,10 +1,11 @@
 # Mail Mass Helper - local Outlook bridge for the website
 # Listens on http://127.0.0.1:19527 so the web app can send without downloading a file each time.
-# Keep this running (or install to Startup). Close the console window to stop.
+# Version 4: never opens Inspector (Word editor was showing raw HTML tags as plain text).
 
 $ErrorActionPreference = 'Stop'
 $Port = 19527
 $Prefix = "http://127.0.0.1:$Port/"
+$HelperVersion = 5
 
 function Send-Cors([System.Net.HttpListenerResponse]$res) {
   $res.Headers.Add('Access-Control-Allow-Origin', '*')
@@ -13,7 +14,7 @@ function Send-Cors([System.Net.HttpListenerResponse]$res) {
 }
 
 function Write-JsonResponse([System.Net.HttpListenerResponse]$res, [int]$code, $obj) {
-  $json = ($obj | ConvertTo-Json -Compress -Depth 6)
+  $json = ($obj | ConvertTo-Json -Compress -Depth 8)
   $bytes = [Text.Encoding]::UTF8.GetBytes($json)
   Send-Cors $res
   $res.StatusCode = $code
@@ -33,35 +34,86 @@ function Html-Escape([string]$s) {
   return $t
 }
 
-function Build-MessageHtml([string]$greeting, [string]$firstName, [string]$message) {
+function Test-LooksLikeHtml([string]$s) {
+  if ([string]::IsNullOrWhiteSpace($s)) { return $false }
+  return ($s.IndexOf('<') -ge 0) -or ($s.IndexOf('&nbsp;') -ge 0)
+}
+
+function Get-SignatureHtml {
+  try {
+    $dir = Join-Path $env:APPDATA 'Microsoft\Signatures'
+    if (-not (Test-Path -LiteralPath $dir)) { return '' }
+    $files = @(Get-ChildItem -LiteralPath $dir -File -ErrorAction SilentlyContinue |
+      Where-Object { $_.Extension -match '^\.(htm|html)$' } |
+      Sort-Object Length -Descending)
+    if (-not $files.Count) { return '' }
+    $pick = $files[0]
+    $raw = [IO.File]::ReadAllText($pick.FullName)
+    if ([string]::IsNullOrWhiteSpace($raw)) { return '' }
+    return $raw
+  } catch {
+    return ''
+  }
+}
+
+function Get-GreetingFontStyle([string]$message) {
+  $size = '11pt'
+  if ($message -match 'font-size:\s*([^;"''\s]+)') {
+    $size = $Matches[1].Trim()
+  }
+  # Dear + first name always Calibri, same size as the message body
+  return "margin:0 0 8pt 0;font-family:Calibri,sans-serif;font-size:$size;font-weight:normal;font-style:normal;"
+}
+
+function Build-MessageHtml([string]$greeting, [string]$firstName, [string]$message, [bool]$messageIsHtml = $false) {
   if ([string]::IsNullOrWhiteSpace($greeting)) {
     $open = "$(Html-Escape $firstName),"
   } else {
     $open = "$(Html-Escape $greeting) $(Html-Escape $firstName),"
   }
-  $html = "<div style='font-family:Calibri,sans-serif;font-size:11.0pt;font-weight:normal;font-style:normal;'>" +
-          "<p class=MsoNormal style='margin:0 0 8pt 0;font-weight:normal;'>$open</p>"
-  $norm = ($message -replace "`r`n", "`n" -replace "`r", "`n")
-  foreach ($para in ($norm -split "`n`n")) {
-    $p = $para.Trim()
-    if ($p -eq '') { continue }
-    $p = (Html-Escape $p) -replace "`n", '<br>'
-    $html += "<p class=MsoNormal style='margin:0 0 8pt 0;font-weight:normal;'>$p</p>"
-  }
-  return $html + '</div>'
-}
 
-function Insert-IntoBody([string]$fullHtml, [string]$contentHtml) {
-  if ([string]::IsNullOrWhiteSpace($fullHtml)) { return $contentHtml }
-  $lower = $fullHtml.ToLowerInvariant()
-  $pos = $lower.IndexOf('<body')
-  if ($pos -ge 0) {
-    $gt = $fullHtml.IndexOf('>', $pos)
-    if ($gt -ge 0) {
-      return $fullHtml.Substring(0, $gt + 1) + $contentHtml + $fullHtml.Substring($gt + 1)
+  $greetStyle = Get-GreetingFontStyle $message
+  $parts = New-Object System.Text.StringBuilder
+  [void]$parts.Append("<div style=""font-family:Calibri,sans-serif;font-size:11pt;"">")
+  [void]$parts.Append("<p style=""$greetStyle""><span style=""$greetStyle"">$open</span></p>")
+
+  if ($messageIsHtml -or (Test-LooksLikeHtml $message)) {
+    [void]$parts.Append($message)
+  } else {
+    $norm = ($message -replace "`r`n", "`n" -replace "`r", "`n")
+    foreach ($para in ($norm -split "`n`n")) {
+      $p = $para.Trim()
+      if ($p -eq '') { continue }
+      $p = (Html-Escape $p) -replace "`n", '<br>'
+      [void]$parts.Append("<p style=""margin:0 0 8pt 0;font-family:Calibri,sans-serif;font-size:11pt;"">$p</p>")
     }
   }
-  return $contentHtml + $fullHtml
+  [void]$parts.Append('</div>')
+  return $parts.ToString()
+}
+
+function Wrap-MailHtml([string]$inner, [string]$signatureHtml) {
+  $sig = ''
+  if (-not [string]::IsNullOrWhiteSpace($signatureHtml)) {
+    # If signature is a full HTML doc, pull body contents; else append as-is
+    $sigBody = $signatureHtml
+    if ($signatureHtml -match '(?is)<body[^>]*>(.*)</body>') {
+      $sigBody = $Matches[1]
+    }
+    $sig = '<br><br>' + $sigBody
+  }
+
+  return @"
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body style="font-family:Calibri,Arial,sans-serif;font-size:11pt;">
+$inner
+$sig
+</body>
+</html>
+"@
 }
 
 function Resolve-SharedAttachmentPath($payload) {
@@ -86,6 +138,7 @@ function Send-MailBatch($payload) {
   $skipped = 0
   $tempAttach = $null
   $tempDir = $null
+  $signatureHtml = Get-SignatureHtml
 
   try {
     $tempAttach = Resolve-SharedAttachmentPath $payload
@@ -109,21 +162,33 @@ function Send-MailBatch($payload) {
       if ([string]::IsNullOrWhiteSpace($email)) { $skipped++; continue }
       if ($attach -and -not (Test-Path -LiteralPath $attach)) { $skipped++; continue }
 
+      $isHtml = $true
+      try {
+        if ($m.PSObject.Properties.Name -contains 'messageIsHtml') {
+          $flag = $m.messageIsHtml
+          if ($flag -eq $false -or [string]$flag -eq '0' -or [string]$flag -eq 'False') {
+            $isHtml = Test-LooksLikeHtml ([string]$m.message)
+          }
+        }
+      } catch {
+        $isHtml = Test-LooksLikeHtml ([string]$m.message)
+      }
+
+      $inner = Build-MessageHtml ([string]$m.greeting) ([string]$m.first) ([string]$m.message) $isHtml
+      $fullHtml = Wrap-MailHtml $inner $signatureHtml
+
+      # NEVER call GetInspector — Word-as-email-editor turns HTML into visible source text.
       $mail = $outlook.CreateItem(0)
       $mail.BodyFormat = 2
-      $inspector = $mail.GetInspector
-      Start-Sleep -Milliseconds 200
-      $body = Build-MessageHtml ([string]$m.greeting) ([string]$m.first) ([string]$m.message)
-      $mail.HTMLBody = Insert-IntoBody ([string]$mail.HTMLBody) $body
       $mail.To = $email
       if ($m.cc) { $mail.CC = [string]$m.cc }
       if ($m.bcc) { $mail.BCC = [string]$m.bcc }
       $subject = [string]$m.subject
       if ([string]::IsNullOrWhiteSpace($subject)) { $subject = 'Document Attached' }
       $mail.Subject = $subject
+      $mail.HTMLBody = $fullHtml
       if ($attach) { [void]$mail.Attachments.Add($attach) }
 
-      try { $inspector.Close(0) } catch {}
       if ($displayOnly) { $mail.Display() } else { $mail.Send() }
       $sent++
       Start-Sleep -Milliseconds 400
@@ -150,8 +215,8 @@ try {
   exit 1
 }
 
-Write-Host "Mail Mass Helper is running."
-Write-Host "Go back to the website and click Send with Outlook."
+Write-Host "Mail Mass Helper v$HelperVersion is running."
+Write-Host "Go back to Mail Mass and click Send with Outlook."
 Write-Host "Listening on $Prefix"
 Write-Host "Close this window to stop."
 Write-Host ""
@@ -170,17 +235,17 @@ while ($listener.IsListening) {
 
     $path = $req.Url.AbsolutePath.TrimEnd('/').ToLowerInvariant()
     if ($req.HttpMethod -eq 'GET' -and ($path -eq '' -or $path -eq '/health' -or $path -eq '/status')) {
-      Write-JsonResponse $res 200 @{ ok = $true; service = 'MailMassHelper'; version = 1 }
+      Write-JsonResponse $res 200 @{ ok = $true; service = 'MailMassHelper'; version = $HelperVersion }
       continue
     }
 
     if ($req.HttpMethod -eq 'POST' -and $path -eq '/send') {
-      $reader = New-Object IO.StreamReader($req.InputStream, $req.ContentEncoding)
+      $reader = New-Object IO.StreamReader($req.InputStream, [Text.Encoding]::UTF8)
       $raw = $reader.ReadToEnd()
       $reader.Close()
       $payload = $raw | ConvertFrom-Json
       $result = Send-MailBatch $payload
-      Write-JsonResponse $res 200 @{ ok = $true; processed = $result.processed; skipped = $result.skipped }
+      Write-JsonResponse $res 200 @{ ok = $true; processed = $result.processed; skipped = $result.skipped; version = $HelperVersion }
       $msg = '[{0}] Sent {1}, skipped {2}' -f (Get-Date -Format 'HH:mm:ss'), $result.processed, $result.skipped
       Write-Host $msg
       continue

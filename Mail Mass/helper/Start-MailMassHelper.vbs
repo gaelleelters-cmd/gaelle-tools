@@ -1,14 +1,12 @@
-' Mail Mass Helper - for everyone using the public website
-' Double-click this file once. It installs a small local bridge so the website
-' can send through YOUR Outlook (each person uses their own Outlook).
-'
-' Requirements: Windows + Outlook desktop
+' Mail Mass Helper - silent Outlook bridge
+' Starts the local helper on http://127.0.0.1:19527 and registers mailmass:// so the website can wake it.
+' Always refreshes the script from the toolkit folder when present, then restarts the helper.
 
 Option Explicit
 
-Dim sh, fso, http, stream
-Dim installDir, ps1Path, starterPath, urlPs1, cmd, startup, linkPath
-Dim baseUrls, i, downloaded, sc
+Dim sh, fso
+Dim installDir, ps1Path, starterPath, cmd, startup, linkPath
+Dim sc, sourcePs1
 
 Set sh = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
@@ -19,35 +17,34 @@ starterPath = installDir & "\Start-MailMassHelper.vbs"
 
 If Not fso.FolderExists(installDir) Then fso.CreateFolder installDir
 
-' Prefer a copy next to this script (local/dev), otherwise download from the public site
-downloaded = False
-If fso.FileExists(fso.GetParentFolderName(WScript.ScriptFullName) & "\MailMassHelper.ps1") Then
-  fso.CopyFile fso.GetParentFolderName(WScript.ScriptFullName) & "\MailMassHelper.ps1", ps1Path, True
-  downloaded = True
-Else
-  baseUrls = Array( _
-    "https://gaelleelters.com/Mail%20Mass/helper/MailMassHelper.ps1", _
-    "https://www.gaelleelters.com/Mail%20Mass/helper/MailMassHelper.ps1" _
-  )
-  For i = 0 To UBound(baseUrls)
-    If DownloadBinary(baseUrls(i), ps1Path) Then
-      downloaded = True
-      Exit For
+sourcePs1 = FindToolkitPs1()
+If sourcePs1 <> "" Then
+  fso.CopyFile sourcePs1, ps1Path, True
+ElseIf Not fso.FileExists(ps1Path) Then
+  If Not DownloadBinary("https://gaelleelters.com/Mail%20Mass/helper/MailMassHelper.ps1", ps1Path) Then
+    If Not WScript.Arguments.Named.Exists("silent") Then
+      MsgBox "Could not install Mail Mass Helper.", vbCritical, "Mail Mass"
     End If
-  Next
+    WScript.Quit 1
+  End If
 End If
 
-If Not downloaded Or Not fso.FileExists(ps1Path) Then
-  MsgBox "Could not install the helper script." & vbCrLf & vbCrLf & _
-         "Check your internet connection, then try again from:" & vbCrLf & _
-         "https://gaelleelters.com", vbCritical, "Mail Mass Helper"
-  WScript.Quit 1
+If LCase(WScript.ScriptFullName) <> LCase(starterPath) Then
+  fso.CopyFile WScript.ScriptFullName, starterPath, True
 End If
 
-' Keep a starter copy in the install folder for Startup
-fso.CopyFile WScript.ScriptFullName, starterPath, True
+On Error Resume Next
+Dim protocolTarget
+protocolTarget = starterPath
+If InStr(1, LCase(WScript.ScriptFullName), "\mail mass\helper\", vbTextCompare) > 0 Then
+  protocolTarget = WScript.ScriptFullName
+End If
+sh.RegWrite "HKCU\Software\Classes\mailmass\", "URL:Mail Mass Protocol", "REG_SZ"
+sh.RegWrite "HKCU\Software\Classes\mailmass\URL Protocol", "", "REG_SZ"
+sh.RegWrite "HKCU\Software\Classes\mailmass\shell\open\command\", _
+  "wscript.exe """ & protocolTarget & """ /silent", "REG_SZ"
+On Error GoTo 0
 
-' Always keep a Startup shortcut so the helper comes back after reboot
 startup = sh.SpecialFolders("Startup")
 linkPath = startup & "\Mail Mass Helper.lnk"
 Set sc = sh.CreateShortcut(linkPath)
@@ -57,17 +54,67 @@ sc.WorkingDirectory = installDir
 sc.WindowStyle = 7
 sc.Save
 
-cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & ps1Path & """"
-If WScript.Arguments.Named.Exists("silent") Then
-  sh.Run cmd, 7, False
-Else
-  sh.Run cmd, 1, False
-  MsgBox "Helper is running on this PC." & vbCrLf & vbCrLf & _
-         "Go back to Mail Mass in your browser and click Send with Outlook." & vbCrLf & _
-         "Keep the helper window open while you send." & vbCrLf & vbCrLf & _
-         "Anyone else using the site must run this helper on their own computer.", _
-         vbInformation, "Mail Mass Helper"
+KillHelper
+WScript.Sleep 900
+cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File """ & ps1Path & """"
+sh.Run cmd, 0, False
+WScript.Sleep 2000
+
+If Not WScript.Arguments.Named.Exists("silent") Then
+  If HelperIsUp() Then
+    MsgBox "Outlook is ready." & vbCrLf & vbCrLf & _
+           "Go back to Mail Mass — status should show Connected." & vbCrLf & _
+           "Then click Send.", _
+           vbInformation, "Mail Mass"
+  Else
+    MsgBox "Helper started but is not responding yet." & vbCrLf & _
+           "Open Outlook, wait a few seconds, then click Connect / Update Outlook again.", vbExclamation, "Mail Mass"
+  End If
 End If
+
+Function FindToolkitPs1()
+  Dim paths, i, p, best, bestDate, d
+  FindToolkitPs1 = ""
+  bestDate = 0
+  paths = Array( _
+    fso.GetParentFolderName(WScript.ScriptFullName) & "\MailMassHelper.ps1", _
+    sh.ExpandEnvironmentStrings("%USERPROFILE%") & "\OneDrive - UNHCR\Desktop\gaelleelters\Mail Mass\helper\MailMassHelper.ps1", _
+    sh.ExpandEnvironmentStrings("%USERPROFILE%") & "\Desktop\gaelleelters\Mail Mass\helper\MailMassHelper.ps1", _
+    "C:\Users\ELTERS\OneDrive - UNHCR\Desktop\gaelleelters\Mail Mass\helper\MailMassHelper.ps1" _
+  )
+  For i = 0 To UBound(paths)
+    p = paths(i)
+    If fso.FileExists(p) Then
+      d = fso.GetFile(p).DateLastModified
+      If d >= bestDate Then
+        bestDate = d
+        best = p
+      End If
+    End If
+  Next
+  If best <> "" Then FindToolkitPs1 = best
+End Function
+
+Function HelperIsUp()
+  On Error Resume Next
+  Dim xhr, status
+  HelperIsUp = False
+  Set xhr = CreateObject("MSXML2.XMLHTTP.6.0")
+  If xhr Is Nothing Then Set xhr = CreateObject("Microsoft.XMLHTTP")
+  xhr.Open "GET", "http://127.0.0.1:19527/health", False
+  xhr.Send
+  status = xhr.Status
+  If Err.Number = 0 And status = 200 Then HelperIsUp = True
+  Err.Clear
+  On Error GoTo 0
+End Function
+
+Function KillHelper()
+  On Error Resume Next
+  sh.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command ""Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*MailMassHelper.ps1*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Get-NetTCPConnection -LocalPort 19527 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }""", 0, True
+  Err.Clear
+  On Error GoTo 0
+End Function
 
 Function DownloadBinary(url, destPath)
   On Error Resume Next

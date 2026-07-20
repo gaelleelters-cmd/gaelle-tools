@@ -6,118 +6,250 @@
   <title>Mail Mass</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20260720c">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=20260720greet">
 </head>
 <body>
-  <header class="top">
-    <h1 class="brand">Mail Mass</h1>
-    <p class="tagline">Like Word mail merge: upload your sheet, click Send — emails go from <strong>your</strong> Outlook on this computer.</p>
+  <header class="hero" id="hero">
+    <div class="hero-mesh" aria-hidden="true"></div>
+    <div class="hero-orbs" aria-hidden="true">
+      <div class="hero-orb hero-orb--1"></div>
+      <div class="hero-orb hero-orb--2"></div>
+      <div class="hero-orb hero-orb--3"></div>
+    </div>
+    <div class="hero-bubbles" aria-hidden="true">
+      <div class="chat-bubble cb-1"></div>
+      <div class="chat-bubble cb-2"></div>
+      <div class="chat-bubble cb-3"></div>
+    </div>
+    <div class="hero-emoji-field" aria-hidden="true">
+      <span class="jump-emoji je-1">✉️</span>
+      <span class="jump-emoji je-2 is-far">📧</span>
+      <span class="jump-emoji je-3">📬</span>
+      <span class="jump-emoji je-4 is-far">📝</span>
+      <span class="jump-emoji je-6">✅</span>
+      <span class="jump-emoji je-7 is-far">📥</span>
+      <span class="jump-emoji je-8">📤</span>
+      <span class="jump-emoji je-9 is-far">💼</span>
+      <span class="jump-emoji je-11">📎</span>
+      <span class="jump-emoji je-12 is-far">🗂️</span>
+      <span class="jump-emoji je-13">💙</span>
+      <span class="jump-emoji je-14">📨</span>
+      <span class="jump-emoji je-16">🌐</span>
+    </div>
+    <div class="hero-content">
+      <h1 class="hero-title">
+        <span class="hero-title-brand">Mail Mass</span>
+        <span class="hero-title-tool">Tool</span>
+      </h1>
+    </div>
   </header>
 
   <main class="main">
-    <section class="panel">
-      <h2 class="step">1 · Your contact sheet</h2>
-      <div class="dropzone" id="dropzone">
-        <input type="file" id="file-input" accept=".csv,.xlsx,.xls" hidden>
-        <div class="dropzone-inner" id="drop-empty">
-          <p class="drop-title">Drop an Excel or CSV here</p>
-          <p class="drop-sub">or <button type="button" class="link-btn" id="browse-btn">browse</button></p>
-        </div>
-        <div class="dropzone-file hidden" id="drop-file">
-          <span id="file-name"></span>
-          <button type="button" class="btn-icon" id="file-remove" title="Remove">✕</button>
-        </div>
-      </div>
-      <div class="map-grid hidden" id="map-section">
-        <div class="field">
-          <label for="col-firstname">First name <span class="req">*</span></label>
-          <select id="col-firstname"></select>
-        </div>
-        <div class="field">
-          <label for="col-email">Email <span class="req">*</span></label>
-          <select id="col-email"></select>
-        </div>
-        <div class="field">
-          <label for="col-subject">Subject <span class="opt">(optional)</span></label>
-          <select id="col-subject"><option value="">— none —</option></select>
-        </div>
-        <div class="field">
-          <label for="attach-file">Attachment <span class="opt">(optional)</span></label>
-          <input type="file" id="attach-file">
-          <span class="hint">Same file for every email</span>
-        </div>
-        <div class="field">
-          <label for="col-cc">CC <span class="opt">(optional)</span></label>
-          <select id="col-cc"><option value="">— none —</option></select>
-        </div>
-        <div class="field">
-          <label for="col-bcc">BCC <span class="opt">(optional)</span></label>
-          <select id="col-bcc"><option value="">— none —</option></select>
-        </div>
-      </div>
-    </section>
+    <p class="page-lead">Like Word mail merge — but you can also set <strong>Subject</strong>, <strong>CC</strong>, <strong>BCC</strong>, a <strong>unique message</strong> per row, and an <strong>attachment</strong>. Upload your sheet, click Send — emails go from <strong>your</strong> Outlook on this computer.</p>
+    <p class="sheet-example-label">Excel header row example (copy these titles into row 1):</p>
+    <div class="sheet-example" role="img" aria-label="Example Excel column titles">
+      <span>First Name</span>
+      <span>Email</span>
+      <span>Subject</span>
+      <span>CC</span>
+      <span>BCC</span>
+      <span>Message</span>
+    </div>
 
-    <section class="panel">
-      <h2 class="step">2 · Write your mail</h2>
-      <div class="form-grid">
-        <div class="field">
-          <label for="greeting">Greeting</label>
-          <select id="greeting">
-            <option value="">(none — first name only)</option>
-            <option value="Dear" selected>Dear</option>
-            <option value="Hello">Hello</option>
-            <option value="Hi">Hi</option>
-            <option value="Assalam Aalaykom">Assalam Aalaykom</option>
-            <option value="Good morning">Good morning</option>
-            <option value="Good afternoon">Good afternoon</option>
-          </select>
+    <section class="panel" id="step-outlook">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="step">1 · Connect Outlook</h2>
         </div>
-        <div class="field greeting-preview-field">
-          <label>Opens as</label>
-          <p class="greeting-preview" id="greeting-preview">Dear <em>FirstName</em>,</p>
+        <div class="outlook-status-row">
+          <span class="outlook-pill" id="outlook-pill">Checking…</span>
+          <p class="hint" id="auth-status">Checking if Outlook is ready on this PC…</p>
         </div>
-        <div class="field field-full">
-          <label>Message mode</label>
-          <div class="radio-row">
-            <label class="radio">
-              <input type="radio" name="msg-mode" value="same" checked>
-              <span>Same message for everyone</span>
-            </label>
-            <label class="radio">
-              <input type="radio" name="msg-mode" value="custom">
-              <span>Custom message from a sheet column</span>
-            </label>
-          </div>
+        <div class="outlook-connect" id="outlook-connect">
+          <a class="btn btn-primary btn-lg" id="btn-connect-outlook" href="Start Mail Mass.bat">
+            Connect / Update Outlook
+          </a>
+          <p class="hint actions-hint" id="connect-hint">
+            Click the blue button above. If Windows asks, choose <strong>Open</strong> (not Save / not Download).
+          </p>
         </div>
-        <div class="field field-full" id="same-msg-wrap">
-          <label for="body">Message</label>
-          <textarea id="body" rows="7" placeholder="Write the email body here…&#10;&#10;You can use {Column Name} tags from your sheet."></textarea>
-          <div class="param-row" id="param-row"></div>
-        </div>
-        <div class="field field-full hidden" id="custom-msg-wrap">
-          <label for="col-message">Message column</label>
-          <select id="col-message"></select>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <h2 class="step">3 · Preview &amp; send</h2>
-      <div class="preview-box">
-        <div class="preview-head">
-          <h3>Live preview</h3>
-          <span class="hint" id="preview-who">Sample row</span>
-        </div>
-        <pre class="preview-body" id="preview-body"></pre>
-      </div>
-      <div class="auth-row">
-        <p class="hint" id="auth-status">Click Send — a small Outlook file downloads. Open it once to send from your mailbox.</p>
+        <p class="hint outlook-ready hidden" id="auth-ready">Outlook is connected. Continue with step 2 below.</p>
         <button type="button" class="btn btn-secondary hidden" id="btn-signout">Sign out</button>
       </div>
-      <div class="actions">
-        <button type="button" class="btn btn-primary" id="btn-prepare" disabled>Send with Outlook</button>
-        <p class="hint actions-hint">Uses your desktop Outlook. No Microsoft cloud setup required.</p>
+    </section>
+
+    <section class="panel" id="step-sheet">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="step">2 · Your contact sheet</h2>
+        </div>
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="file-input" accept=".csv,.xlsx,.xls" hidden>
+          <div class="dropzone-inner" id="drop-empty">
+            <p class="drop-title">Drop an Excel or CSV here</p>
+            <p class="drop-sub">or <button type="button" class="link-btn" id="browse-btn">browse</button></p>
+          </div>
+          <div class="dropzone-file hidden" id="drop-file">
+            <span id="file-name"></span>
+            <button type="button" class="btn-icon" id="file-remove" title="Remove">✕</button>
+          </div>
+        </div>
+        <div class="map-grid hidden" id="map-section">
+          <div class="field">
+            <label for="col-firstname">First name <span class="req">*</span></label>
+            <select id="col-firstname"></select>
+          </div>
+          <div class="field">
+            <label for="col-email">Email <span class="req">*</span></label>
+            <select id="col-email"></select>
+          </div>
+          <div class="field">
+            <label for="col-subject">Subject <span class="opt">(optional)</span></label>
+            <select id="col-subject"><option value="">— none —</option></select>
+          </div>
+          <div class="field">
+            <label for="attach-file">Attachment <span class="opt">(optional)</span></label>
+            <input type="file" id="attach-file">
+            <span class="hint">Same file for every email</span>
+          </div>
+          <div class="field">
+            <label for="col-cc">CC <span class="opt">(optional)</span></label>
+            <select id="col-cc"><option value="">— none —</option></select>
+          </div>
+          <div class="field">
+            <label for="col-bcc">BCC <span class="opt">(optional)</span></label>
+            <select id="col-bcc"><option value="">— none —</option></select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="step-write">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="step">3 · Write your mail</h2>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="greeting">Greeting</label>
+            <select id="greeting">
+              <option value="">(none — first name only)</option>
+              <option value="Dear" selected>Dear</option>
+              <option value="Hello">Hello</option>
+              <option value="Hi">Hi</option>
+              <option value="Assalam Aalaykom">Assalam Aalaykom</option>
+              <option value="Good morning">Good morning</option>
+              <option value="Good afternoon">Good afternoon</option>
+            </select>
+          </div>
+          <div class="field greeting-preview-field">
+            <label>Opens as</label>
+            <p class="greeting-preview" id="greeting-preview">Dear <em>FirstName</em>,</p>
+          </div>
+          <div class="field field-full">
+            <label>Message mode</label>
+            <div class="radio-row">
+              <label class="radio">
+                <input type="radio" name="msg-mode" value="same" checked>
+                <span>Same message for everyone</span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="msg-mode" value="custom">
+                <span>Custom message from a sheet column</span>
+              </label>
+            </div>
+          </div>
+          <div class="field field-full" id="same-msg-wrap">
+            <label for="body">Message</label>
+            <div class="rte-wrap">
+              <div class="rte-toolbar" role="toolbar" aria-label="Formatting">
+                <select class="rte-select" id="rte-font" title="Font">
+                  <option value="Calibri" selected>Calibri</option>
+                  <option value="Arial">Arial</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Verdana">Verdana</option>
+                  <option value="Tahoma">Tahoma</option>
+                  <option value="Courier New">Courier New</option>
+                </select>
+                <select class="rte-select rte-size" id="rte-size" title="Font size">
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="11" selected>11</option>
+                  <option value="12">12</option>
+                  <option value="14">14</option>
+                  <option value="16">16</option>
+                  <option value="18">18</option>
+                  <option value="20">20</option>
+                  <option value="24">24</option>
+                  <option value="28">28</option>
+                  <option value="36">36</option>
+                </select>
+                <span class="rte-sep" aria-hidden="true"></span>
+                <button type="button" class="rte-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                <button type="button" class="rte-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                <button type="button" class="rte-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                <button type="button" class="rte-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+                <span class="rte-sep" aria-hidden="true"></span>
+                <label class="rte-color" title="Text color">
+                  <span class="rte-color-swatch" id="rte-color-swatch"></span>
+                  <input type="color" id="rte-color" value="#000000" aria-label="Text color">
+                </label>
+                <label class="rte-color" title="Highlight">
+                  <span class="rte-color-swatch rte-hl" id="rte-hl-swatch"></span>
+                  <input type="color" id="rte-highlight" value="#ffff00" aria-label="Highlight color">
+                </label>
+                <span class="rte-sep" aria-hidden="true"></span>
+                <button type="button" class="rte-btn" data-cmd="justifyLeft" title="Align left">L</button>
+                <button type="button" class="rte-btn" data-cmd="justifyCenter" title="Align center">C</button>
+                <button type="button" class="rte-btn" data-cmd="justifyRight" title="Align right">R</button>
+                <span class="rte-sep" aria-hidden="true"></span>
+                <button type="button" class="rte-btn" data-cmd="insertUnorderedList" title="Bullets">• List</button>
+                <button type="button" class="rte-btn" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+                <span class="rte-sep" aria-hidden="true"></span>
+                <button type="button" class="rte-btn" data-cmd="removeFormat" title="Clear formatting">Clear</button>
+              </div>
+              <div
+                id="body"
+                class="rte-editor"
+                contenteditable="true"
+                role="textbox"
+                aria-multiline="true"
+                aria-label="Message"
+                data-placeholder="Write the email body here… Use {Column Name} tags from your sheet."
+              ></div>
+            </div>
+            <div class="param-row" id="param-row"></div>
+          </div>
+          <div class="field field-full hidden" id="custom-msg-wrap">
+            <label for="col-message">Message column</label>
+            <select id="col-message"></select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="step-send">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="step">4 · Preview &amp; send</h2>
+        </div>
+          <div class="preview-box">
+          <div class="preview-head">
+            <h3>Live preview</h3>
+            <span class="hint" id="preview-who">Sample row</span>
+          </div>
+          <div class="preview-body" id="preview-body">
+            <pre class="preview-meta" id="preview-meta"></pre>
+            <div class="preview-mail" id="preview-mail"></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn btn-primary btn-lg" id="btn-prepare" disabled>Send with Outlook</button>
+          <p class="hint actions-hint">Emails send from your Outlook. Make sure step 1 is connected first.</p>
+        </div>
       </div>
     </section>
   </main>
@@ -125,7 +257,6 @@
   <div class="toast-wrap" id="toast-wrap"></div>
 
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="js/oneshot.js?v=20260720c"></script>
-  <script src="js/app.js?v=20260720c"></script>
+  <script src="js/app.js?v=20260720greet"></script>
 </body>
 </html>

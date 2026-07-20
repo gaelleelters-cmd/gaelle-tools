@@ -28,12 +28,22 @@
   var sameWrap = $('same-msg-wrap');
   var customWrap = $('custom-msg-wrap');
   var paramRow = $('param-row');
-  var previewBody = $('preview-body');
+  var previewMeta = $('preview-meta');
+  var previewMail = $('preview-mail');
   var previewWho = $('preview-who');
   var btnPrepare = $('btn-prepare');
   var btnSignOut = $('btn-signout');
+  var btnConnectOutlook = $('btn-connect-outlook');
+  var outlookConnect = $('outlook-connect');
+  var authReady = $('auth-ready');
   var authStatus = $('auth-status');
   var toastWrap = $('toast-wrap');
+  var rteFont = $('rte-font');
+  var rteSize = $('rte-size');
+  var rteColor = $('rte-color');
+  var rteHighlight = $('rte-highlight');
+  var rteColorSwatch = $('rte-color-swatch');
+  var rteHlSwatch = $('rte-hl-swatch');
 
   function toast(msg, isError) {
     var el = document.createElement('div');
@@ -167,23 +177,233 @@
     });
   }
 
-  function insertAtCursor(textarea, text) {
-    var start = textarea.selectionStart || 0;
-    var end = textarea.selectionEnd || 0;
-    var val = textarea.value;
-    textarea.value = val.slice(0, start) + text + val.slice(end);
-    textarea.focus();
-    var pos = start + text.length;
-    textarea.setSelectionRange(pos, pos);
+  function insertAtCursor(editor, text) {
+    editor.focus();
+    var sel = window.getSelection();
+    if (!sel || !sel.rangeCount || !editor.contains(sel.anchorNode)) {
+      editor.appendChild(document.createTextNode(text));
+      placeCaretAtEnd(editor);
+      return;
+    }
+    var range = sel.getRangeAt(0);
+    range.deleteContents();
+    var node = document.createTextNode(text);
+    range.insertNode(node);
+    range.setStartAfter(node);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
   }
 
-  function applyMerge(template, row) {
+  function placeCaretAtEnd(el) {
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function getBodyHtml() {
+    var html = (bodyEl.innerHTML || '').trim();
+    if (!html || html === '<br>') return '';
+    return cleanEmailHtml(html);
+  }
+
+  function getBodyPlain() {
+    return (bodyEl.innerText || bodyEl.textContent || '').trim();
+  }
+
+  function looksLikeHtml(s) {
+    return /<[a-z]|\&nbsp;/i.test(String(s || ''));
+  }
+
+  function unwrapSafeLink(href) {
+    try {
+      var u = new URL(href, window.location.href);
+      if (/safelinks\.protection\.outlook\.com$/i.test(u.hostname) && u.searchParams.has('url')) {
+        return decodeURIComponent(u.searchParams.get('url'));
+      }
+    } catch (e) {}
+    return href;
+  }
+
+  function cleanEmailHtml(raw) {
+    var src = String(raw || '');
+    if (!src.trim()) return '';
+    var tmp = document.createElement('div');
+    tmp.innerHTML = src
+      .replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<\/?o:p[^>]*>/gi, '')
+      .replace(/<\/?xml:[^>]*>/gi, '')
+      .replace(/<\/?w:[^>]*>/gi, '');
+
+    function keepStyle(styleText) {
+      if (!styleText) return '';
+      var keep = [];
+      String(styleText).split(';').forEach(function (part) {
+        var p = part.trim();
+        if (!p) return;
+        var low = p.toLowerCase();
+        if (
+          low.indexOf('font-family') === 0 ||
+          low.indexOf('font-size') === 0 ||
+          low.indexOf('font-weight') === 0 ||
+          low.indexOf('font-style') === 0 ||
+          low.indexOf('text-decoration') === 0 ||
+          low.indexOf('color') === 0 ||
+          low.indexOf('background') === 0 ||
+          low.indexOf('text-align') === 0
+        ) {
+          keep.push(p);
+        }
+      });
+      return keep.join('; ');
+    }
+
+    function walk(node, out) {
+      if (node.nodeType === 3) {
+        out.appendChild(document.createTextNode(node.nodeValue));
+        return;
+      }
+      if (node.nodeType !== 1) return;
+      var tag = node.tagName.toLowerCase();
+      if (tag === 'script' || tag === 'style' || tag === 'meta' || tag === 'link') return;
+
+      if (tag === 'br') {
+        out.appendChild(document.createElement('br'));
+        return;
+      }
+
+      var next = out;
+      if (tag === 'p' || tag === 'div') {
+        var p = document.createElement('p');
+        p.setAttribute('style', 'margin:0 0 8pt 0;');
+        out.appendChild(p);
+        next = p;
+      } else if (tag === 'b' || tag === 'strong') {
+        next = document.createElement('b');
+        out.appendChild(next);
+      } else if (tag === 'i' || tag === 'em') {
+        next = document.createElement('i');
+        out.appendChild(next);
+      } else if (tag === 'u') {
+        next = document.createElement('u');
+        out.appendChild(next);
+      } else if (tag === 's' || tag === 'strike') {
+        next = document.createElement('s');
+        out.appendChild(next);
+      } else if (tag === 'sup' || tag === 'sub') {
+        next = document.createElement(tag);
+        out.appendChild(next);
+      } else if (tag === 'ul' || tag === 'ol' || tag === 'li') {
+        next = document.createElement(tag);
+        out.appendChild(next);
+      } else if (tag === 'a') {
+        var a = document.createElement('a');
+        var href = unwrapSafeLink(node.getAttribute('href') || '');
+        if (href) a.setAttribute('href', href);
+        a.setAttribute('style', keepStyle(node.getAttribute('style')) || 'color:#0070C0;');
+        out.appendChild(a);
+        next = a;
+      } else if (tag === 'span' || tag === 'font') {
+        var style = keepStyle(node.getAttribute('style') || '');
+        if (tag === 'font') {
+          var face = node.getAttribute('face');
+          var color = node.getAttribute('color');
+          var size = node.getAttribute('size');
+          if (face) style += (style ? '; ' : '') + 'font-family:' + face;
+          if (color) style += (style ? '; ' : '') + 'color:' + color;
+          if (size) {
+            var map = { '1': '8pt', '2': '10pt', '3': '12pt', '4': '14pt', '5': '18pt', '6': '24pt', '7': '36pt' };
+            style += (style ? '; ' : '') + 'font-size:' + (map[size] || '11pt');
+          }
+        }
+        if (style) {
+          next = document.createElement('span');
+          next.setAttribute('style', style);
+          out.appendChild(next);
+        }
+      }
+
+      Array.prototype.forEach.call(node.childNodes, function (child) {
+        walk(child, next);
+      });
+    }
+
+    var cleaned = document.createElement('div');
+    Array.prototype.forEach.call(tmp.childNodes, function (child) {
+      walk(child, cleaned);
+    });
+
+    // Drop empty paragraphs that are only &nbsp;
+    Array.prototype.slice.call(cleaned.querySelectorAll('p')).forEach(function (p) {
+      var t = (p.textContent || '').replace(/\u00a0/g, ' ').trim();
+      if (!t && !p.querySelector('img')) p.remove();
+    });
+
+    return cleaned.innerHTML.trim();
+  }
+
+  function insertHtmlAtCursor(html) {
+    bodyEl.focus();
+    try {
+      document.execCommand('insertHTML', false, html);
+    } catch (e) {
+      bodyEl.innerHTML = (bodyEl.innerHTML || '') + html;
+    }
+  }
+
+  function rteCommand(cmd, value) {
+    bodyEl.focus();
+    try {
+      document.execCommand('styleWithCSS', false, true);
+    } catch (e) {}
+    document.execCommand(cmd, false, value || null);
+    updatePreview();
+  }
+
+  function applyFontSize(pt) {
+    bodyEl.focus();
+    try {
+      document.execCommand('styleWithCSS', false, true);
+    } catch (e) {}
+    document.execCommand('fontSize', false, '7');
+    bodyEl.querySelectorAll('font[size="7"]').forEach(function (el) {
+      var span = document.createElement('span');
+      span.style.fontSize = pt + 'pt';
+      while (el.firstChild) span.appendChild(el.firstChild);
+      el.parentNode.replaceChild(span, el);
+    });
+    bodyEl.querySelectorAll('span').forEach(function (el) {
+      if (el.style && /xxx-large|xx-large|x-large/i.test(el.style.fontSize || '')) {
+        el.style.fontSize = pt + 'pt';
+      }
+    });
+    updatePreview();
+  }
+
+  function htmlEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function applyMerge(template, row, asHtml) {
     return String(template || '').replace(/\{([^}]+)\}/g, function (_, key) {
       var k = key.trim();
-      if (Object.prototype.hasOwnProperty.call(row, k)) return String(row[k] == null ? '' : row[k]);
-      var found = headers.find(function (h) { return h.toLowerCase() === k.toLowerCase(); });
-      if (found) return String(row[found] == null ? '' : row[found]);
-      return '{' + key + '}';
+      var val = '';
+      if (Object.prototype.hasOwnProperty.call(row, k)) {
+        val = String(row[k] == null ? '' : row[k]);
+      } else {
+        var found = headers.find(function (h) { return h.toLowerCase() === k.toLowerCase(); });
+        if (found) val = String(row[found] == null ? '' : row[found]);
+        else return '{' + key + '}';
+      }
+      return asHtml ? htmlEsc(val) : val;
     });
   }
 
@@ -195,14 +415,23 @@
     var subject = colSubject.value ? String(row[colSubject.value] || '').trim() : '';
     if (!subject) subject = 'Document Attached';
 
-    var message = msgMode() === 'custom'
-      ? String(row[colMessage.value] || '').trim()
-      : applyMerge(bodyEl.value, row).trim();
+    var messageIsHtml = false;
+    var message = '';
+    if (msgMode() === 'custom') {
+      message = String(row[colMessage.value] || '').trim();
+      messageIsHtml = looksLikeHtml(message);
+    } else {
+      message = applyMerge(getBodyHtml(), row, true).trim();
+      messageIsHtml = true;
+    }
 
     var greet = String(greeting.value || '').trim();
+    var plainMsg = msgMode() === 'custom'
+      ? message
+      : applyMerge(getBodyPlain(), row, false).trim();
     var bodyText = greet
-      ? (greet + ' ' + (first || 'there') + ',\n\n' + message)
-      : ((first || 'there') + ',\n\n' + message);
+      ? (greet + ' ' + (first || 'there') + ',\n\n' + plainMsg)
+      : ((first || 'there') + ',\n\n' + plainMsg);
 
     return {
       first: first,
@@ -212,6 +441,7 @@
       subject: subject,
       bodyText: bodyText,
       message: message,
+      messageIsHtml: messageIsHtml,
       greeting: greet
     };
   }
@@ -232,35 +462,129 @@
       : '<em>FirstName</em>,';
   }
 
+  function detectMessageFontSize(html) {
+    var m = String(html || '').match(/font-size:\s*([^;"'\s]+)/i);
+    return m ? m[1] : '11pt';
+  }
+
+  function buildPreviewHtml(mail) {
+    var open = mail.greeting
+      ? (mail.greeting + ' ' + (mail.first || 'FirstName') + ',')
+      : ((mail.first || 'FirstName') + ',');
+    var size = detectMessageFontSize(mail.message);
+    var greetStyle = 'margin:0 0 8pt 0;font-family:Calibri,sans-serif;font-size:' + size +
+      ';font-weight:normal;font-style:normal;';
+    var wrapOpen = '<div style="font-family:Calibri,sans-serif;font-size:11pt;">' +
+      '<p style="' + greetStyle + '"><span style="' + greetStyle + '">' +
+      open.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+      '</span></p>';
+    if (mail.messageIsHtml) {
+      return wrapOpen + mail.message + '</div>';
+    }
+    var norm = String(mail.message || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    var parts = norm.split(/\n\n/).map(function (p) {
+      var t = p.trim();
+      if (!t) return '';
+      return '<p style="margin:0 0 8pt 0;font-family:Calibri,sans-serif;font-size:11pt;">' +
+        t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>') +
+        '</p>';
+    }).join('');
+    return wrapOpen + parts + '</div>';
+  }
+
   function updatePreview() {
     updateGreetingPreview();
     if (!rows.length || !colFirst.value) {
       var greet = String(greeting.value || '').trim();
-      previewBody.textContent = (greet ? (greet + ' FirstName,') : 'FirstName,') + '\n\n' + (bodyEl.value || '…');
+      var sample = {
+        first: 'FirstName',
+        email: '',
+        cc: '',
+        bcc: '',
+        subject: 'Document Attached',
+        greeting: greet,
+        message: getBodyHtml() || '…',
+        messageIsHtml: true
+      };
       previewWho.textContent = 'Sample';
+      previewMeta.textContent = 'Subject: Document Attached';
+      previewMail.innerHTML = buildPreviewHtml(sample);
       return;
     }
     var mail = buildRow(rows[0]);
     previewWho.textContent = (mail.first || 'Row 1') + (mail.email ? ' · ' + mail.email : '');
-    previewBody.textContent =
+    previewMeta.textContent =
       'To: ' + (mail.email || '') + '\n' +
       (mail.cc ? 'CC: ' + mail.cc + '\n' : '') +
       (mail.bcc ? 'BCC: ' + mail.bcc + '\n' : '') +
-      'Subject: ' + mail.subject + '\n' +
-      (sharedAttachment ? 'Attachment: ' + sharedAttachment.name + '\n' : '') +
-      '\n' + mail.bodyText;
+      'Subject: ' + mail.subject +
+      (sharedAttachment ? '\nAttachment: ' + sharedAttachment.name : '');
+    previewMail.innerHTML = buildPreviewHtml(mail);
   }
 
   var HELPER_URL = 'http://127.0.0.1:19527';
+  var HELPER_MIN_VERSION = 5;
   var helperOnline = false;
+  var helperVersion = 0;
+  var outlookPill = $('outlook-pill');
+  var connectHint = $('connect-hint');
 
   function setAuthUi() {
     btnSignOut.classList.add('hidden');
-    if (helperOnline) {
-      authStatus.textContent = 'Outlook on this PC is connected — Send goes straight through your Outlook.';
-    } else {
-      authStatus.textContent = 'Click Send — a small Outlook file downloads. Open it once to send from your mailbox (like Word mail merge).';
+    var needsUpdate = helperOnline && helperVersion < HELPER_MIN_VERSION;
+    var ready = helperOnline && helperVersion >= HELPER_MIN_VERSION;
+
+    if (ready) {
+      if (outlookConnect) outlookConnect.classList.add('hidden');
+      if (authReady) authReady.classList.remove('hidden');
+      if (outlookPill) {
+        outlookPill.textContent = 'Connected';
+        outlookPill.className = 'outlook-pill is-on';
+      }
+      if (authStatus) authStatus.textContent = 'Outlook is ready on this PC.';
+      return;
     }
+
+    if (outlookConnect) outlookConnect.classList.remove('hidden');
+    if (authReady) authReady.classList.add('hidden');
+
+    if (needsUpdate) {
+      if (outlookPill) {
+        outlookPill.textContent = 'Update needed';
+        outlookPill.className = 'outlook-pill is-off';
+      }
+      if (authStatus) {
+        authStatus.textContent = 'Click the blue button below: Connect / Update Outlook';
+      }
+      if (btnConnectOutlook) btnConnectOutlook.textContent = 'Connect / Update Outlook';
+      if (connectHint) {
+        connectHint.innerHTML = 'Click the blue button. If Windows asks, choose <strong>Open</strong>.';
+      }
+      return;
+    }
+
+    if (outlookPill) {
+      outlookPill.textContent = 'Not connected';
+      outlookPill.className = 'outlook-pill is-off';
+    }
+    if (authStatus) authStatus.textContent = 'Click the blue button below: Connect / Update Outlook';
+    if (btnConnectOutlook) btnConnectOutlook.textContent = 'Connect / Update Outlook';
+  }
+
+  function setConnectingUi() {
+    if (outlookPill) {
+      outlookPill.textContent = 'Connecting…';
+      outlookPill.className = 'outlook-pill is-wait';
+    }
+    if (authStatus) authStatus.textContent = 'Updating Outlook helper — wait a few seconds…';
+    if (btnConnectOutlook) {
+      btnConnectOutlook.classList.add('is-busy');
+      btnConnectOutlook.textContent = 'Connecting…';
+    }
+  }
+
+  function sleep(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
   }
 
   function checkHelper() {
@@ -268,12 +592,80 @@
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (data) {
         helperOnline = !!(data && data.ok);
+        helperVersion = data && data.version != null ? Number(data.version) : 0;
+        if (!isFinite(helperVersion)) helperVersion = 0;
         return helperOnline;
       })
       .catch(function () {
         helperOnline = false;
+        helperVersion = 0;
         return false;
       });
+  }
+
+  function wakeHelper() {
+    try {
+      var iframe = document.createElement('iframe');
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.style.cssText = 'position:fixed;left:-100px;top:-100px;width:1px;height:1px;opacity:0;border:0;pointer-events:none';
+      iframe.src = 'mailmass://start';
+      document.body.appendChild(iframe);
+      setTimeout(function () {
+        try { iframe.remove(); } catch (e) {}
+      }, 4000);
+    } catch (e) {}
+    // Also try opening the protocol in a way Windows may prompt once
+    try {
+      var a = document.createElement('a');
+      a.href = 'mailmass://start';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { try { a.remove(); } catch (e2) {} }, 500);
+    } catch (e3) {}
+  }
+
+  function ensureHelper(attemptsLeft, requireCurrent) {
+    var left = typeof attemptsLeft === 'number' ? attemptsLeft : 20;
+    var needVersion = !!requireCurrent;
+    return checkHelper().then(function (online) {
+      if (online && (!needVersion || helperVersion >= HELPER_MIN_VERSION)) return true;
+      if (left <= 0) return false;
+      if (left === 20 || left === 15 || left === 10 || left === 5) wakeHelper();
+      return sleep(500).then(function () {
+        return ensureHelper(left - 1, needVersion);
+      });
+    });
+  }
+
+  function launchUpdaterFromApp() {
+    wakeHelper();
+    var candidates = [];
+    try {
+      if (location.protocol === 'file:') {
+        var base = location.href.replace(/[^\/?#]*([?#].*)?$/, '');
+        candidates.push(base + 'helper/Start-MailMassHelper.vbs');
+        candidates.push(base + 'Start%20Mail%20Mass.bat');
+      }
+    } catch (e) {}
+    candidates.push('helper/Start-MailMassHelper.vbs');
+    candidates.push('Start Mail Mass.bat');
+    // Absolute fallback for this toolkit install
+    candidates.push('file:///C:/Users/ELTERS/OneDrive%20-%20UNHCR/Desktop/gaelleelters/Mail%20Mass/helper/Start-MailMassHelper.vbs');
+    candidates.push('file:///C:/Users/ELTERS/OneDrive%20-%20UNHCR/Desktop/gaelleelters/Mail%20Mass/Start%20Mail%20Mass.bat');
+
+    candidates.forEach(function (href, idx) {
+      setTimeout(function () {
+        try {
+          var link = document.createElement('a');
+          link.href = href;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          setTimeout(function () { try { link.remove(); } catch (e2) {} }, 1500);
+        } catch (e3) {}
+      }, idx * 400);
+    });
   }
 
   function sendViaHelper(prepared) {
@@ -288,6 +680,7 @@
           bcc: m.bcc,
           subject: m.subject,
           message: m.message,
+          messageIsHtml: !!m.messageIsHtml,
           greeting: m.greeting
         };
       })
@@ -306,18 +699,11 @@
     }).then(function (res) {
       return res.json().then(function (data) {
         if (!res.ok || !data.ok) {
-          throw new Error((data && data.error) || 'Outlook helper send failed');
+          throw new Error((data && data.error) || 'Outlook send failed');
         }
         return data;
       });
     });
-  }
-
-  function sendViaOneShot(prepared) {
-    if (!window.MailMassOneShot) {
-      throw new Error('Send helper script failed to load. Refresh the page and try again.');
-    }
-    return Promise.resolve(MailMassOneShot.download(prepared, sharedAttachment));
   }
 
   function refreshAuth() {
@@ -399,11 +785,81 @@
     });
   });
 
-  [colEmail, colFirst, colSubject, colCc, colBcc, colMessage, greeting, bodyEl]
+  [colEmail, colFirst, colSubject, colCc, colBcc, colMessage, greeting]
     .forEach(function (el) {
       el.addEventListener('input', function () { updatePreview(); refreshButtons(); });
       el.addEventListener('change', function () { updatePreview(); refreshButtons(); });
     });
+
+  bodyEl.addEventListener('input', function () { updatePreview(); refreshButtons(); });
+  bodyEl.addEventListener('keyup', function () { updatePreview(); });
+  bodyEl.addEventListener('paste', function (e) {
+    var clip = e.clipboardData || window.clipboardData;
+    if (!clip) {
+      setTimeout(function () {
+        bodyEl.innerHTML = cleanEmailHtml(bodyEl.innerHTML);
+        updatePreview();
+        refreshButtons();
+      }, 0);
+      return;
+    }
+    e.preventDefault();
+    var html = clip.getData('text/html');
+    var text = clip.getData('text/plain');
+    if (html && /<[a-z]/i.test(html)) {
+      insertHtmlAtCursor(cleanEmailHtml(html));
+    } else if (text) {
+      var paras = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n').split(/\n{2,}/);
+      var built = paras.map(function (block) {
+        var line = htmlEsc(block).replace(/\n/g, '<br>');
+        return '<p style="margin:0 0 8pt 0;">' + line + '</p>';
+      }).join('');
+      insertHtmlAtCursor(built);
+    }
+    updatePreview();
+    refreshButtons();
+  });
+
+  document.querySelectorAll('.rte-btn[data-cmd]').forEach(function (btn) {
+    btn.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      rteCommand(btn.getAttribute('data-cmd'));
+    });
+  });
+
+  if (rteFont) {
+    rteFont.addEventListener('change', function () {
+      rteCommand('fontName', rteFont.value);
+    });
+  }
+
+  if (rteSize) {
+    rteSize.addEventListener('change', function () {
+      applyFontSize(rteSize.value);
+    });
+  }
+
+  if (rteColor) {
+    rteColor.addEventListener('input', function () {
+      if (rteColorSwatch) rteColorSwatch.style.background = rteColor.value;
+      rteCommand('foreColor', rteColor.value);
+    });
+  }
+
+  if (rteHighlight) {
+    rteHighlight.addEventListener('input', function () {
+      if (rteHlSwatch) rteHlSwatch.style.background = rteHighlight.value;
+      bodyEl.focus();
+      try {
+        document.execCommand('styleWithCSS', false, true);
+      } catch (e) {}
+      // hiliteColor works in most browsers; backColor as fallback
+      if (!document.execCommand('hiliteColor', false, rteHighlight.value)) {
+        document.execCommand('backColor', false, rteHighlight.value);
+      }
+      updatePreview();
+    });
+  }
 
   btnSignOut.addEventListener('click', function () {
     if (window.MailMassGraph) {
@@ -414,6 +870,27 @@
     }
   });
 
+  if (btnConnectOutlook) {
+    btnConnectOutlook.addEventListener('click', function (e) {
+      e.preventDefault();
+      setConnectingUi();
+      toast('Connecting Outlook… If Windows asks, choose Open.');
+      launchUpdaterFromApp();
+      ensureHelper(30, true).then(function (ready) {
+        if (btnConnectOutlook) {
+          btnConnectOutlook.classList.remove('is-busy');
+          btnConnectOutlook.textContent = 'Connect / Update Outlook';
+        }
+        setAuthUi();
+        if (ready) {
+          toast('Outlook connected. You can continue.');
+        } else {
+          toast('Still updating… Click Connect / Update Outlook again, and choose Open if Windows asks.', true);
+        }
+      });
+    });
+  }
+
   btnPrepare.addEventListener('click', function () {
     if (!validSetup()) return;
     var prepared = rows.map(buildRow).filter(function (m) { return m.email; });
@@ -423,33 +900,40 @@
     }
 
     btnPrepare.disabled = true;
+    toast('Sending from your Outlook…');
 
-    checkHelper().then(function (online) {
-      if (online) {
-        toast('Sending via your Outlook…');
-        return sendViaHelper(prepared);
+    ensureHelper(24, true).then(function (ready) {
+      if (!ready) {
+        if (outlookConnect) outlookConnect.classList.remove('hidden');
+        throw new Error('Click «Connect / Update Outlook» in step 1 first. If Windows asks, choose Open.');
       }
-      toast('Downloading Outlook sender… open the file to send.');
-      return sendViaOneShot(prepared);
+      return sendViaHelper(prepared);
     }).then(function (data) {
       btnPrepare.disabled = false;
       refreshButtons();
       refreshAuth();
       if (!data) return;
-      if (data.mode === 'oneshot') {
-        toast('Open MailMass_Send_Now.vbs from your Downloads folder — it sends from your Outlook.');
-        return;
-      }
-      toast('Done — sent ' + data.processed + (data.skipped ? ', skipped ' + data.skipped : ''));
+      toast('Sent ' + data.processed + ' email' + (data.processed === 1 ? '' : 's') +
+        (data.skipped ? ' (skipped ' + data.skipped + ')' : '') + ' from Outlook.');
     }).catch(function (err) {
       btnPrepare.disabled = false;
       refreshButtons();
+      refreshAuth();
       toast(err.message || 'Send failed', true);
     });
   });
 
-  refreshAuth();
-  setInterval(refreshAuth, 8000);
+  // Wake Outlook bridge as soon as the page opens
+  setConnectingUi();
+  wakeHelper();
+  ensureHelper(16, true).then(function () {
+    if (btnConnectOutlook) {
+      btnConnectOutlook.classList.remove('is-busy');
+      btnConnectOutlook.textContent = 'Connect / Update Outlook';
+    }
+    refreshAuth();
+  });
+  setInterval(refreshAuth, 5000);
   updatePreview();
   refreshButtons();
 })();
