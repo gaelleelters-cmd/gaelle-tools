@@ -3,8 +3,7 @@
 
   var rows = [];
   var headers = [];
-  var attachmentFile = null;
-  var mailReady = false;
+  var sharedAttachment = null;
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -32,7 +31,8 @@
   var previewBody = $('preview-body');
   var previewWho = $('preview-who');
   var btnPrepare = $('btn-prepare');
-  var sendStatus = $('send-status');
+  var btnSignOut = $('btn-signout');
+  var authStatus = $('auth-status');
   var toastWrap = $('toast-wrap');
 
   function toast(msg, isError) {
@@ -93,6 +93,23 @@
       };
       reader.onerror = function () { reject(new Error('Could not read file')); };
       reader.readAsArrayBuffer(file);
+    });
+  }
+
+  function fileToAttachment(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var result = String(reader.result || '');
+        var comma = result.indexOf(',');
+        resolve({
+          name: file.name,
+          contentType: file.type || 'application/octet-stream',
+          contentBytes: comma >= 0 ? result.slice(comma + 1) : result
+        });
+      };
+      reader.onerror = function () { reject(new Error('Could not read attachment')); };
+      reader.readAsDataURL(file);
     });
   }
 
@@ -178,12 +195,9 @@
     var subject = colSubject.value ? String(row[colSubject.value] || '').trim() : '';
     if (!subject) subject = 'Document Attached';
 
-    var message = '';
-    if (msgMode() === 'custom') {
-      message = String(row[colMessage.value] || '').trim();
-    } else {
-      message = applyMerge(bodyEl.value, row).trim();
-    }
+    var message = msgMode() === 'custom'
+      ? String(row[colMessage.value] || '').trim()
+      : applyMerge(bodyEl.value, row).trim();
 
     var greet = String(greeting.value || '').trim();
     var bodyText = greet
@@ -208,7 +222,7 @@
   }
 
   function refreshButtons() {
-    btnPrepare.disabled = !(validSetup() && mailReady);
+    btnPrepare.disabled = !validSetup();
   }
 
   function updateGreetingPreview() {
@@ -222,8 +236,7 @@
     updateGreetingPreview();
     if (!rows.length || !colFirst.value) {
       var greet = String(greeting.value || '').trim();
-      var openLine = greet ? (greet + ' FirstName,') : 'FirstName,';
-      previewBody.textContent = openLine + '\n\n' + (bodyEl.value || '…');
+      previewBody.textContent = (greet ? (greet + ' FirstName,') : 'FirstName,') + '\n\n' + (bodyEl.value || '…');
       previewWho.textContent = 'Sample';
       return;
     }
@@ -234,52 +247,28 @@
       (mail.cc ? 'CC: ' + mail.cc + '\n' : '') +
       (mail.bcc ? 'BCC: ' + mail.bcc + '\n' : '') +
       'Subject: ' + mail.subject + '\n' +
-      (attachmentFile ? 'Attachment: ' + attachmentFile.name + '\n' : '') +
+      (sharedAttachment ? 'Attachment: ' + sharedAttachment.name + '\n' : '') +
       '\n' + mail.bodyText;
   }
 
-  function checkMailService() {
-    return fetch('/api/health', { cache: 'no-store' })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        mailReady = !!(data && data.ok && data.smtpConfigured);
-        if (mailReady) {
-          sendStatus.textContent = 'Ready to send from ' + (data.from || 'site mailbox') + '.';
-        } else if (data && data.ok) {
-          sendStatus.textContent = 'Mail service is up, but SMTP is not configured on the server yet.';
-        } else {
-          sendStatus.textContent = 'Mail service unavailable.';
-        }
-        refreshButtons();
-        return mailReady;
-      })
-      .catch(function () {
-        mailReady = false;
-        sendStatus.textContent = 'Mail service unavailable.';
-        refreshButtons();
-        return false;
-      });
+  function setAuthUi(user) {
+    if (user) {
+      authStatus.textContent = 'Sending as ' + (user.username || user.name) + ' (your mailbox).';
+      btnSignOut.classList.remove('hidden');
+    } else {
+      authStatus.textContent = 'Click Send — you’ll confirm with your Microsoft account (same mailbox as Outlook).';
+      btnSignOut.classList.add('hidden');
+    }
   }
 
-  function sendMails(prepared) {
-    var form = new FormData();
-    form.append('mails', JSON.stringify(prepared));
-    if (attachmentFile) form.append('attachment', attachmentFile, attachmentFile.name);
-
-    return fetch('/api/send', {
-      method: 'POST',
-      body: form
-    }).then(function (res) {
-      return res.json().then(function (data) {
-        if (!res.ok || !data.ok) {
-          var msg = (data && data.error) || 'Send failed';
-          if (data && data.errors && data.errors.length) {
-            msg += ' (' + data.errors[0].error + ')';
-          }
-          throw new Error(msg);
-        }
-        return data;
-      });
+  function refreshAuth() {
+    if (!window.MailMassGraph || !MailMassGraph.isConfigured()) {
+      setAuthUi(null);
+      return Promise.resolve(null);
+    }
+    return MailMassGraph.currentUser().then(function (user) {
+      setAuthUi(user);
+      return user;
     });
   }
 
@@ -330,8 +319,20 @@
   });
 
   attachFile.addEventListener('change', function () {
-    attachmentFile = (attachFile.files && attachFile.files[0]) || null;
-    updatePreview();
+    var file = attachFile.files && attachFile.files[0];
+    if (!file) {
+      sharedAttachment = null;
+      updatePreview();
+      return;
+    }
+    fileToAttachment(file).then(function (att) {
+      sharedAttachment = att;
+      toast('Attachment ready: ' + att.name);
+      updatePreview();
+    }).catch(function (err) {
+      sharedAttachment = null;
+      toast(err.message || 'Attachment failed', true);
+    });
   });
 
   document.querySelectorAll('input[name="msg-mode"]').forEach(function (r) {
@@ -350,23 +351,39 @@
       el.addEventListener('change', function () { updatePreview(); refreshButtons(); });
     });
 
+  btnSignOut.addEventListener('click', function () {
+    MailMassGraph.signOut().then(function () {
+      setAuthUi(null);
+      toast('Signed out');
+    }).catch(function () { setAuthUi(null); });
+  });
+
   btnPrepare.addEventListener('click', function () {
-    if (!validSetup() || !mailReady) return;
+    if (!validSetup()) return;
     var prepared = rows.map(buildRow).filter(function (m) { return m.email; });
     if (!prepared.length) {
       toast('No valid email addresses found', true);
       return;
     }
+    if (!MailMassGraph.isConfigured()) {
+      toast('Site is not connected to Microsoft yet. Ask the site owner to finish one-time setup.', true);
+      return;
+    }
 
     btnPrepare.disabled = true;
-    toast('Sending ' + prepared.length + ' email(s)…');
+    toast('Confirm Microsoft sign-in if asked…');
 
-    sendMails(prepared).then(function (data) {
+    MailMassGraph.signIn().then(function (user) {
+      setAuthUi(user);
+      toast('Sending from your mailbox…');
+      return MailMassGraph.sendAll(prepared, sharedAttachment, function (done, total) {
+        if (done === total || done % 5 === 0) toast('Sending… ' + done + ' / ' + total);
+      });
+    }).then(function (data) {
       btnPrepare.disabled = false;
       refreshButtons();
-      toast('Done — sent ' + data.processed +
-        (data.failed ? ', failed ' + data.failed : '') +
-        (data.skipped ? ', skipped ' + data.skipped : ''));
+      if (!data) return;
+      toast('Done — sent ' + data.processed + (data.skipped ? ', skipped ' + data.skipped : ''));
     }).catch(function (err) {
       btnPrepare.disabled = false;
       refreshButtons();
@@ -374,8 +391,7 @@
     });
   });
 
-  checkMailService();
-  setInterval(checkMailService, 15000);
+  refreshAuth();
   updatePreview();
   refreshButtons();
 })();

@@ -12,7 +12,7 @@
 <body>
   <header class="top">
     <h1 class="brand">Mail Mass</h1>
-    <p class="tagline">Upload your Excel, check the preview, click Send. That’s it — no installs, no sign-in.</p>
+    <p class="tagline">Like Word mail merge: upload your sheet, click Send — emails go from <strong>your</strong> Outlook / Microsoft 365 mailbox.</p>
   </header>
 
   <main class="main">
@@ -111,10 +111,13 @@
         </div>
         <pre class="preview-body" id="preview-body"></pre>
       </div>
-      <p class="hint" id="send-status">Checking mail service…</p>
+      <div class="auth-row">
+        <p class="hint" id="auth-status">Click Send — you’ll confirm with your Microsoft account (same mailbox as Outlook).</p>
+        <button type="button" class="btn btn-secondary hidden" id="btn-signout">Sign out</button>
+      </div>
       <div class="actions">
-        <button type="button" class="btn btn-primary" id="btn-prepare" disabled>Send</button>
-        <p class="hint actions-hint">Emails are sent automatically from the site mailbox.</p>
+        <button type="button" class="btn btn-primary" id="btn-prepare" disabled>Send with Outlook</button>
+        <p class="hint actions-hint">First time only: Microsoft asks you to allow sending. After that it’s one click.</p>
       </div>
     </section>
   </main>
@@ -122,6 +125,9 @@
   <div class="toast-wrap" id="toast-wrap"></div>
 
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/graph.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

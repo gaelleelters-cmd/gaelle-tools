@@ -16,6 +16,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Inject Mail Mass Microsoft client ID
+        shell: bash
+        env:
+          MAILMASS_CLIENT_ID: ${{ secrets.MAILMASS_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -n "${MAILMASS_CLIENT_ID:-}" ]; then
+            python3 - <<'PY'
+          import os, pathlib
+          p = pathlib.Path("Mail Mass/js/config.js")
+          text = p.read_text(encoding="utf-8")
+          cid = os.environ["MAILMASS_CLIENT_ID"].strip()
+          text = text.replace("MAILMASS_CLIENT_ID_PLACEHOLDER", cid)
+          p.write_text(text, encoding="utf-8")
+          print("Injected MAILMASS_CLIENT_ID")
+          PY
+          else
+            echo "WARN: MAILMASS_CLIENT_ID secret missing — Mail Mass cannot send from each user's mailbox until set."
+          fi
+
       - name: Prepare remote directory
         uses: appleboy/ssh-action@v1.2.0
         with:
