@@ -3,78 +3,118 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gaelle Tools</title>
+  <title>Toolkit</title>
+  <meta name="description" content="Everyday tools for WhatsApp and Excel — built for agents who need to move fast.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
-  <div class="shell">
-    <aside class="rail" aria-label="Apps">
-      <div class="rail-brand">
-        <span class="rail-mark">G</span>
-        <div class="rail-brand-text">
-          <strong>Gaelle</strong>
-          <span>Tools</span>
+  <div class="page" id="home">
+    <!-- HERO -->
+    <header class="hero">
+      <div class="hero-bg" aria-hidden="true">
+        <div class="hero-mesh"></div>
+        <div class="hero-grid"></div>
+        <div class="hero-blob hero-blob-1"></div>
+        <div class="hero-blob hero-blob-2"></div>
+        <div class="hero-blob hero-blob-3"></div>
+        <div class="hero-shine"></div>
+      </div>
+
+      <div class="hero-inner">
+        <div class="brand">
+          <p class="brand-main">Toolkit</p>
+        </div>
+        <h1 class="hero-title">Your daily work,<br>made simpler.</h1>
+        <div class="hero-cta">
+          <a class="btn-primary" href="#tools">See the tools</a>
         </div>
       </div>
+    </header>
 
-      <nav class="app-nav" role="tablist" aria-label="Choose app">
-        <button type="button" class="app-tab is-active" role="tab" aria-selected="true" data-app="whatsapp" data-src="Gaelle%20Whatsapp%20Tool/index.html">
-          <span class="app-tab-label">WhatsApp Tool</span>
-          <span class="app-tab-desc">Send, formulas, bulk &amp; Meta</span>
+    <!-- TOOLS -->
+    <section class="tools" id="tools">
+      <div class="section-head">
+        <h2 class="section-title">Pick what you need</h2>
+      </div>
+
+      <div class="tool-rail" aria-label="Choose a tool">
+        <button type="button" class="tool-panel tool-panel--wa" data-src="Gaelle%20Whatsapp%20Tool/index.html" data-label="WhatsApp Tool">
+          <div class="tool-panel-visual" aria-hidden="true">
+            <span class="chip chip-a"></span>
+            <span class="chip chip-b"></span>
+            <span class="chip chip-c"></span>
+          </div>
+          <div class="tool-panel-body">
+            <h3 class="tool-panel-name">WhatsApp Tool</h3>
+            <p class="tool-panel-copy">Send a message, generate Excel / Sheets formulas, bulk-create links, or prepare Meta API credentials.</p>
+            <span class="tool-panel-action">Open WhatsApp Tool</span>
+          </div>
         </button>
-        <button type="button" class="app-tab" role="tab" aria-selected="false" data-app="combine" data-src="COMBINE/index.html">
-          <span class="app-tab-label">Excel Combiner</span>
-          <span class="app-tab-desc">Merge donor sheets into one file</span>
+
+        <button type="button" class="tool-panel tool-panel--xl" data-src="COMBINE/index.html" data-label="Excel Combiner">
+          <div class="tool-panel-visual" aria-hidden="true">
+            <span class="sheet sheet-1"></span>
+            <span class="sheet sheet-2"></span>
+            <span class="sheet sheet-3"></span>
+          </div>
+          <div class="tool-panel-body">
+            <h3 class="tool-panel-name">Excel Combiner</h3>
+            <p class="tool-panel-copy">Upload several donor files, align phone columns, remove duplicates, and download one clean combined sheet.</p>
+            <span class="tool-panel-action">Open Excel Combiner</span>
+          </div>
         </button>
-      </nav>
 
-      <p class="rail-note">Both apps run locally in your browser — no server needed.</p>
-    </aside>
-
-    <section class="stage">
-      <header class="stage-bar">
-        <h1 class="stage-title" id="stage-title">WhatsApp Tool</h1>
-        <a class="open-new" id="open-new" href="Gaelle%20Whatsapp%20Tool/index.html" target="_blank" rel="noopener">Open in new tab</a>
-      </header>
-      <div class="frame-wrap">
-        <iframe
-          id="app-frame"
-          class="app-frame"
-          title="WhatsApp Tool"
-          src="Gaelle%20Whatsapp%20Tool/index.html"
-        ></iframe>
+        <button type="button" class="tool-panel tool-panel--mail" data-src="Mail%20Mass/index.html" data-label="Mail Mass">
+          <div class="tool-panel-visual" aria-hidden="true">
+            <span class="mail-line mail-1"></span>
+            <span class="mail-line mail-2"></span>
+            <span class="mail-line mail-3"></span>
+          </div>
+          <div class="tool-panel-body">
+            <h3 class="tool-panel-name">Mail Mass</h3>
+            <p class="tool-panel-copy">Mail merge from Excel into Outlook on your PC — greeting, CC/BCC, attachments, signature. One-time Windows helper, then send from the site.</p>
+            <span class="tool-panel-action">Open Mail Mass</span>
+          </div>
+        </button>
       </div>
     </section>
+
+    <!-- WHY -->
+    <section class="why">
+      <div class="why-inner">
+        <p class="section-kicker section-kicker--on-dark">Why this exists</p>
+        <h2 class="why-title">Less clicking around.<br>More done.</h2>
+        <div class="why-grid">
+          <div class="why-item">
+            <strong>Safe &amp; simple</strong>
+            <span>Files stay in your browser. No account required.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-foot">
+      <span class="brand-mini">Toolkit</span>
+      <span>For everyday agent work</span>
+    </footer>
   </div>
 
-  <script>
-    (function () {
-      var frame = document.getElementById('app-frame');
-      var title = document.getElementById('stage-title');
-      var openNew = document.getElementById('open-new');
-      var tabs = Array.prototype.slice.call(document.querySelectorAll('.app-tab'));
+  <!-- WORKSPACE -->
+  <section class="workspace is-hidden" id="workspace" aria-hidden="true">
+    <header class="workspace-bar">
+      <button type="button" class="back-btn" id="back-home"><span aria-hidden="true">←</span> Home</button>
+      <div class="workspace-brand">Toolkit</div>
+      <h2 class="workspace-title" id="stage-title">WhatsApp Tool</h2>
+      <a class="open-new" id="open-new" href="Gaelle%20Whatsapp%20Tool/index.html" target="_blank" rel="noopener">Open in new tab</a>
+    </header>
+    <div class="frame-wrap">
+      <iframe id="app-frame" class="app-frame" title="Tool" src="about:blank"></iframe>
+    </div>
+  </section>
 
-      tabs.forEach(function (tab) {
-        tab.addEventListener('click', function () {
-          tabs.forEach(function (t) {
-            t.classList.remove('is-active');
-            t.setAttribute('aria-selected', 'false');
-          });
-          tab.classList.add('is-active');
-          tab.setAttribute('aria-selected', 'true');
-
-          var src = tab.getAttribute('data-src');
-          var label = tab.querySelector('.app-tab-label').textContent;
-          title.textContent = label;
-          openNew.href = src;
-          frame.title = label;
-          frame.src = src;
-        });
-      });
-    })();
-  </script>
+  <script src="js/site.js"></script>
 </body>
 </html>

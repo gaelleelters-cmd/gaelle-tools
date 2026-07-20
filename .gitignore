@@ -17,3 +17,4 @@ desktop.ini
 .env
 .env.*
 *.log
+Mail Mass/MailMass_Ready.csv

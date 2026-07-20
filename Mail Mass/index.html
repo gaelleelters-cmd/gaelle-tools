@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mail Mass</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <h1 class="brand">Mail Mass</h1>
+    <p class="tagline">Mail merge from Excel into your Outlook — works for everyone on Windows with Outlook desktop. Each person sends from their own Outlook.</p>
+  </header>
+
+  <main class="main">
+    <section class="panel setup-panel" id="setup-panel">
+      <h2 class="step">Before you send (one-time per PC)</h2>
+      <ol class="setup-steps">
+        <li>Use <strong>Windows</strong> with <strong>Outlook desktop</strong> open.</li>
+        <li>Download and open
+          <a class="setup-download" id="helper-link" href="helper/Start-MailMassHelper.vbs">Start-MailMassHelper.vbs</a>
+          — allow it if Windows asks.</li>
+        <li>When the status below says <strong>connected</strong>, click Send with Outlook on this page.</li>
+      </ol>
+      <p class="hint" id="helper-status">Checking Outlook helper…</p>
+      <p class="hint">This helper stays on your computer only. It never sends through someone else’s Outlook. Every public user installs the same helper on their own PC.</p>
+    </section>
+
+    <!-- STEP 1: Sheet -->
+    <section class="panel">
+      <h2 class="step">1 · Your contact sheet</h2>
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="file-input" accept=".csv,.xlsx,.xls" hidden>
+        <div class="dropzone-inner" id="drop-empty">
+          <p class="drop-title">Drop an Excel or CSV here</p>
+          <p class="drop-sub">or <button type="button" class="link-btn" id="browse-btn">browse</button></p>
+        </div>
+        <div class="dropzone-file hidden" id="drop-file">
+          <span id="file-name"></span>
+          <button type="button" class="btn-icon" id="file-remove" title="Remove">✕</button>
+        </div>
+      </div>
+      <div class="map-grid hidden" id="map-section">
+        <div class="field">
+          <label for="col-firstname">First name <span class="req">*</span></label>
+          <select id="col-firstname"></select>
+          <span class="hint">Placed automatically after the greeting</span>
+        </div>
+        <div class="field">
+          <label for="col-email">Email <span class="req">*</span></label>
+          <select id="col-email"></select>
+        </div>
+        <div class="field">
+          <label for="col-attach">Attachment path <span class="opt">(optional)</span></label>
+          <select id="col-attach"><option value="">— none —</option></select>
+          <span class="hint">Full path on your PC, e.g. C:\Files\letter.pdf — Outlook attaches it when sending</span>
+        </div>
+        <div class="field">
+          <label for="col-cc">CC <span class="opt">(optional)</span></label>
+          <select id="col-cc"><option value="">— none —</option></select>
+        </div>
+        <div class="field">
+          <label for="col-bcc">BCC <span class="opt">(optional)</span></label>
+          <select id="col-bcc"><option value="">— none —</option></select>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2: Compose -->
+    <section class="panel">
+      <h2 class="step">2 · Write your mail</h2>
+      <div class="form-grid">
+        <div class="field field-full">
+          <label for="subject">Subject</label>
+          <input type="text" id="subject" placeholder="" dir="ltr">
+        </div>
+
+        <div class="field">
+          <label for="greeting">Greeting</label>
+          <select id="greeting">
+            <option value="">(none — first name only)</option>
+            <option value="Dear" selected>Dear</option>
+            <option value="Hello">Hello</option>
+            <option value="Hi">Hi</option>
+            <option value="Assalam Aalaykom">Assalam Aalaykom</option>
+            <option value="Good morning">Good morning</option>
+            <option value="Good afternoon">Good afternoon</option>
+          </select>
+        </div>
+        <div class="field greeting-preview-field">
+          <label>Opens as</label>
+          <p class="greeting-preview" id="greeting-preview">Dear <em>FirstName</em>,</p>
+        </div>
+
+        <div class="field field-full">
+          <label>Message mode</label>
+          <div class="radio-row">
+            <label class="radio">
+              <input type="radio" name="msg-mode" value="same" checked>
+              <span>Same message for everyone</span>
+            </label>
+            <label class="radio">
+              <input type="radio" name="msg-mode" value="custom">
+              <span>Custom message from a sheet column</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field field-full" id="same-msg-wrap">
+          <label for="body">Message</label>
+          <textarea id="body" rows="7" placeholder="Write the email body here…&#10;&#10;You can use {Column Name} tags from your sheet."></textarea>
+          <div class="param-row" id="param-row"></div>
+        </div>
+
+        <div class="field field-full hidden" id="custom-msg-wrap">
+          <label for="col-message">Message column</label>
+          <select id="col-message"></select>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3: Preview -->
+    <section class="panel">
+      <h2 class="step">3 · Preview</h2>
+
+      <div class="preview-box">
+        <div class="preview-head">
+          <h3>Live preview</h3>
+          <span class="hint" id="preview-who">Sample row</span>
+        </div>
+        <pre class="preview-body" id="preview-body"></pre>
+      </div>
+
+      <label class="check">
+        <input type="checkbox" id="opt-display">
+        <span>Show each email in Outlook first (review before send) — leave unchecked to send all automatically</span>
+      </label>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="btn-prepare" disabled>Send with Outlook</button>
+        <p class="hint actions-hint">Requires the helper above to be running on this PC.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast-wrap" id="toast-wrap"></div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
