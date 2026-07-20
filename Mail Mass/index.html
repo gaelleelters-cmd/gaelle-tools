@@ -12,7 +12,7 @@
 <body>
   <header class="top">
     <h1 class="brand">Mail Mass</h1>
-    <p class="tagline">Like Word mail merge: upload your sheet, click Send — emails go from <strong>your</strong> Outlook / Microsoft 365 mailbox.</p>
+    <p class="tagline">Like Word mail merge: upload your sheet, click Send — emails go from <strong>your</strong> Outlook on this computer.</p>
   </header>
 
   <main class="main">
@@ -112,12 +112,12 @@
         <pre class="preview-body" id="preview-body"></pre>
       </div>
       <div class="auth-row">
-        <p class="hint" id="auth-status">Click Send — you’ll confirm with your Microsoft account (same mailbox as Outlook).</p>
+        <p class="hint" id="auth-status">Click Send — a small Outlook file downloads. Open it once to send from your mailbox.</p>
         <button type="button" class="btn btn-secondary hidden" id="btn-signout">Sign out</button>
       </div>
       <div class="actions">
         <button type="button" class="btn btn-primary" id="btn-prepare" disabled>Send with Outlook</button>
-        <p class="hint actions-hint">Uses Outlook on this computer when the helper is running; otherwise Microsoft sign-in for your mailbox.</p>
+        <p class="hint actions-hint">Uses your desktop Outlook. No Microsoft cloud setup required.</p>
       </div>
     </section>
   </main>
@@ -125,9 +125,7 @@
   <div class="toast-wrap" id="toast-wrap"></div>
 
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/graph.js"></script>
+  <script src="js/oneshot.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

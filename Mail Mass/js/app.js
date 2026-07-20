@@ -254,25 +254,12 @@
   var HELPER_URL = 'http://127.0.0.1:19527';
   var helperOnline = false;
 
-  function setAuthUi(user) {
-    if (helperOnline) {
-      authStatus.innerHTML = 'Outlook on this PC is connected — Send uses your desktop Outlook (like Word mail merge).';
-      btnSignOut.classList.add('hidden');
-      return;
-    }
-    if (user) {
-      authStatus.textContent = 'Sending as ' + (user.username || user.name) + ' (your Microsoft mailbox).';
-      btnSignOut.classList.remove('hidden');
-      return;
-    }
+  function setAuthUi() {
     btnSignOut.classList.add('hidden');
-    if (window.MailMassGraph && MailMassGraph.isConfigured()) {
-      authStatus.textContent = 'Click Send — uses Outlook on this PC if available, otherwise your Microsoft mailbox sign-in.';
+    if (helperOnline) {
+      authStatus.textContent = 'Outlook on this PC is connected — Send goes straight through your Outlook.';
     } else {
-      authStatus.innerHTML =
-        'Outlook helper is not running on this PC. ' +
-        '<a href="helper/Start-MailMassHelper.vbs" download="Start-MailMassHelper.vbs">Install Outlook helper</a> ' +
-        '(once), then click Send.';
+      authStatus.textContent = 'Click Send — a small Outlook file downloads. Open it once to send from your mailbox (like Word mail merge).';
     }
   }
 
@@ -326,20 +313,16 @@
     });
   }
 
+  function sendViaOneShot(prepared) {
+    if (!window.MailMassOneShot) {
+      throw new Error('Send helper script failed to load. Refresh the page and try again.');
+    }
+    return Promise.resolve(MailMassOneShot.download(prepared, sharedAttachment));
+  }
+
   function refreshAuth() {
-    return checkHelper().then(function (online) {
-      if (online) {
-        setAuthUi(null);
-        return null;
-      }
-      if (!window.MailMassGraph || !MailMassGraph.isConfigured()) {
-        setAuthUi(null);
-        return null;
-      }
-      return MailMassGraph.currentUser().then(function (user) {
-        setAuthUi(user);
-        return user;
-      });
+    return checkHelper().then(function () {
+      setAuthUi();
     });
   }
 
@@ -423,10 +406,12 @@
     });
 
   btnSignOut.addEventListener('click', function () {
-    MailMassGraph.signOut().then(function () {
-      setAuthUi(null);
-      toast('Signed out');
-    }).catch(function () { setAuthUi(null); });
+    if (window.MailMassGraph) {
+      MailMassGraph.signOut().then(function () {
+        setAuthUi();
+        toast('Signed out');
+      }).catch(function () { setAuthUi(); });
+    }
   });
 
   btnPrepare.addEventListener('click', function () {
@@ -444,22 +429,17 @@
         toast('Sending via your Outlook…');
         return sendViaHelper(prepared);
       }
-      if (!MailMassGraph.isConfigured()) {
-        throw new Error('Outlook helper is not running. Download and run “Install Outlook helper”, then try Send again.');
-      }
-      toast('Confirm Microsoft sign-in if asked…');
-      return MailMassGraph.signIn().then(function (user) {
-        setAuthUi(user);
-        toast('Sending from your mailbox…');
-        return MailMassGraph.sendAll(prepared, sharedAttachment, function (done, total) {
-          if (done === total || done % 5 === 0) toast('Sending… ' + done + ' / ' + total);
-        });
-      });
+      toast('Downloading Outlook sender… open the file to send.');
+      return sendViaOneShot(prepared);
     }).then(function (data) {
       btnPrepare.disabled = false;
       refreshButtons();
       refreshAuth();
       if (!data) return;
+      if (data.mode === 'oneshot') {
+        toast('Open MailMass_Send_Now.vbs from your Downloads folder — it sends from your Outlook.');
+        return;
+      }
       toast('Done — sent ' + data.processed + (data.skipped ? ', skipped ' + data.skipped : ''));
     }).catch(function (err) {
       btnPrepare.disabled = false;
