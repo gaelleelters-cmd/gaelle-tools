@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Toolkit</title>
-  <meta name="description" content="Everyday tools for WhatsApp and Excel — built for agents who need to move fast.">
+  <title>Gaelle El Ters</title>
+  <meta name="description" content="Portfolio of Gaelle El Ters — websites and practical tools for everyday work.">
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
@@ -12,106 +12,93 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/site.css?v=20260720h">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/site.css?v=20260722menudown">
 </head>
 <body>
   <div class="page" id="home">
-    <!-- HERO -->
     <header class="hero">
-      <div class="hero-bg" aria-hidden="true">
-        <div class="hero-mesh"></div>
-        <div class="hero-grid"></div>
-        <div class="hero-blob hero-blob-1"></div>
-        <div class="hero-blob hero-blob-2"></div>
-        <div class="hero-blob hero-blob-3"></div>
-        <div class="hero-shine"></div>
+      <div class="hero-photo" aria-hidden="true">
+        <img src="images/gaelle-el-ters.png" alt="" class="hero-photo-img">
       </div>
-
+      <div class="hero-scrim" aria-hidden="true"></div>
       <div class="hero-inner">
-        <div class="brand">
-          <p class="brand-main">Toolkit</p>
-        </div>
-        <h1 class="hero-title">Your daily work,<br>made simpler.</h1>
-        <div class="hero-cta">
-          <a class="btn-primary" href="#tools">See the tools</a>
+        <p class="brand-main">Gaelle El Ters</p>
+        <h1 class="hero-title">I build websites and tools that make daily work feel lighter.</h1>
+        <p class="hero-lead">A personal space for the apps I design — practical, clear, and ready to use.</p>
+
+        <div class="work-menu" id="work-menu">
+          <button
+            type="button"
+            class="work-menu-btn"
+            id="work-menu-btn"
+            aria-expanded="false"
+            aria-haspopup="true"
+            aria-controls="work-menu-panel"
+          >
+            <span>Some work</span>
+            <span class="work-menu-dots" aria-hidden="true">
+              <i></i><i></i><i></i>
+            </span>
+          </button>
+          <div class="work-menu-panel" id="work-menu-panel" role="menu" hidden>
+            <button type="button" class="work-menu-item" role="menuitem" data-panel="work-tools">
+              Work-related tools
+            </button>
+            <button type="button" class="work-menu-item" role="menuitem" data-panel="generator">
+              Generators
+            </button>
+          </div>
         </div>
       </div>
     </header>
 
-    <!-- TOOLS -->
-    <section class="tools" id="tools">
+    <section class="tools is-hidden" id="work-tools" aria-label="Work-related tools">
       <div class="section-head">
-        <h2 class="section-title">Pick what you need</h2>
+        <p class="section-kicker">Work-related tools</p>
+        <h2 class="section-title">Built for everyday agent work</h2>
+        <p class="section-lead">Open any tool below — files stay in your browser, no account needed.</p>
       </div>
 
-      <div class="tool-rail" aria-label="Choose a tool">
+      <div class="tool-rail" aria-label="Work-related tools">
         <button type="button" class="tool-panel tool-panel--wa" data-src="Gaelle%20Whatsapp%20Tool/index.html" data-label="WhatsApp Tool">
-          <div class="tool-panel-visual" aria-hidden="true">
-            <span class="chip chip-a"></span>
-            <span class="chip chip-b"></span>
-            <span class="chip chip-c"></span>
-          </div>
-          <div class="tool-panel-body">
-            <h3 class="tool-panel-name">WhatsApp Tool</h3>
-            <p class="tool-panel-copy">Send a message, generate Excel / Sheets formulas, bulk-create links, or prepare Meta API credentials.</p>
-            <span class="tool-panel-action">Open WhatsApp Tool</span>
-          </div>
+          <h3 class="tool-panel-name">WhatsApp Tool</h3>
+          <p class="tool-panel-copy">Send a message, generate Excel / Sheets formulas, or bulk-create WhatsApp links.</p>
+          <span class="tool-panel-action">Open</span>
         </button>
 
         <button type="button" class="tool-panel tool-panel--mail" data-src="Mail%20Mass/index.html" data-label="Mail Mass">
-          <div class="tool-panel-visual" aria-hidden="true">
-            <span class="mail-line mail-1"></span>
-            <span class="mail-line mail-2"></span>
-            <span class="mail-line mail-3"></span>
-          </div>
-          <div class="tool-panel-body">
-            <h3 class="tool-panel-name">Mail Mass</h3>
-            <p class="tool-panel-copy">Like Word mail merge — upload Excel, click Send, emails go from your own Outlook / Microsoft mailbox.</p>
-            <span class="tool-panel-action">Open Mail Mass</span>
-          </div>
+          <h3 class="tool-panel-name">Mail Mass</h3>
+          <p class="tool-panel-copy">Word-style mail merge — upload Excel, format your message, send from your Outlook.</p>
+          <span class="tool-panel-action">Open</span>
         </button>
 
         <button type="button" class="tool-panel tool-panel--xl" data-src="COMBINE/index.html" data-label="Excel Combiner">
-          <div class="tool-panel-visual" aria-hidden="true">
-            <span class="sheet sheet-1"></span>
-            <span class="sheet sheet-2"></span>
-            <span class="sheet sheet-3"></span>
-          </div>
-          <div class="tool-panel-body">
-            <h3 class="tool-panel-name">Excel Combiner</h3>
-            <p class="tool-panel-copy">Upload several donor files, align phone columns, remove duplicates, and download one clean combined sheet.</p>
-            <span class="tool-panel-action">Open Excel Combiner</span>
-          </div>
+          <h3 class="tool-panel-name">Excel Combiner</h3>
+          <p class="tool-panel-copy">Combine several sheets, align columns, remove duplicates, download one clean file.</p>
+          <span class="tool-panel-action">Open</span>
         </button>
       </div>
     </section>
 
-    <!-- WHY -->
-    <section class="why">
-      <div class="why-inner">
-        <p class="section-kicker section-kicker--on-dark">Why this exists</p>
-        <h2 class="why-title">Less clicking around.<br>More done.</h2>
-        <div class="why-grid">
-          <div class="why-item">
-            <strong>Safe &amp; simple</strong>
-            <span>Files stay in your browser. No account required.</span>
-          </div>
-        </div>
+    <section class="lab is-hidden" id="generator" aria-label="Generators">
+      <div class="lab-inner">
+        <p class="section-kicker">Generators</p>
+        <h2 class="section-title">Coming soon</h2>
+        <p class="section-lead">This space is empty for now. Web apps will be added here later.</p>
       </div>
     </section>
 
     <footer class="site-foot">
-      <span class="brand-mini">Toolkit · GaelleElTers</span>
-      <span>For everyday agent work</span>
+      <span class="brand-mini">Gaelle El Ters</span>
+      <span>Portfolio &amp; tools</span>
     </footer>
   </div>
 
-  <!-- WORKSPACE -->
   <section class="workspace is-hidden" id="workspace" aria-hidden="true">
     <header class="workspace-bar">
       <button type="button" class="back-btn" id="back-home"><span aria-hidden="true">←</span> Home</button>
-      <div class="workspace-brand">Toolkit</div>
+      <div class="workspace-brand">Gaelle El Ters</div>
       <h2 class="workspace-title" id="stage-title">WhatsApp Tool</h2>
       <a class="open-new" id="open-new" href="Gaelle%20Whatsapp%20Tool/index.html" target="_blank" rel="noopener">Open in new tab</a>
     </header>
@@ -120,6 +107,6 @@
     </div>
   </section>
 
-  <script src="js/site.js?v=20260720mail"></script>
+  <script src="js/site.js?v=20260722clean"></script>
 </body>
 </html>

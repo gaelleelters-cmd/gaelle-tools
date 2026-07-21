@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Title Generator — Gaelle El Ters</title>
+  <meta name="description" content="Title Generator — a growing collection of web apps by Gaelle El Ters.">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1c2430;
+      --muted: #6b7789;
+      --sea: #2f6f8f;
+      --font: "Outfit", sans-serif;
+      --display: "Fraunces", Georgia, serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: var(--font);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 50% at 80% 0%, rgba(47, 111, 143, 0.12), transparent 55%),
+        linear-gradient(180deg, #f4f6f8 0%, #e8edf2 100%);
+      padding: clamp(1.5rem, 5vw, 3rem);
+    }
+    .wrap { max-width: 40rem; margin: 0 auto; }
+    a.back {
+      display: inline-block;
+      margin-bottom: 2rem;
+      color: var(--sea);
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.92rem;
+    }
+    a.back:hover { text-decoration: underline; }
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+    }
+    p { color: var(--muted); font-size: 1.05rem; line-height: 1.55; margin-bottom: 1rem; }
+    .soon {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(28, 36, 48, 0.12);
+      font-size: 0.9rem;
+      color: var(--ink);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../index.html">← Back to Gaelle El Ters</a>
+    <h1>Title Generator</h1>
+    <p>
+      This space will hold many small web apps — generators, helpers, and experiments —
+      added one by one.
+    </p>
+    <p class="soon">Apps coming soon. Check back here as new tools are published.</p>
+  </div>
+</body>
+</html>
