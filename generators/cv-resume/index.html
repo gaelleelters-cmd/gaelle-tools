@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CV / Resume Generator — Gaelle El Ters</title>
+  <meta name="description" content="Free CV builder with live preview, ATS score, job-match keywords, and smart recommendations — no paywall.">
+  <link rel="icon" href="../../favicon.ico" sizes="any">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../../favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Lora:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=8">
+</head>
+<body>
+  <div class="app">
+    <header class="app-top">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">G</span>
+        <div>
+          <p class="app-kicker">Free forever · No paywall</p>
+          <h1 class="app-title">Resume Builder</h1>
+        </div>
+      </div>
+      <div class="app-top-actions">
+        <button type="button" class="btn-ghost" id="btn-example">Try example</button>
+        <button type="button" class="btn-ghost" id="btn-clear">Start over</button>
+        <button type="button" class="btn-primary" id="btn-print">Download PDF</button>
+      </div>
+    </header>
+
+    <div class="score-bar" id="score-bar">
+      <div class="score-card">
+        <div class="ring" id="ats-ring" style="--p:0">
+          <strong id="ats-score">0</strong>
+        </div>
+        <div class="score-copy">
+          <span class="score-label">ATS score</span>
+          <p class="score-sub">How ready your CV looks for scanners</p>
+        </div>
+      </div>
+      <div class="score-card">
+        <div class="ring ring--match" id="match-ring" style="--p:0">
+          <strong id="match-score">—</strong>
+        </div>
+        <div class="score-copy">
+          <span class="score-label">Job match</span>
+          <p class="score-sub">Keyword fit for a pasted vacancy</p>
+        </div>
+      </div>
+      <p class="score-tip" id="score-tip">Add your name and target role — we’ll guide you from there.</p>
+    </div>
+
+    <div class="studio">
+      <aside class="editor">
+        <nav class="step-tabs" id="step-tabs" aria-label="Builder steps">
+          <button type="button" class="step-tab is-active" data-go="1"><span class="step-num">1</span><span class="step-label">Design</span></button>
+          <button type="button" class="step-tab" data-go="2"><span class="step-num">2</span><span class="step-label">Profile</span></button>
+          <button type="button" class="step-tab" data-go="3"><span class="step-num">3</span><span class="step-label">Experience</span></button>
+          <button type="button" class="step-tab" data-go="4"><span class="step-num">4</span><span class="step-label">Education</span></button>
+          <button type="button" class="step-tab" data-go="5"><span class="step-num">5</span><span class="step-label">Skills</span></button>
+          <button type="button" class="step-tab" data-go="6"><span class="step-num">6</span><span class="step-label">Job fit</span></button>
+        </nav>
+
+        <section class="panel is-active" data-step="1">
+          <h2>Pick a template</h2>
+          <p class="hint">Choose a look you like — you can change it anytime. Your content stays the same.</p>
+          <div class="template-grid" role="radiogroup">
+            <label class="template-card"><input type="radio" name="template" value="classic" checked><span class="template-preview template-preview--classic"></span><span class="template-name">Classic</span></label>
+            <label class="template-card"><input type="radio" name="template" value="modern"><span class="template-preview template-preview--modern"></span><span class="template-name">Modern</span></label>
+            <label class="template-card"><input type="radio" name="template" value="minimal"><span class="template-preview template-preview--minimal"></span><span class="template-name">Minimal</span></label>
+            <label class="template-card"><input type="radio" name="template" value="sidebar"><span class="template-preview template-preview--sidebar"></span><span class="template-name">Sidebar</span></label>
+            <label class="template-card"><input type="radio" name="template" value="executive"><span class="template-preview template-preview--executive"></span><span class="template-name">Executive</span></label>
+            <label class="template-card"><input type="radio" name="template" value="compact"><span class="template-preview template-preview--compact"></span><span class="template-name">Compact ATS</span></label>
+          </div>
+        </section>
+
+        <section class="panel" data-step="2" hidden>
+          <h2>About you</h2>
+          <p class="hint">Start with the basics — the preview on the right updates as you type.</p>
+          <div class="photo-row">
+            <div class="photo-box">
+              <img id="photo-preview" class="photo-preview is-empty" alt="">
+              <label class="photo-btn" for="photo-input">Add photo</label>
+              <input type="file" id="photo-input" accept="image/*" hidden>
+              <button type="button" class="linkish" id="photo-clear" hidden>Remove</button>
+            </div>
+            <div class="stack">
+              <div class="field"><label for="full-name">Full name</label><input id="full-name" type="text" placeholder="Your full name"></div>
+              <div class="field">
+                <label for="job-title">Target role</label>
+                <select id="job-title">
+                  <option value="">Choose a role…</option>
+                  <option>Communications Officer</option>
+                  <option>Programme Associate</option>
+                  <option>Data Analyst</option>
+                  <option>Project Manager</option>
+                  <option>Administrative Assistant</option>
+                  <option>Fundraising Officer</option>
+                  <option>Monitoring &amp; Evaluation Officer</option>
+                  <option>Software Engineer</option>
+                  <option>Product Designer</option>
+                  <option>Customer Success Manager</option>
+                  <option>Other (type below)</option>
+                </select>
+                <input id="job-title-custom" type="text" placeholder="Custom title" hidden>
+              </div>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label for="email">Email</label><input id="email" type="email" placeholder="you@email.com"></div>
+            <div class="field"><label for="phone">Phone</label><input id="phone" type="tel" placeholder="+961 …"></div>
+            <div class="field"><label for="location">Location</label><input id="location" type="text" placeholder="City, Country"></div>
+            <div class="field"><label for="linkedin">LinkedIn / website</label><input id="linkedin" type="url" placeholder="https://"></div>
+          </div>
+          <div class="field">
+            <label for="summary-tone">Summary style</label>
+            <select id="summary-tone">
+              <option value="impact">Impact-focused (best for most jobs)</option>
+              <option value="warm">Warm &amp; collaborative</option>
+              <option value="technical">Technical &amp; precise</option>
+              <option value="leadership">Leadership &amp; strategy</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="summary">Professional summary</label>
+              <button type="button" class="btn-text" id="btn-suggest-summary">Write for me</button>
+            </div>
+            <textarea id="summary" rows="4" placeholder="2–4 strong sentences about what you’re great at…"></textarea>
+          </div>
+        </section>
+
+        <section class="panel" data-step="3" hidden>
+          <h2>Work experience</h2>
+          <p class="hint">Tap a suggestion below to drop a strong bullet into your first role.</p>
+          <div class="field">
+            <label for="bullet-pack">Suggestions for</label>
+            <select id="bullet-pack">
+              <option value="comms">Communications</option>
+              <option value="programme">Programme / humanitarian</option>
+              <option value="data">Data &amp; analysis</option>
+              <option value="ops">Operations / admin</option>
+              <option value="tech">Tech / digital</option>
+            </select>
+          </div>
+          <div class="chip-row" id="bullet-suggestions"></div>
+          <div id="exp-list" class="entry-list"></div>
+          <button type="button" class="btn-secondary" id="btn-add-exp">+ Add another role</button>
+        </section>
+
+        <section class="panel" data-step="4" hidden>
+          <h2>Education</h2>
+          <p class="hint">Degrees, certificates, or courses that support the role you want.</p>
+          <div id="edu-list" class="entry-list"></div>
+          <button type="button" class="btn-secondary" id="btn-add-edu">+ Add education</button>
+        </section>
+
+        <section class="panel" data-step="5" hidden>
+          <h2>Skills &amp; languages</h2>
+          <p class="hint">Pick a pack, then fine-tune the list — recruiters skim this fast.</p>
+          <div class="field">
+            <label for="skill-pack">Quick skill pack</label>
+            <select id="skill-pack">
+              <option value="">Choose recommendations…</option>
+              <option value="comms">Communications &amp; outreach</option>
+              <option value="data">Data &amp; analysis</option>
+              <option value="ops">Operations &amp; admin</option>
+              <option value="tech">Tech &amp; digital</option>
+              <option value="humanitarian">Humanitarian / programme</option>
+            </select>
+          </div>
+          <div class="chip-row" id="skill-suggestions"></div>
+          <div class="field"><label for="skills">Skills (comma-separated)</label><textarea id="skills" rows="3" placeholder="Media relations, Excel, Stakeholder engagement…"></textarea></div>
+          <div class="field"><label for="languages">Languages</label><input id="languages" type="text" placeholder="Arabic (native), English (fluent)…"></div>
+        </section>
+
+        <section class="panel" data-step="6" hidden>
+          <h2>Target job <span class="opt">optional</span></h2>
+          <p class="hint">Paste a job ad to see which keywords you already cover — and which to add if they’re true for you.</p>
+          <div class="field">
+            <label for="job-desc">Job description</label>
+            <textarea id="job-desc" rows="8" placeholder="Paste the vacancy text here…"></textarea>
+          </div>
+          <div class="match-box" id="match-box">
+            <p class="match-empty">Paste a job description to see matched and missing keywords.</p>
+          </div>
+          <div class="field">
+            <label for="cover">Cover letter draft <span class="opt">optional</span></label>
+            <div class="label-row">
+              <span></span>
+              <button type="button" class="btn-text" id="btn-cover">Draft cover letter</button>
+            </div>
+            <textarea id="cover" rows="6" placeholder="A short letter you can copy…"></textarea>
+          </div>
+        </section>
+
+        <div class="editor-nav">
+          <button type="button" class="btn-secondary" id="btn-back" hidden>Back</button>
+          <span class="nav-spacer"></span>
+          <button type="button" class="btn-primary" id="btn-next">Continue</button>
+        </div>
+      </aside>
+
+      <section class="preview-pane" aria-label="Live CV preview">
+        <div class="preview-toolbar">
+          <span class="preview-title">Live preview</span>
+          <span class="autosave" id="autosave">Saved on this device</span>
+        </div>
+        <div class="preview-scroll">
+          <div id="cv-preview" class="cv cv--classic"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <template id="tpl-exp">
+    <article class="entry-card" data-entry="exp">
+      <div class="grid-2">
+        <div class="field">
+          <label>Job title</label>
+          <select class="exp-title-select">
+            <option value="">Suggested titles…</option>
+            <option>Communications Officer</option>
+            <option>Programme Associate</option>
+            <option>Project Coordinator</option>
+            <option>Data Analyst</option>
+            <option>Administrative Assistant</option>
+            <option>Team Lead</option>
+            <option>Intern</option>
+            <option>Custom…</option>
+          </select>
+          <input class="exp-title" type="text" placeholder="Your title">
+        </div>
+        <div class="field"><label>Organization</label><input class="exp-company" type="text" placeholder="Company or organization"></div>
+        <div class="field"><label>Start</label><input class="exp-start" type="text" placeholder="Jan 2022"></div>
+        <div class="field"><label>End</label><input class="exp-end" type="text" placeholder="Present"></div>
+        <div class="field field-full"><label>Achievements (one per line)</label><textarea class="exp-bullets" rows="3" placeholder="Led …&#10;Improved … by 30%"></textarea></div>
+      </div>
+      <button type="button" class="entry-remove">Remove</button>
+    </article>
+  </template>
+
+  <template id="tpl-edu">
+    <article class="entry-card" data-entry="edu">
+      <div class="grid-2">
+        <div class="field">
+          <label>Degree</label>
+          <select class="edu-degree-select">
+            <option value="">Suggested…</option>
+            <option>Bachelor of Arts</option>
+            <option>Bachelor of Science</option>
+            <option>Master of Arts</option>
+            <option>Master of Science</option>
+            <option>MBA</option>
+            <option>Professional Certificate</option>
+            <option>Custom…</option>
+          </select>
+          <input class="edu-degree" type="text" placeholder="Degree or certificate">
+        </div>
+        <div class="field"><label>School</label><input class="edu-school" type="text" placeholder="University or institute"></div>
+        <div class="field"><label>Year</label><input class="edu-year" type="text" placeholder="2020"></div>
+        <div class="field"><label>Details</label><input class="edu-detail" type="text" placeholder="Major, honors…"></div>
+      </div>
+      <button type="button" class="entry-remove">Remove</button>
+    </article>
+  </template>
+
+  <script src="js/app.js?v=7"></script>
+</body>
+</html>
