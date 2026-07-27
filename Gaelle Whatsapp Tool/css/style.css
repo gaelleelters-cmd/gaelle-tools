@@ -19,7 +19,7 @@
   --radius-sm: 8px;
   --shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 16px rgba(15, 23, 42, 0.04);
   --shadow-lg: 0 4px 24px rgba(15, 23, 42, 0.08);
-  --font: 'Inter', 'Noto Sans Arabic', system-ui, sans-serif;
+  --font: 'Outfit', 'Noto Sans Arabic', system-ui, sans-serif;
   --transition: 0.2s ease;
 }
 

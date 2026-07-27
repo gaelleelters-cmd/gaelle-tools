@@ -15,6 +15,7 @@ Mail Mass (like Word mail merge — each user sends from their own mailbox):
 
 Optional SMTP mail-api (shared mailbox only — not per-user Outlook):
   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+  CONTACT_TO (optional, default info@gaelleelters.com) — help bot questions
 
 Manual deploy:
   docker rm -f newapp-placeholder

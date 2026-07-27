@@ -1,26 +1,28 @@
+@import url("../../css/tokens.css");
+
 :root {
-  --ink: #1f2937;
-  --ink-soft: #4b5563;
-  --muted: #6b7280;
+  --ink: var(--brand-ink);
+  --ink-soft: var(--brand-ink-soft);
+  --muted: var(--brand-muted);
   --line: #e5e7eb;
   --line-soft: #f3f4f6;
-  --paper: #f3f5f8;
+  --paper: var(--brand-paper);
   --surface: #ffffff;
-  --accent: #0d9488;
-  --accent-deep: #0f766e;
-  --accent-soft: #ccfbf1;
+  --accent: var(--brand-sea);
+  --accent-deep: var(--brand-sea-deep);
+  --accent-soft: var(--brand-sea-soft);
   --good: #059669;
   --good-soft: #d1fae5;
   --warn: #d97706;
   --warn-soft: #ffedd5;
   --desk: #e8edf3;
-  --font: "DM Sans", system-ui, sans-serif;
-  --display: "Lora", Georgia, serif;
+  --font: var(--font-ui);
+  --display: var(--font-display);
   --cv-serif: "Source Serif 4", Georgia, serif;
-  --radius: 14px;
-  --radius-sm: 10px;
-  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
-  --shadow-paper: 0 4px 6px rgba(15, 23, 42, 0.04), 0 18px 40px rgba(15, 23, 42, 0.1);
+  --radius: var(--radius-lg);
+  --radius-sm: var(--radius);
+  --shadow: var(--shadow-sm);
+  --shadow-paper: var(--shadow-md);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -78,8 +80,8 @@ body {
   font-weight: 700;
   font-size: 1.15rem;
   color: #fff;
-  background: linear-gradient(145deg, #14b8a6, #0f766e);
-  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.28);
+  background: linear-gradient(145deg, var(--brand-sea), var(--brand-sea-deep));
+  box-shadow: 0 6px 16px rgba(47, 111, 143, 0.28);
 }
 .app-kicker {
   font-size: 0.72rem;
@@ -399,8 +401,8 @@ body {
 .field input:focus, .field select:focus, .field textarea:focus,
 .entry-card input:focus, .entry-card select:focus, .entry-card textarea:focus {
   outline: none;
-  border-color: #5eead4;
-  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.12);
+  border-color: var(--brand-sea);
+  box-shadow: 0 0 0 4px var(--brand-sea-soft);
 }
 
 /* —— Buttons —— */
@@ -413,22 +415,22 @@ body {
   transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 .btn-primary {
-  background: linear-gradient(180deg, #14b8a6, var(--accent-deep));
+  background: linear-gradient(180deg, var(--brand-sea), var(--accent-deep));
   color: #fff;
   padding: 0.65rem 1.2rem;
-  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.25);
+  box-shadow: 0 8px 18px rgba(47, 111, 143, 0.25);
 }
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(13, 148, 136, 0.3);
+  box-shadow: 0 10px 22px rgba(47, 111, 143, 0.3);
 }
 .btn-primary.is-pulse {
   animation: pulse-cta 1.2s ease-in-out infinite;
 }
 @keyframes pulse-cta {
-  0% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.45); }
-  70% { box-shadow: 0 0 0 12px rgba(13, 148, 136, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(47, 111, 143, 0.45); }
+  70% { box-shadow: 0 0 0 12px rgba(47, 111, 143, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(47, 111, 143, 0); }
 }
 .btn-secondary {
   background: #fff;
@@ -436,7 +438,7 @@ body {
   color: var(--ink);
   padding: 0.65rem 1.1rem;
 }
-.btn-secondary:hover { border-color: #99f6e4; color: var(--accent-deep); }
+.btn-secondary:hover { border-color: var(--brand-sea); color: var(--accent-deep); }
 .btn-ghost {
   background: #fff;
   border-color: var(--line);
@@ -487,7 +489,7 @@ body {
   transition: all 0.15s ease;
 }
 .chip:hover {
-  border-color: #99f6e4;
+  border-color: var(--brand-sea);
   background: var(--accent-soft);
   color: var(--accent-deep);
 }

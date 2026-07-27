@@ -85,6 +85,7 @@ jobs:
               echo "SMTP_PASS=${SMTP_PASS}"
               echo "SMTP_FROM=${SMTP_FROM}"
               echo "SMTP_SECURE=${SMTP_SECURE:-false}"
+              echo "CONTACT_TO=${CONTACT_TO:-info@gaelleelters.com}"
             } > .env
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
@@ -93,6 +94,7 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SMTP_FROM: ${{ secrets.SMTP_FROM }}
           SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          CONTACT_TO: ${{ secrets.CONTACT_TO }}
 
       - name: Start / refresh container
         uses: appleboy/ssh-action@v1.2.0

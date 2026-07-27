@@ -14,6 +14,7 @@ const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 const SMTP_SECURE = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true';
+const CONTACT_TO = process.env.CONTACT_TO || 'info@gaelleelters.com';
 
 const app = express();
 const upload = multer({
@@ -31,6 +32,14 @@ app.use('/send', rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { ok: false, error: 'Too many send requests. Try again in a few minutes.' }
+}));
+
+app.use('/contact', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Too many questions. Try again in a few minutes.' }
 }));
 
 function smtpConfigured() {
@@ -62,6 +71,47 @@ function buildBodyHtml(greeting, firstName, message) {
 function splitAddrs(value) {
   if (!value) return [];
   return String(value).split(/[;,]/).map((s) => s.trim()).filter(Boolean);
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+}
+
+function buildContactHtml(question, replyEmail, meta) {
+  const rows = [
+    ['Question', question],
+    ['Reply email', replyEmail || '(not provided)'],
+    ['Page', meta.page || '(unknown)'],
+    ['Time (UTC)', meta.time || '(unknown)']
+  ];
+  const body = rows.map(function (row) {
+    return `<tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:600;vertical-align:top;">${htmlEsc(row[0])}</td>`
+      + `<td style="padding:8px 12px;border:1px solid #e5e7eb;white-space:pre-wrap;">${htmlEsc(row[1])}</td></tr>`;
+  }).join('');
+  return `<div style="font-family:Calibri,sans-serif;font-size:11pt;">`
+    + `<p style="margin:0 0 12px 0;">New question from the site help bot:</p>`
+    + `<table style="border-collapse:collapse;width:100%;max-width:640px;">${body}</table></div>`;
+}
+
+function buildContactText(question, replyEmail, meta) {
+  return [
+    'New question from the site help bot:',
+    '',
+    'Question:',
+    question,
+    '',
+    'Reply email: ' + (replyEmail || '(not provided)'),
+    'Page: ' + (meta.page || '(unknown)'),
+    'Time (UTC): ' + (meta.time || '(unknown)')
+  ].join('\n');
+}
+
+function matchFaqTopic(lower) {
+  if (/mail mass|outlook|merge/.test(lower)) return 'mailmass';
+  if (/cv|resume|curriculum/.test(lower)) return 'cv';
+  if (/data|privacy|upload|store|safe/.test(lower)) return 'privacy';
+  if (/tool|how|work|whatsapp|excel/.test(lower)) return 'tools';
+  return null;
 }
 
 app.get('/health', (_req, res) => {
@@ -154,6 +204,62 @@ app.post('/send', upload.single('attachment'), async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ ok: false, error: err.message || 'Server error' });
+  }
+});
+
+app.post('/contact', async (req, res) => {
+  try {
+    if (req.body && req.body.website) {
+      return res.json({ ok: true });
+    }
+
+    const question = String(req.body.question || '').trim();
+    const replyEmail = String(req.body.replyEmail || '').trim();
+
+    if (!question || question.length < 3) {
+      return res.status(400).json({ ok: false, error: 'Please enter a question.' });
+    }
+    if (question.length > 2000) {
+      return res.status(400).json({ ok: false, error: 'Question is too long.' });
+    }
+    if (replyEmail && !isValidEmail(replyEmail)) {
+      return res.status(400).json({ ok: false, error: 'Please enter a valid email address.' });
+    }
+
+    if (!smtpConfigured()) {
+      return res.status(503).json({
+        ok: false,
+        error: 'Question forwarding is not configured on the server yet.'
+      });
+    }
+
+    const faqTopic = matchFaqTopic(question.toLowerCase());
+    const meta = {
+      page: String(req.body.page || req.get('referer') || '').trim(),
+      time: new Date().toISOString()
+    };
+    const subjectPrefix = faqTopic ? '[Help bot · auto-answered]' : '[Help bot · needs reply]';
+    const subject = `${subjectPrefix} ${question.slice(0, 72)}${question.length > 72 ? '…' : ''}`;
+
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE || SMTP_PORT === 465,
+      auth: { user: SMTP_USER, pass: SMTP_PASS }
+    });
+
+    await transporter.sendMail({
+      from: SMTP_FROM,
+      to: CONTACT_TO,
+      replyTo: replyEmail || undefined,
+      subject,
+      text: buildContactText(question, replyEmail, meta),
+      html: buildContactHtml(question, replyEmail, meta)
+    });
+
+    return res.json({ ok: true, forwarded: true });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message || 'Could not send your question.' });
   }
 });
 

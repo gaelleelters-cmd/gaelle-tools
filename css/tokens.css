@@ -1,0 +1,37 @@
+/* Gaelle El Ters — shared design tokens (all pages) */
+:root {
+  /* Brand palette */
+  --brand-ink: #1c2430;
+  --brand-ink-soft: #3d4a5c;
+  --brand-muted: #6b7789;
+  --brand-paper: #eef1f4;
+  --brand-paper-deep: #e2e7ed;
+  --brand-line: rgba(28, 36, 48, 0.12);
+  --brand-sea: #2f6f8f;
+  --brand-sea-deep: #1a455c;
+  --brand-sea-soft: rgba(47, 111, 143, 0.12);
+  --brand-gold: #b8956c;
+  --brand-gold-soft: rgba(184, 149, 108, 0.18);
+  --brand-cream: #f7f5f2;
+  --brand-night: #151b24;
+
+  /* Typography */
+  --font-ui: "Outfit", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+
+  /* Shape & elevation */
+  --radius: 10px;
+  --radius-sm: 8px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(16, 22, 30, 0.04), 0 4px 14px rgba(16, 22, 30, 0.05);
+  --shadow-md: 0 2px 8px rgba(16, 22, 30, 0.06), 0 14px 36px rgba(16, 22, 30, 0.08);
+  --shadow-lg: 0 8px 28px rgba(16, 22, 30, 0.1), 0 28px 56px rgba(16, 22, 30, 0.07);
+
+  /* Motion */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition: 0.22s var(--ease);
+
+  /* Layout */
+  --page-max: 1040px;
+}

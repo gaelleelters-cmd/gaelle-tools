@@ -22,8 +22,8 @@
   --radius-sm: 8px;
   --shadow: 0 1px 3px rgba(11, 55, 84, 0.06), 0 4px 16px rgba(11, 55, 84, 0.04);
   --shadow-lg: 0 4px 24px rgba(11, 55, 84, 0.1);
-  --font: "Inter", system-ui, sans-serif;
-  --display: "Plus Jakarta Sans", var(--font);
+  --font: "Outfit", system-ui, sans-serif;
+  --display: "Fraunces", var(--font);
   --transition: 0.2s ease;
 }
 

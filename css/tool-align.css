@@ -1,0 +1,77 @@
+/* Embed mode — hide tool chrome when opened inside portfolio iframe */
+@import url("tokens.css");
+
+html.is-embed .hero,
+html.is-embed header.hero {
+  display: none !important;
+}
+
+html.is-embed body {
+  background: var(--brand-paper, #eef1f4);
+}
+
+html.is-embed .main {
+  margin-top: 0 !important;
+  padding-top: 0.75rem !important;
+}
+
+html.is-embed .app-top {
+  border-radius: var(--radius-sm);
+}
+
+/* Shared typography */
+body {
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+.hero-title-whatsapp,
+.hero-title-mail,
+.hero-title-main,
+.hero-title-whatsapp + .hero-title-tool {
+  font-family: var(--font-display) !important;
+}
+
+.hero-title-tool {
+  font-family: var(--font-ui) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.28em !important;
+  text-transform: uppercase;
+  font-size: clamp(0.72rem, 1.9vw, 0.86rem) !important;
+}
+
+.card-header h2,
+.app-title {
+  font-family: var(--font-display);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-ghost {
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+}
+
+.dropzone {
+  border-radius: var(--radius) !important;
+}
+
+.dropzone.dragover,
+.dropzone.is-drag {
+  box-shadow: 0 0 0 3px var(--accent-glow, rgba(47, 111, 143, 0.15)) !important;
+}
+
+.toast {
+  font-family: var(--font-ui) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-md) !important;
+  border-left: 3px solid var(--accent, var(--brand-sea)) !important;
+  background: #fff !important;
+  color: var(--text, var(--brand-ink)) !important;
+}
+
+.toast.error {
+  border-left-color: var(--danger, #dc2626) !important;
+}

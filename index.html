@@ -3,121 +3,276 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gaelle El Ters</title>
-  <meta name="description" content="Portfolio of Gaelle El Ters — websites and practical tools for everyday work.">
-  <link rel="icon" href="favicon.ico" sizes="any">
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
-  <link rel="icon" href="favicon-192.png" type="image/png" sizes="192x192">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>Gaelle El Ters | Websites &amp; Practical Tools</title>
+  <meta name="description" content="Gaelle El Ters. I design and build websites and practical tools that make everyday work lighter. Explore my projects.">
+  <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
+  <link rel="icon" href="favicon.ico?v=3" sizes="any">
+  <link rel="icon" href="favicon-32.png?v=3" type="image/png" sizes="32x32">
+  <link rel="icon" href="favicon-192.png?v=3" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/site.css?v=20260722cv">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,650;0,9..144,700;1,9..144,400;1,9..144,500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/site.css?v=20260728r12">
 </head>
 <body>
-  <div class="page" id="home">
-    <header class="hero">
-      <div class="hero-photo" aria-hidden="true">
-        <img src="images/gaelle-el-ters.png" alt="" class="hero-photo-img">
-      </div>
-      <div class="hero-scrim" aria-hidden="true"></div>
-      <div class="hero-inner">
-        <p class="brand-main">Gaelle El Ters</p>
-        <h1 class="hero-title">I turn boring work into something that actually inspires.</h1>
-        <p class="hero-lead">Websites and tools designed to make the everyday feel lighter — and a little more fun.</p>
 
-        <div class="work-menu" id="work-menu">
-          <button
-            type="button"
-            class="work-menu-btn"
-            id="work-menu-btn"
-            aria-expanded="false"
-            aria-haspopup="true"
-            aria-controls="work-menu-panel"
-          >
-            <span>Some work</span>
-            <span class="work-menu-dots" aria-hidden="true">
-              <i></i><i></i><i></i>
-            </span>
-          </button>
-          <div class="work-menu-panel" id="work-menu-panel" role="menu" hidden>
-            <button type="button" class="work-menu-item" role="menuitem" data-panel="work-tools">
-              Work-related tools
-            </button>
-            <button type="button" class="work-menu-item" role="menuitem" data-panel="generator">
-              Generators
-            </button>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <section class="tools is-hidden" id="work-tools" aria-label="Work-related tools">
-      <div class="section-head">
-        <p class="section-kicker">Work-related tools</p>
-        <h2 class="section-title">Built for everyday agent work</h2>
-        <p class="section-lead">Open any tool below — files stay in your browser, no account needed.</p>
-      </div>
-
-      <div class="tool-rail" aria-label="Work-related tools">
-        <button type="button" class="tool-panel tool-panel--wa" data-src="Gaelle%20Whatsapp%20Tool/index.html" data-label="WhatsApp Tool">
-          <h3 class="tool-panel-name">WhatsApp Tool</h3>
-          <p class="tool-panel-copy">Send a message, generate Excel / Sheets formulas, or bulk-create WhatsApp links.</p>
-          <span class="tool-panel-action">Open</span>
-        </button>
-
-        <button type="button" class="tool-panel tool-panel--mail" data-src="Mail%20Mass/index.html" data-label="Mail Mass">
-          <h3 class="tool-panel-name">Mail Mass</h3>
-          <p class="tool-panel-copy">Word-style mail merge — upload Excel, format your message, send from your Outlook.</p>
-          <span class="tool-panel-action">Open</span>
-        </button>
-
-        <button type="button" class="tool-panel tool-panel--xl" data-src="COMBINE/index.html" data-label="Excel Combiner">
-          <h3 class="tool-panel-name">Excel Combiner</h3>
-          <p class="tool-panel-copy">Combine several sheets, align columns, remove duplicates, download one clean file.</p>
-          <span class="tool-panel-action">Open</span>
-        </button>
-      </div>
-    </section>
-
-    <section class="lab is-hidden" id="generator" aria-label="Generators">
-      <div class="lab-inner">
-        <p class="section-kicker">Generators</p>
-        <h2 class="section-title">Web apps</h2>
-        <p class="section-lead">Practical generators — more will be added here over time.</p>
-        <div class="gen-rail">
-          <button
-            type="button"
-            class="tool-panel tool-panel--gen"
-            data-src="generators/cv-resume/index.html"
-            data-label="CV / Resume Generator"
-          >
-            <h3 class="tool-panel-name">CV / Resume Generator</h3>
-            <p class="tool-panel-copy">Choose a template, add your photo, follow step-by-step guidance with smart recommendations, then download your CV.</p>
-            <span class="tool-panel-action">Open</span>
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <footer class="site-foot">
-      <span class="brand-mini">Gaelle El Ters</span>
-    </footer>
+  <!-- Workflow node background (full page, behind content) -->
+  <div class="workflow-bg" aria-hidden="true">
+    <canvas id="workflow-canvas"></canvas>
   </div>
 
+  <!-- Scroll progress -->
+  <div class="scroll-progress" aria-hidden="true"><span id="scroll-progress-bar"></span></div>
+
+  <!-- ===== TOP NAV ===== -->
+  <header class="top-nav" id="top-nav">
+    <a class="top-nav-brand" href="#top" data-scroll aria-label="Gaelle El Ters, home">
+      <img class="top-nav-logo" src="favicon.svg?v=3" alt="" width="36" height="36">
+    </a>
+    <nav class="top-nav-links" aria-label="Main">
+      <a href="#about" data-scroll>About</a>
+      <a href="#projects" data-scroll>Projects</a>
+      <a href="#contact" data-scroll>Contact</a>
+    </nav>
+    <a class="top-nav-cta" href="mailto:info@gaelleelters.com">Work with me</a>
+  </header>
+
+  <main class="page" id="home">
+
+    <!-- ===== HERO ===== -->
+    <section class="hero" id="top">
+      <div class="hero-aura" aria-hidden="true">
+        <span class="aura aura--sea"></span>
+        <span class="aura aura--gold"></span>
+        <span class="aura aura--blush"></span>
+      </div>
+      <div class="grain" aria-hidden="true"></div>
+
+      <div class="hero-inner">
+        <h1 class="hero-name">
+          <span class="hero-name-text">
+            <span class="hero-name-face hero-name-face--front">Gaelle<br><em>El&nbsp;Ters</em></span>
+            <span class="hero-name-face hero-name-face--back" aria-hidden="true">Gaelle<br><em>El&nbsp;Ters</em></span>
+          </span>
+        </h1>
+        <p class="hero-role reveal">Designer &amp; builder of <strong>websites</strong> and <strong>practical&nbsp;tools</strong></p>
+        <p class="hero-lead reveal">I turn everyday work into something that actually inspires: tools that feel light, look good, and just work.</p>
+        <div class="hero-cta reveal">
+          <a class="btn btn--ink" href="#projects" data-scroll>See my projects</a>
+          <a class="btn btn--ghost" href="#about" data-scroll>More about me</a>
+        </div>
+      </div>
+
+      <a class="hero-scroll-hint" href="#about" data-scroll aria-label="Scroll to about">
+        <span class="hero-scroll-line" aria-hidden="true"></span>
+        Scroll
+      </a>
+    </section>
+
+    <!-- ===== MARQUEE ===== -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span>Websites</span><i>✦</i><span>Practical tools</span><i>✦</i><span>Automation</span><i>✦</i><span>Clean design</span><i>✦</i><span>Everyday made lighter</span><i>✦</i>
+        <span>Websites</span><i>✦</i><span>Practical tools</span><i>✦</i><span>Automation</span><i>✦</i><span>Clean design</span><i>✦</i><span>Everyday made lighter</span><i>✦</i>
+      </div>
+    </div>
+
+    <!-- ===== ABOUT ===== -->
+    <section class="about section" id="about">
+      <div class="section-inner about-grid">
+        <div class="about-side reveal">
+          <div class="about-card">
+            <img
+              class="about-card-photo"
+              src="images/gaelle-el-ters-about.png"
+              alt="Portrait of Gaelle El Ters"
+              width="680"
+              height="850"
+              loading="lazy"
+            >
+            <div class="about-card-shade" aria-hidden="true"></div>
+            <div class="about-card-content">
+              <p class="about-card-name">Gaelle El Ters</p>
+              <p class="about-card-role">Websites &amp; practical tools</p>
+              <div class="about-card-links">
+                <a href="mailto:info@gaelleelters.com">info@gaelleelters.com</a>
+                <a href="https://www.linkedin.com/in/gaelle-el-ters-4b41b61a5/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="about-body">
+          <p class="section-kicker reveal">01 · About</p>
+          <h2 class="section-title reveal">The person behind<br>the <em>brand</em></h2>
+          <p class="about-text reveal">
+            Hi, I'm Gaelle. I build digital things that remove friction from everyday work. My work sits where
+            <strong>useful meets beautiful</strong>.
+          </p>
+          <p class="about-text reveal">
+            I care about the details most people skip, like the empty states, the wording, the way a
+            button feels. That's what turns a "tool" into something people actually enjoy using.
+          </p>
+
+          <ul class="about-values reveal">
+            <li>Design-led</li>
+            <li>Detail-obsessed</li>
+            <li>Fast &amp; practical</li>
+            <li>Human wording</li>
+          </ul>
+
+          <dl class="about-stats reveal">
+            <div><dt class="about-stat-num" data-count="3" data-suffix="+">0</dt><dd>Tools shipped</dd></div>
+            <div><dt class="about-stat-num" data-count="100" data-suffix="%">0</dt><dd>Designed &amp; built by me</dd></div>
+            <div><dt class="about-stat-num" data-count="0" data-suffix="">0</dt><dd>Sign-ups required</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PROJECTS ===== -->
+    <section class="projects section section--tint" id="projects">
+      <div class="section-inner">
+        <p class="section-kicker reveal">02 · Projects</p>
+        <h2 class="section-title reveal">Selected <em>work</em></h2>
+        <p class="section-lead reveal">Live tools you can open and use right now. No account, no install.</p>
+
+        <div class="project-list">
+          <button type="button" class="project-card reveal" data-src="Gaelle%20Whatsapp%20Tool/index.html" data-label="WhatsApp Tool">
+            <span class="project-num" aria-hidden="true">01</span>
+            <div class="project-media project-media--wa" aria-hidden="true">
+              <span class="project-glyph">💬</span>
+            </div>
+            <div class="project-body">
+              <p class="project-tags"><span>Work tool</span><span>Messaging</span></p>
+              <h3 class="project-name">WhatsApp Tool</h3>
+              <p class="project-copy">Send messages, generate Excel / Sheets formulas, and bulk-create WhatsApp links, all from the browser.</p>
+              <span class="project-open">Open project <i aria-hidden="true">→</i></span>
+            </div>
+          </button>
+
+          <button type="button" class="project-card reveal" data-src="Mail%20Mass/index.html" data-label="Mail Mass">
+            <span class="project-num" aria-hidden="true">02</span>
+            <div class="project-media project-media--mail" aria-hidden="true">
+              <span class="project-glyph">✉️</span>
+            </div>
+            <div class="project-body">
+              <p class="project-tags"><span>Work tool</span><span>Email</span></p>
+              <h3 class="project-name">Mail Mass</h3>
+              <p class="project-copy">Mail merge from Excel. Format your message beautifully and send from your own Outlook.</p>
+              <span class="project-open">Open project <i aria-hidden="true">→</i></span>
+            </div>
+          </button>
+
+          <button type="button" class="project-card reveal" data-src="generators/cv-resume/index.html" data-label="CV / Resume Generator">
+            <span class="project-num" aria-hidden="true">03</span>
+            <div class="project-media project-media--cv" aria-hidden="true">
+              <span class="project-glyph">📄</span>
+            </div>
+            <div class="project-body">
+              <p class="project-tags"><span>Generator</span><span>Documents</span></p>
+              <h3 class="project-name">CV / Resume Generator</h3>
+              <p class="project-copy">Pick a template, add your details, preview live, and download a ready-to-send CV, free.</p>
+              <span class="project-open">Open project <i aria-hidden="true">→</i></span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CONTACT ===== -->
+    <section class="contact section" id="contact">
+      <div class="section-inner contact-inner">
+        <p class="section-kicker reveal">03 · Contact</p>
+        <h2 class="contact-title reveal">Have an idea?<br>Let's make it <em>real</em>.</h2>
+        <p class="contact-lead reveal">A new tool, a website, or an improvement to something that already exists. I read every message.</p>
+        <div class="contact-actions reveal">
+          <a class="btn btn--ink btn--lg" href="mailto:info@gaelleelters.com">info@gaelleelters.com</a>
+          <a class="btn btn--ghost btn--lg" href="https://www.linkedin.com/in/gaelle-el-ters-4b41b61a5/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-foot" id="site-foot">
+    <div class="site-foot-inner">
+      <div class="site-foot-brand">
+        <span class="brand-mini">Gaelle El Ters</span>
+        <p class="site-foot-tagline">Websites &amp; practical tools</p>
+      </div>
+      <div class="site-foot-contact">
+        <p class="site-foot-label">Contact</p>
+        <a class="site-foot-link" href="mailto:info@gaelleelters.com">info@gaelleelters.com</a>
+        <a class="site-foot-link" href="https://www.linkedin.com/in/gaelle-el-ters-4b41b61a5/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===== HELP BOT ===== -->
+  <div class="help-bot" id="help-bot">
+    <button
+      type="button"
+      class="help-bot-flag"
+      id="help-bot-toggle"
+      aria-expanded="false"
+      aria-controls="help-bot-panel"
+    >
+      <span class="help-bot-flag-pole" aria-hidden="true"></span>
+      <span class="help-bot-flag-banner">
+        <span class="help-bot-flag-icon" aria-hidden="true">?</span>
+        <span class="help-bot-flag-text">Ask me</span>
+      </span>
+    </button>
+    <div class="help-bot-backdrop is-hidden" id="help-bot-backdrop" aria-hidden="true"></div>
+    <div class="help-bot-panel is-hidden" id="help-bot-panel" role="dialog" aria-labelledby="help-bot-title" aria-modal="true">
+      <header class="help-bot-head">
+        <div>
+          <p class="help-bot-kicker">Gaelle El Ters</p>
+          <h2 class="help-bot-title" id="help-bot-title">Quick help</h2>
+        </div>
+        <button type="button" class="help-bot-close" id="help-bot-close" aria-label="Close">×</button>
+      </header>
+      <div class="help-bot-messages" id="help-bot-messages" aria-live="polite"></div>
+      <div class="help-bot-options" id="help-bot-options"></div>
+      <form class="help-bot-compose" id="help-bot-form">
+        <div class="help-bot-compose-fields">
+          <label class="visually-hidden" for="help-bot-reply-email">Your email (optional)</label>
+          <input type="email" id="help-bot-reply-email" class="help-bot-input help-bot-input--email" placeholder="Your email (optional, for a reply)" autocomplete="email" maxlength="120">
+          <div class="help-bot-compose-row">
+            <label class="visually-hidden" for="help-bot-input">Your question</label>
+            <input type="text" id="help-bot-input" class="help-bot-input" placeholder="Type your question…" autocomplete="off" maxlength="240" required>
+            <button type="submit" class="help-bot-send" id="help-bot-send">Send</button>
+          </div>
+        </div>
+        <input type="text" class="help-bot-honeypot" id="help-bot-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== WORKSPACE (tool view) ===== -->
   <section class="workspace is-hidden" id="workspace" aria-hidden="true">
-    <header class="workspace-bar">
-      <button type="button" class="back-btn" id="back-home"><span aria-hidden="true">←</span> Home</button>
-      <div class="workspace-brand">Gaelle El Ters</div>
-      <h2 class="workspace-title" id="stage-title">WhatsApp Tool</h2>
-      <a class="open-new" id="open-new" href="Gaelle%20Whatsapp%20Tool/index.html" target="_blank" rel="noopener">Open in new tab</a>
+    <header class="site-nav workspace-bar">
+      <div class="workspace-bar-start">
+        <button type="button" class="home-back-btn" id="workspace-home">
+          <span class="home-back-btn-icon" aria-hidden="true">←</span>
+          <span class="home-back-btn-text">Home page</span>
+        </button>
+        <p class="workspace-now">
+          <span class="workspace-now-label">Now using</span>
+          <strong class="workspace-now-name" id="stage-title">WhatsApp Tool</strong>
+        </p>
+      </div>
+      <a class="site-nav-action open-new" id="open-new" href="Gaelle%20Whatsapp%20Tool/index.html" target="_blank" rel="noopener">Open in new tab</a>
     </header>
     <div class="frame-wrap">
       <iframe id="app-frame" class="app-frame" title="Tool" src="about:blank"></iframe>
     </div>
   </section>
 
-  <script src="js/site.js?v=20260722cv"></script>
+  <script src="js/bg-workflow.js?v=4"></script>
+  <script src="js/help-bot.js?v=5"></script>
+  <script src="js/site.js?v=20260728r2"></script>
 </body>
 </html>
