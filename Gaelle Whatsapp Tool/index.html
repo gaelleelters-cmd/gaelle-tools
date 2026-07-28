@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WhatsApp Tool — Send, Formula, Bulk & Meta</title>
+  <title>WhatsApp Tool — Send, Formula & Bulk</title>
   <link rel="icon" href="../favicon.svg?v=3" type="image/svg+xml">
   <link rel="icon" href="../favicon.ico?v=3" sizes="any">
   <link rel="icon" href="../favicon-32.png?v=3" type="image/png" sizes="32x32">
@@ -66,10 +66,6 @@
       <button class="tab" data-tab="bulk" role="tab" aria-selected="false">
         <span class="tab-icon">📁</span>
         Bulk Sender
-      </button>
-      <button class="tab" data-tab="meta" role="tab" aria-selected="false">
-        <span class="tab-icon">🔗</span>
-        Meta App
       </button>
     </nav>
 
@@ -324,94 +320,6 @@
             </div>
           </div>
           <div class="contact-list" id="bulk-contact-list"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ========== META APP ========== -->
-    <section id="panel-meta" class="panel" role="tabpanel" hidden>
-      <div class="card">
-        <p class="meta-intro">Connect your <strong>internal WhatsApp API</strong> using the organization’s verified number — the same number already used by another integration.</p>
-
-        <div class="meta-section">
-          <h3 class="meta-section-title">What to request from your organization</h3>
-          <p class="meta-hint">Send this checklist to whoever owns Meta / WhatsApp (IT, comms, or the team running the current API).</p>
-          <ul class="meta-checklist" id="meta-request-checklist">
-            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="business-access"> Access to <strong>Meta Business Manager</strong> and the Meta App on the verified number</label></li>
-            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="ids"> <strong>WABA ID</strong>, <strong>Phone Number ID</strong>, and <strong>App ID</strong> (not the display phone number alone)</label></li>
-            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="token"> A dedicated <strong>System User access token</strong> with <code>whatsapp_business_messaging</code> for your internal tool</label></li>
-            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="shared-number"> Written confirmation that your internal API can use the <strong>same number</strong> without breaking the existing API</label></li>
-            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="webhook"> How <strong>webhooks</strong> will work — separate app, shared endpoint, or events forwarded to you</label></li>
-            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="templates"> Rules for <strong>message templates</strong>, test numbers, and outbound messaging approval</label></li>
-            <li><label class="meta-check-label"><input type="checkbox" data-meta-check="compliance"> Who handles <strong>opt-in, consent, and data protection</strong> for WhatsApp messaging</label></li>
-          </ul>
-        </div>
-
-        <div class="meta-section">
-          <h3 class="meta-section-title">Credentials from IT / WhatsApp owner <span class="hint-inline">Saved only in this browser</span></h3>
-          <div class="form-grid meta-ref-grid">
-            <div class="field">
-              <label for="meta-app-id">App ID</label>
-              <input type="text" id="meta-app-id" placeholder="" dir="ltr" autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="meta-waba-id">WhatsApp Business Account ID</label>
-              <input type="text" id="meta-waba-id" placeholder="" dir="ltr" autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="meta-phone-id">Phone Number ID</label>
-              <input type="text" id="meta-phone-id" placeholder="API ID, not +971…" dir="ltr" autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="meta-display-phone">Display phone number</label>
-              <input type="tel" id="meta-display-phone" placeholder="e.g. +971501234567" dir="ltr" autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="meta-existing-api">Existing API / integration</label>
-              <input type="text" id="meta-existing-api" placeholder="Name of current API" dir="ltr" autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="meta-owner-contact">Internal contact</label>
-              <input type="text" id="meta-owner-contact" placeholder="Team or person who owns access" dir="ltr" autocomplete="off">
-            </div>
-          </div>
-          <span class="hint">Store IDs locally for reference. Access tokens stay in this browser session only — ask IT for a dedicated token, not a shared production secret.</span>
-          <div class="actions meta-inline-actions">
-            <button type="button" class="btn btn-secondary" id="meta-save-ref">Save credentials</button>
-            <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Meta Developer Portal</a>
-          </div>
-        </div>
-
-        <div class="meta-section meta-divider">
-          <h3 class="meta-section-title">Test Cloud API send</h3>
-          <p class="meta-hint">After IT provides credentials, send a test via the WhatsApp Cloud API from this browser. Recipients must be approved test numbers, or have messaged the business within 24 hours. Token stays in session storage only.</p>
-          <div class="form-grid">
-            <div class="field field-full">
-              <label for="meta-access-token">Access token</label>
-              <input type="password" id="meta-access-token" placeholder="System User or temporary token from IT" dir="ltr" autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="meta-test-to">Recipient phone</label>
-              <input type="tel" id="meta-test-to" placeholder="e.g. 971501234567" dir="ltr" autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="meta-test-phone-id">Phone Number ID</label>
-              <input type="text" id="meta-test-phone-id" placeholder="From API Setup" dir="ltr" autocomplete="off">
-            </div>
-            <div class="field field-full">
-              <label for="meta-test-message">Message</label>
-              <textarea id="meta-test-message" rows="3" placeholder="Hello from Cloud API test"></textarea>
-            </div>
-          </div>
-          <div class="actions">
-            <button type="button" class="btn btn-primary" id="meta-send-test">Send test message</button>
-          </div>
-          <div class="result-block hidden" id="meta-send-result">
-            <div class="result-header">
-              <span class="result-badge preview" id="meta-send-result-badge">Response</span>
-            </div>
-            <pre class="result-code" id="meta-send-result-body"></pre>
-          </div>
         </div>
       </div>
     </section>

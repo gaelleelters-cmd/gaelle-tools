@@ -7,12 +7,11 @@ A standalone HTML app for WhatsApp messaging — open `index.html` in your brows
 - **Single Sender** — Send a message to one contact with formatting toolbar, emoji picker, and RTL/LTR support
 - **WhatsApp Formula** — Generate `HYPERLINK` formulas for Excel 365 and Google Sheets
 - **Bulk Sender** — Upload CSV/Excel, send same or custom messages, export links
-- **Meta App** — Credential checklist and request email (saved in your browser)
 
 ## Quick Start
 
 1. Double-click `index.html`, or open it in Chrome / Edge / Firefox
-2. Use the tabs: Single Sender, WhatsApp Formula, Bulk Sender, Meta App
+2. Use the tabs: Single Sender, WhatsApp Formula, Bulk Sender
 
 Bulk Excel/CSV reading uses SheetJS from a CDN, so you need internet the first time you open the page (or keep the CDN cached).
 

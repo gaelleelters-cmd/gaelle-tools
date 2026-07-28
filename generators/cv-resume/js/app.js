@@ -81,10 +81,37 @@
     return el ? el.value : 'classic';
   }
 
+  function accent() {
+    var el = $('input[name="accent"]:checked');
+    return el ? el.value : '#2f6f8f';
+  }
+
+  function mixAccent(hex, ratio) {
+    var h = String(hex || '#2f6f8f').replace('#', '');
+    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+    var r = parseInt(h.slice(0, 2), 16);
+    var g = parseInt(h.slice(2, 4), 16);
+    var b = parseInt(h.slice(4, 6), 16);
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return '#1a455c';
+    return 'rgb(' + Math.round(r * ratio) + ',' + Math.round(g * ratio) + ',' + Math.round(b * ratio) + ')';
+  }
+
+  function applyAccent() {
+    var col = accent();
+    var deep = mixAccent(col, 0.76);
+    var app = $('.app');
+    var cv = $('#cv-preview');
+    if (app) {
+      app.style.setProperty('--cv-accent', col);
+    }
+    if (cv) {
+      cv.style.setProperty('--cv-accent', col);
+      cv.style.setProperty('--cv-deep', deep);
+    }
+  }
+
   function jobTitle() {
-    var sel = $('#job-title').value;
-    if (sel === 'Other (type below)') return ($('#job-title-custom').value || '').trim();
-    return (sel || '').trim();
+    return ($('#job-title').value || '').trim();
   }
 
   function esc(s) {
@@ -291,6 +318,7 @@
   }
 
   function renderPreview() {
+    applyAccent();
     var tpl = template();
     var nameRaw = $('#full-name').value.trim();
     var name = nameRaw || 'Your Name';
@@ -356,8 +384,15 @@
       t.classList.toggle('is-active', Number(t.getAttribute('data-go')) === step);
     });
     $('#btn-back').hidden = step === 1;
-    $('#btn-next').textContent = step === total ? 'Done' : 'Continue';
-    if (step !== total) $('#btn-print').classList.remove('is-pulse');
+    $('#btn-next').textContent = step === total ? 'Done ✓' : 'Continue →';
+    if (step !== total) {
+      $('#btn-print').classList.remove('is-pulse');
+      var pp = $('#btn-print-preview');
+      if (pp) pp.classList.remove('is-pulse');
+    }
+    var bar = $('#steps-bar');
+    if (bar) bar.style.width = Math.round((step / total) * 100) + '%';
+    renderPreview();
   }
 
   function bindEntry(card, kind) {
@@ -462,10 +497,10 @@
   function serialize() {
     return {
       template: template(),
+      accent: accent(),
       photoData: photoData && photoData.length < 450000 ? photoData : '',
       fullName: $('#full-name').value,
-      jobTitle: $('#job-title').value,
-      jobTitleCustom: $('#job-title-custom').value,
+      jobTitle: jobTitle(),
       email: $('#email').value,
       phone: $('#phone').value,
       location: $('#location').value,
@@ -486,6 +521,8 @@
     if (!data) return;
     var radio = $('input[name="template"][value="' + (data.template || 'classic') + '"]');
     if (radio) radio.checked = true;
+    var accRadio = $('input[name="accent"][value="' + (data.accent || '#2f6f8f') + '"]');
+    if (accRadio) accRadio.checked = true;
     photoData = data.photoData || '';
     var img = $('#photo-preview');
     if (photoData) {
@@ -498,9 +535,9 @@
       $('#photo-clear').hidden = true;
     }
     $('#full-name').value = data.fullName || '';
-    $('#job-title').value = data.jobTitle || '';
-    $('#job-title-custom').value = data.jobTitleCustom || '';
-    $('#job-title-custom').hidden = data.jobTitle !== 'Other (type below)';
+    var savedTitle = data.jobTitle || '';
+    if (savedTitle === 'Other (type below)' && data.jobTitleCustom) savedTitle = data.jobTitleCustom;
+    $('#job-title').value = savedTitle;
     $('#email').value = data.email || '';
     $('#phone').value = data.phone || '';
     $('#location').value = data.location || '';
@@ -544,6 +581,7 @@
   function loadExample() {
     applyData({
       template: 'modern',
+      accent: '#0f766e',
       fullName: 'Gaelle El Ters',
       jobTitle: 'Communications Officer',
       email: 'gaelle@example.com',
@@ -578,6 +616,30 @@
   $$('.step-tab').forEach(function (tab) {
     tab.addEventListener('click', function () { showStep(Number(tab.getAttribute('data-go'))); });
   });
+  function downloadPdf(btn) {
+    if (btn) btn.classList.remove('is-pulse');
+    var cv = $('#cv-preview');
+    var savedZoom = cv ? cv.style.zoom : '';
+    renderPreview();
+    applyAccent();
+    if (cv) cv.style.zoom = '1';
+    document.documentElement.classList.add('is-printing');
+    function restore() {
+      document.documentElement.classList.remove('is-printing');
+      if (cv) cv.style.zoom = savedZoom || String(ZOOMS[zoomIdx]);
+      window.removeEventListener('afterprint', restore);
+    }
+    window.addEventListener('afterprint', restore);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { window.print(); });
+    });
+  }
+
+  $$('input[name="template"], input[name="accent"]').forEach(function (el) {
+    el.addEventListener('change', scheduleSave);
+    el.addEventListener('input', scheduleSave);
+  });
+
   $('#btn-back').addEventListener('click', function () { if (step > 1) showStep(step - 1); });
   $('#btn-next').addEventListener('click', function () {
     if (step < total) {
@@ -585,19 +647,14 @@
       return;
     }
     $('#btn-print').classList.add('is-pulse');
+    var ppDone = $('#btn-print-preview');
+    if (ppDone) ppDone.classList.add('is-pulse');
     $('#score-tip').textContent = 'Ready — click Download PDF, then choose “Save as PDF” in the print dialog.';
     $('#btn-print').focus();
   });
-  $('#btn-print').addEventListener('click', function () {
-    this.classList.remove('is-pulse');
-    renderPreview();
-    window.print();
-  });
-  $('#btn-example').addEventListener('click', loadExample);
-  $('#btn-clear').addEventListener('click', function () {
-    localStorage.removeItem(STORAGE_KEY);
-    location.href = location.pathname + '?fresh=' + Date.now();
-  });
+  $('#btn-print').addEventListener('click', function () { downloadPdf(this); });
+  var printPreview = $('#btn-print-preview');
+  if (printPreview) printPreview.addEventListener('click', function () { downloadPdf(this); });
   $('#btn-suggest-summary').addEventListener('click', suggestSummary);
   $('#btn-cover').addEventListener('click', draftCover);
   $('#btn-add-exp').addEventListener('click', function () { addExp(); scheduleSave(); });
@@ -634,11 +691,6 @@
     scheduleSave();
   });
 
-  $('#job-title').addEventListener('change', function () {
-    $('#job-title-custom').hidden = this.value !== 'Other (type below)';
-    scheduleSave();
-  });
-
   $('#skill-pack').addEventListener('change', function () {
     var pack = SKILL_PACKS[this.value] || [];
     var row = $('#skill-suggestions');
@@ -662,6 +714,35 @@
     if (e.target.closest('.editor')) scheduleSave();
   });
 
+  // Preview zoom
+  var ZOOMS = [0.55, 0.65, 0.75, 0.9, 1, 1.15, 1.3];
+  var zoomIdx = 1;
+  function applyZoom() {
+    var cv = $('#cv-preview');
+    if (cv) cv.style.zoom = String(ZOOMS[zoomIdx]);
+    var label = $('#zoom-level');
+    if (label) label.textContent = Math.round(ZOOMS[zoomIdx] * 100) + '%';
+  }
+  var zoomOut = $('#zoom-out');
+  var zoomIn = $('#zoom-in');
+  if (zoomOut) zoomOut.addEventListener('click', function () {
+    if (zoomIdx > 0) { zoomIdx--; applyZoom(); }
+  });
+  if (zoomIn) zoomIn.addEventListener('click', function () {
+    if (zoomIdx < ZOOMS.length - 1) { zoomIdx++; applyZoom(); }
+  });
+
+  // Mobile edit/preview switch
+  $$('.view-switch button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var showPreview = btn.getAttribute('data-view') === 'preview';
+      $('#studio').classList.toggle('is-preview', showPreview);
+      $$('.view-switch button').forEach(function (b) {
+        b.classList.toggle('is-active', b === btn);
+      });
+    });
+  });
+
   // Init
   try {
     var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
@@ -679,4 +760,5 @@
     renderPreview();
   }
   showStep(1);
+  applyZoom();
 })();

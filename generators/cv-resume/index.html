@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CV / Resume Generator — Gaelle El Ters</title>
+  <title>CV / Resume Studio — Gaelle El Ters</title>
   <meta name="description" content="Free CV builder with live preview, ATS score, job-match keywords, and smart recommendations — no paywall.">
   <link rel="icon" href="../../favicon.svg?v=3" type="image/svg+xml">
   <link rel="icon" href="../../favicon.ico?v=3" sizes="any">
@@ -12,62 +12,32 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=Outfit:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=30260727design">
+  <link rel="stylesheet" href="css/style.css?v=30260728r5">
   <link rel="stylesheet" href="../../css/tool-align.css?v=30260727v2">
 </head>
 <body>
   <div class="app">
-    <header class="app-top">
-      <div class="brand">
-        <span class="brand-mark" aria-hidden="true">G</span>
-        <div>
-          <p class="app-kicker">Free forever · No paywall</p>
-          <h1 class="app-title">Resume Builder</h1>
+    <div class="studio" id="studio">
+      <aside class="editor" aria-label="Resume editor">
+        <div class="coach">
+          <span class="coach-ico" aria-hidden="true">💡</span>
+          <p id="score-tip">Add your name and target role — we’ll guide you from there.</p>
         </div>
-      </div>
-      <div class="app-top-actions">
-        <button type="button" class="btn-ghost" id="btn-example">Try example</button>
-        <button type="button" class="btn-ghost" id="btn-clear">Start over</button>
-        <button type="button" class="btn-primary" id="btn-print">Download PDF</button>
-      </div>
-    </header>
 
-    <div class="score-bar" id="score-bar">
-      <div class="score-card">
-        <div class="ring" id="ats-ring" style="--p:0">
-          <strong id="ats-score">0</strong>
-        </div>
-        <div class="score-copy">
-          <span class="score-label">ATS score</span>
-          <p class="score-sub">How ready your CV looks for scanners</p>
-        </div>
-      </div>
-      <div class="score-card">
-        <div class="ring ring--match" id="match-ring" style="--p:0">
-          <strong id="match-score">—</strong>
-        </div>
-        <div class="score-copy">
-          <span class="score-label">Job match</span>
-          <p class="score-sub">Keyword fit for a pasted vacancy</p>
-        </div>
-      </div>
-      <p class="score-tip" id="score-tip">Add your name and target role — we’ll guide you from there.</p>
-    </div>
-
-    <div class="studio">
-      <aside class="editor">
-        <nav class="step-tabs" id="step-tabs" aria-label="Builder steps">
-          <button type="button" class="step-tab is-active" data-go="1"><span class="step-num">1</span><span class="step-label">Design</span></button>
-          <button type="button" class="step-tab" data-go="2"><span class="step-num">2</span><span class="step-label">Profile</span></button>
-          <button type="button" class="step-tab" data-go="3"><span class="step-num">3</span><span class="step-label">Experience</span></button>
-          <button type="button" class="step-tab" data-go="4"><span class="step-num">4</span><span class="step-label">Education</span></button>
-          <button type="button" class="step-tab" data-go="5"><span class="step-num">5</span><span class="step-label">Skills</span></button>
-          <button type="button" class="step-tab" data-go="6"><span class="step-num">6</span><span class="step-label">Job fit</span></button>
+        <nav class="steps" id="step-tabs" aria-label="Builder steps">
+          <button type="button" class="step-tab is-active" data-go="1"><span class="step-ico" aria-hidden="true">🎨</span><span class="step-label">Design</span></button>
+          <button type="button" class="step-tab" data-go="2"><span class="step-ico" aria-hidden="true">👤</span><span class="step-label">Profile</span></button>
+          <button type="button" class="step-tab" data-go="3"><span class="step-ico" aria-hidden="true">💼</span><span class="step-label">Experience</span></button>
+          <button type="button" class="step-tab" data-go="4"><span class="step-ico" aria-hidden="true">🎓</span><span class="step-label">Education</span></button>
+          <button type="button" class="step-tab" data-go="5"><span class="step-ico" aria-hidden="true">⚡</span><span class="step-label">Skills</span></button>
+          <button type="button" class="step-tab" data-go="6"><span class="step-ico" aria-hidden="true">🎯</span><span class="step-label">Job fit</span></button>
         </nav>
+        <div class="steps-progress" aria-hidden="true"><span id="steps-bar"></span></div>
 
         <section class="panel is-active" data-step="1">
-          <h2>Pick a template</h2>
-          <p class="hint">Choose a look you like — you can change it anytime. Your content stays the same.</p>
+          <h2>Make it yours</h2>
+          <p class="hint">Pick a template and an accent color — you can switch anytime, your content stays the same.</p>
+          <h3 class="mini-title">Template</h3>
           <div class="template-grid" role="radiogroup">
             <label class="template-card"><input type="radio" name="template" value="classic" checked><span class="template-preview template-preview--classic"></span><span class="template-name">Classic</span></label>
             <label class="template-card"><input type="radio" name="template" value="modern"><span class="template-preview template-preview--modern"></span><span class="template-name">Modern</span></label>
@@ -76,11 +46,20 @@
             <label class="template-card"><input type="radio" name="template" value="executive"><span class="template-preview template-preview--executive"></span><span class="template-name">Executive</span></label>
             <label class="template-card"><input type="radio" name="template" value="compact"><span class="template-preview template-preview--compact"></span><span class="template-name">Compact ATS</span></label>
           </div>
+          <h3 class="mini-title">Accent color</h3>
+          <div class="swatch-row" role="radiogroup" aria-label="Accent color">
+            <label class="swatch" style="--sw:#2f6f8f" title="Sea"><input type="radio" name="accent" value="#2f6f8f" checked><span></span></label>
+            <label class="swatch" style="--sw:#0f766e" title="Teal"><input type="radio" name="accent" value="#0f766e"><span></span></label>
+            <label class="swatch" style="--sw:#4f46e5" title="Indigo"><input type="radio" name="accent" value="#4f46e5"><span></span></label>
+            <label class="swatch" style="--sw:#9d174d" title="Plum"><input type="radio" name="accent" value="#9d174d"><span></span></label>
+            <label class="swatch" style="--sw:#c2410c" title="Rust"><input type="radio" name="accent" value="#c2410c"><span></span></label>
+            <label class="swatch" style="--sw:#334155" title="Slate"><input type="radio" name="accent" value="#334155"><span></span></label>
+          </div>
         </section>
 
         <section class="panel" data-step="2" hidden>
           <h2>About you</h2>
-          <p class="hint">Start with the basics — the preview on the right updates as you type.</p>
+          <p class="hint">Start with the basics — the preview updates as you type.</p>
           <div class="photo-row">
             <div class="photo-box">
               <img id="photo-preview" class="photo-preview is-empty" alt="">
@@ -92,21 +71,81 @@
               <div class="field"><label for="full-name">Full name</label><input id="full-name" type="text" placeholder="Your full name"></div>
               <div class="field">
                 <label for="job-title">Target role</label>
-                <select id="job-title">
-                  <option value="">Choose a role…</option>
-                  <option>Communications Officer</option>
-                  <option>Programme Associate</option>
-                  <option>Data Analyst</option>
-                  <option>Project Manager</option>
-                  <option>Administrative Assistant</option>
-                  <option>Fundraising Officer</option>
-                  <option>Monitoring &amp; Evaluation Officer</option>
-                  <option>Software Engineer</option>
-                  <option>Product Designer</option>
-                  <option>Customer Success Manager</option>
-                  <option>Other (type below)</option>
-                </select>
-                <input id="job-title-custom" type="text" placeholder="Custom title" hidden>
+                <input id="job-title" type="text" list="job-title-suggestions" placeholder="Type any role — or pick a suggestion" autocomplete="off">
+                <datalist id="job-title-suggestions">
+                  <option value="Communications Officer">
+                  <option value="Programme Associate">
+                  <option value="Programme Officer">
+                  <option value="Project Manager">
+                  <option value="Project Coordinator">
+                  <option value="Monitoring &amp; Evaluation Officer">
+                  <option value="Protection Officer">
+                  <option value="Field Officer">
+                  <option value="Logistics Officer">
+                  <option value="Supply Chain Officer">
+                  <option value="Finance Officer">
+                  <option value="HR Officer">
+                  <option value="Partnerships Officer">
+                  <option value="Donor Relations Officer">
+                  <option value="Fundraising Officer">
+                  <option value="Grant Writer">
+                  <option value="Advocacy Officer">
+                  <option value="Community Engagement Officer">
+                  <option value="Case Worker">
+                  <option value="Social Worker">
+                  <option value="Administrative Assistant">
+                  <option value="Executive Assistant">
+                  <option value="Office Manager">
+                  <option value="Operations Manager">
+                  <option value="Operations Coordinator">
+                  <option value="Procurement Officer">
+                  <option value="Travel Coordinator">
+                  <option value="Data Analyst">
+                  <option value="Research Analyst">
+                  <option value="M&amp;E Specialist">
+                  <option value="Information Management Officer">
+                  <option value="GIS Specialist">
+                  <option value="Software Engineer">
+                  <option value="Frontend Developer">
+                  <option value="Backend Developer">
+                  <option value="Full Stack Developer">
+                  <option value="Product Designer">
+                  <option value="UX Designer">
+                  <option value="UI Designer">
+                  <option value="Product Manager">
+                  <option value="IT Support Specialist">
+                  <option value="DevOps Engineer">
+                  <option value="Data Scientist">
+                  <option value="Digital Marketing Specialist">
+                  <option value="Marketing Manager">
+                  <option value="Marketing Coordinator">
+                  <option value="Sales Manager">
+                  <option value="Account Manager">
+                  <option value="Customer Success Manager">
+                  <option value="Business Analyst">
+                  <option value="Consultant">
+                  <option value="HR Manager">
+                  <option value="Recruiter">
+                  <option value="Finance Manager">
+                  <option value="Accountant">
+                  <option value="Nurse">
+                  <option value="Medical Officer">
+                  <option value="Teacher">
+                  <option value="Training Coordinator">
+                  <option value="Legal Officer">
+                  <option value="Policy Advisor">
+                  <option value="Compliance Officer">
+                  <option value="Graphic Designer">
+                  <option value="Content Writer">
+                  <option value="Copywriter">
+                  <option value="Video Producer">
+                  <option value="Team Lead">
+                  <option value="Manager">
+                  <option value="Director">
+                  <option value="Intern">
+                  <option value="Volunteer Coordinator">
+                </datalist>
+                <span class="input-hint">Any job title works — suggestions are optional.</span>
               </div>
             </div>
           </div>
@@ -128,7 +167,7 @@
           <div class="field">
             <div class="label-row">
               <label for="summary">Professional summary</label>
-              <button type="button" class="btn-text" id="btn-suggest-summary">Write for me</button>
+              <button type="button" class="btn-text" id="btn-suggest-summary">✨ Write for me</button>
             </div>
             <textarea id="summary" rows="4" placeholder="2–4 strong sentences about what you’re great at…"></textarea>
           </div>
@@ -189,31 +228,56 @@
             <p class="match-empty">Paste a job description to see matched and missing keywords.</p>
           </div>
           <div class="field">
-            <label for="cover">Cover letter draft <span class="opt">optional</span></label>
             <div class="label-row">
-              <span></span>
-              <button type="button" class="btn-text" id="btn-cover">Draft cover letter</button>
+              <label for="cover">Cover letter draft <span class="opt">optional</span></label>
+              <button type="button" class="btn-text" id="btn-cover">✨ Draft cover letter</button>
             </div>
             <textarea id="cover" rows="6" placeholder="A short letter you can copy…"></textarea>
           </div>
         </section>
 
         <div class="editor-nav">
-          <button type="button" class="btn-secondary" id="btn-back" hidden>Back</button>
+          <button type="button" class="btn-secondary" id="btn-back" hidden>← Back</button>
           <span class="nav-spacer"></span>
-          <button type="button" class="btn-primary" id="btn-next">Continue</button>
+          <button type="button" class="btn-secondary btn-download" id="btn-print" title="Save as PDF">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download PDF
+          </button>
+          <button type="button" class="btn-primary" id="btn-next">Continue →</button>
         </div>
       </aside>
 
       <section class="preview-pane" aria-label="Live CV preview">
         <div class="preview-toolbar">
-          <span class="preview-title">Live preview</span>
-          <span class="autosave" id="autosave">Saved on this device</span>
+          <div class="score-pills">
+            <div class="score-pill" title="How ready your CV looks for applicant tracking scanners">
+              <div class="ring" id="ats-ring" style="--p:0"><strong id="ats-score">0</strong></div>
+              <span class="score-name">ATS<br>score</span>
+            </div>
+            <div class="score-pill" title="Keyword fit for a pasted vacancy (step 6)">
+              <div class="ring ring--match" id="match-ring" style="--p:0"><strong id="match-score">—</strong></div>
+              <span class="score-name">Job<br>match</span>
+            </div>
+            <span class="autosave" id="autosave">Saved on this device</span>
+          </div>
+          <div class="zoom-ctrl" aria-label="Preview zoom">
+            <button type="button" id="zoom-out" title="Zoom out">−</button>
+            <span id="zoom-level">100%</span>
+            <button type="button" id="zoom-in" title="Zoom in">+</button>
+          </div>
+          <button type="button" class="btn-download-preview" id="btn-print-preview" title="Download PDF" aria-label="Download PDF">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
         </div>
         <div class="preview-scroll">
           <div id="cv-preview" class="cv cv--classic"></div>
         </div>
       </section>
+    </div>
+
+    <div class="view-switch" role="tablist" aria-label="Editor or preview">
+      <button type="button" class="is-active" data-view="edit" role="tab">✏️ Edit</button>
+      <button type="button" data-view="preview" role="tab">👁 Preview</button>
     </div>
   </div>
 
@@ -270,6 +334,6 @@
   </template>
 
   <script src="../../js/embed.js?v=1"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/app.js?v=12"></script>
 </body>
 </html>
