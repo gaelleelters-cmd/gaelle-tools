@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Prepare for interviews with a tailored question library, guided practice, and timed mock sessions.">
+  <title>Interview Practice Studio</title>
+  <link rel="icon" href="../../favicon.svg?v=3" type="image/svg+xml">
+  <link rel="icon" href="../../favicon.ico?v=3" sizes="any">
+  <link rel="icon" href="../../favicon-32.png?v=3" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="../../apple-touch-icon.png?v=3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=1">
+  <link rel="stylesheet" href="../../css/tool-align.css?v=30260727v2">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to workspace</a>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">IP</span>
+        <div>
+          <p class="eyebrow">Interview Practice</p>
+          <h1>Preparation studio</h1>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span class="save-status" id="save-status" aria-live="polite">Saved locally</span>
+        <button class="button button--quiet" id="setup-toggle" type="button" aria-expanded="true" aria-controls="setup-panel">Hide setup</button>
+      </div>
+    </header>
+
+    <section class="setup-panel" id="setup-panel" aria-labelledby="setup-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Personalize your practice</p>
+          <h2 id="setup-heading">Target interview</h2>
+        </div>
+        <p>Your information stays in this browser.</p>
+      </div>
+      <form id="setup-form" class="setup-grid">
+        <div class="field field--role">
+          <label for="target-role">Target role</label>
+          <input id="target-role" name="role" type="text" list="role-suggestions" placeholder="e.g. Protection Officer" autocomplete="off" required>
+          <datalist id="role-suggestions"></datalist>
+        </div>
+        <div class="field field--description">
+          <label for="job-description">Job description <span>Optional</span></label>
+          <textarea id="job-description" name="jobDescription" rows="3" placeholder="Paste key responsibilities or requirements…"></textarea>
+        </div>
+        <div class="field">
+          <label for="experience-level">Experience level</label>
+          <select id="experience-level" name="level">
+            <option value="entry">Entry</option>
+            <option value="mid" selected>Mid-level</option>
+            <option value="senior">Senior</option>
+            <option value="manager">Manager / executive</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="interview-focus">Interview focus</label>
+          <select id="interview-focus" name="focus">
+            <option value="mixed">Mixed</option>
+            <option value="behavioral">Behavioral</option>
+            <option value="situational">Situational</option>
+            <option value="technical">Technical</option>
+            <option value="competency">Competency</option>
+            <option value="leadership">Leadership</option>
+            <option value="motivation">HR / motivation</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="session-length">Session length</label>
+          <select id="session-length" name="length">
+            <option value="5">5 questions</option>
+            <option value="10" selected>10 questions</option>
+            <option value="15">15 questions</option>
+            <option value="20">20 questions</option>
+          </select>
+        </div>
+        <button class="button button--primary setup-submit" type="submit">Apply setup</button>
+      </form>
+    </section>
+
+    <div class="workspace">
+      <nav class="mode-nav" aria-label="Practice workspace">
+        <p class="mode-nav-label">Workspace</p>
+        <div class="mode-tabs" role="tablist" aria-label="Practice modes" aria-orientation="vertical">
+          <button class="mode-button is-active" id="library-tab" type="button" role="tab" data-mode="library" aria-selected="true" aria-controls="library-view" tabindex="0">
+            <span aria-hidden="true">⌕</span><span>Library</span>
+          </button>
+          <button class="mode-button" id="guided-tab" type="button" role="tab" data-mode="guided" aria-selected="false" aria-controls="guided-view" tabindex="-1">
+            <span aria-hidden="true">✦</span><span>Guided</span>
+          </button>
+          <button class="mode-button" id="mock-tab" type="button" role="tab" data-mode="mock" aria-selected="false" aria-controls="mock-view" tabindex="-1">
+            <span aria-hidden="true">◷</span><span>Mock</span>
+          </button>
+          <button class="mode-button" id="progress-tab" type="button" role="tab" data-mode="progress" aria-selected="false" aria-controls="progress-view" tabindex="-1">
+            <span aria-hidden="true">↗</span><span>Progress</span>
+          </button>
+        </div>
+        <div class="nav-spacer"></div>
+        <button class="mode-button mode-button--danger" id="reset-button" type="button">
+          <span aria-hidden="true">↺</span><span>Reset</span>
+        </button>
+      </nav>
+
+      <main class="main-content" id="main-content" tabindex="-1">
+        <section class="mode-view is-active" id="library-view" data-view="library" role="tabpanel" aria-labelledby="library-tab" tabindex="0">
+          <header class="view-header">
+            <div>
+              <p class="eyebrow">Explore &amp; prepare</p>
+              <h2 id="library-heading" tabindex="-1">Question library</h2>
+            </div>
+            <p class="result-count" id="library-count"></p>
+          </header>
+          <form class="filter-bar" id="library-filters" role="search">
+            <div class="field field--search">
+              <label class="visually-hidden" for="library-search">Search questions</label>
+              <input id="library-search" type="search" placeholder="Search questions or skills…">
+            </div>
+            <div class="field">
+              <label class="visually-hidden" for="category-filter">Category</label>
+              <select id="category-filter">
+                <option value="">All categories</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="visually-hidden" for="difficulty-filter">Difficulty</label>
+              <select id="difficulty-filter">
+                <option value="">All difficulties</option>
+                <option value="entry">Entry</option>
+                <option value="mid">Mid</option>
+                <option value="senior">Senior</option>
+              </select>
+            </div>
+            <label class="check-control">
+              <input id="favorites-filter" type="checkbox">
+              <span>Favorites only</span>
+            </label>
+          </form>
+          <div class="question-list" id="library-list"></div>
+          <nav class="pagination" id="library-pagination" aria-label="Library pages"></nav>
+        </section>
+
+        <section class="mode-view" id="guided-view" data-view="guided" role="tabpanel" aria-labelledby="guided-tab" tabindex="0" hidden>
+          <header class="view-header">
+            <div>
+              <p class="eyebrow">Learn one answer at a time</p>
+              <h2 id="guided-heading" tabindex="-1">Guided practice</h2>
+            </div>
+            <button class="button button--secondary" id="new-guided-session" type="button">New session</button>
+          </header>
+          <div id="guided-content"></div>
+        </section>
+
+        <section class="mode-view" id="mock-view" data-view="mock" role="tabpanel" aria-labelledby="mock-tab" tabindex="0" hidden>
+          <header class="view-header">
+            <div>
+              <p class="eyebrow">Simulate the real conversation</p>
+              <h2 id="mock-heading" tabindex="-1">Mock interview</h2>
+            </div>
+            <div class="timer-group">
+              <div class="timer" id="mock-timer" role="timer" aria-label="Mock interview timer">00:00</div>
+              <span class="timer-warning" id="timer-warning" role="status" aria-live="polite" hidden>⚠ Time check: 20 minutes elapsed</span>
+            </div>
+          </header>
+          <div id="mock-content"></div>
+        </section>
+
+        <section class="mode-view" id="progress-view" data-view="progress" role="tabpanel" aria-labelledby="progress-tab" tabindex="0" hidden>
+          <header class="view-header">
+            <div>
+              <p class="eyebrow">Your local practice record</p>
+              <h2 id="progress-heading" tabindex="-1">Progress dashboard</h2>
+            </div>
+          </header>
+          <div id="progress-content"></div>
+        </section>
+      </main>
+
+      <aside class="coach-panel" aria-labelledby="coach-heading">
+        <p class="eyebrow">Contextual coach</p>
+        <h2 id="coach-heading">Answer with evidence</h2>
+        <div id="coach-content"></div>
+      </aside>
+    </div>
+  </div>
+
+  <dialog class="confirm-dialog" id="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-description">
+    <form method="dialog">
+      <div class="dialog-icon" aria-hidden="true">↺</div>
+      <h2 id="reset-title">Reset all progress?</h2>
+      <p id="reset-description">This permanently removes your setup, favorites, drafts, notes, ratings, and completed sessions from this browser.</p>
+      <div class="dialog-actions">
+        <button class="button button--quiet" value="cancel">Keep my progress</button>
+        <button class="button button--danger" id="confirm-reset" value="confirm">Reset everything</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div class="visually-hidden" id="live-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../../js/embed.js"></script>
+  <script src="data/core-questions.js"></script>
+  <script src="data/role-packs.js"></script>
+  <script src="data/answer-guides.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

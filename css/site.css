@@ -756,11 +756,53 @@ img { max-width: 100%; display: block; }
 .project-media--wa { background: linear-gradient(140deg, rgba(47, 158, 117, 0.16), rgba(47, 158, 117, 0.05)); }
 .project-media--mail { background: linear-gradient(140deg, rgba(47, 111, 143, 0.16), rgba(47, 111, 143, 0.05)); }
 .project-media--cv { background: linear-gradient(140deg, rgba(184, 149, 108, 0.2), rgba(184, 149, 108, 0.06)); }
+.project-media--interview {
+  position: relative;
+  background:
+    radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.6) 0 8%, transparent 9%),
+    linear-gradient(140deg, rgba(106, 82, 140, 0.2), rgba(47, 111, 143, 0.07));
+}
+
+.project-media--interview::before,
+.project-media--interview::after {
+  content: "";
+  position: absolute;
+  border: 1px solid rgba(74, 59, 103, 0.16);
+  border-radius: 50%;
+}
+
+.project-media--interview::before {
+  width: 5.5rem;
+  height: 5.5rem;
+}
+
+.project-media--interview::after {
+  width: 7.5rem;
+  height: 7.5rem;
+  border-color: rgba(47, 111, 143, 0.1);
+}
 
 .project-glyph {
   font-size: clamp(2rem, 5vw, 3rem);
   filter: saturate(0.9);
   transition: transform 0.35s var(--ease);
+}
+
+.project-glyph--interview {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: clamp(3.4rem, 7vw, 4.4rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 10px 24px rgba(44, 38, 61, 0.12);
+  color: #4a3b67;
+  font-family: var(--display);
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  font-weight: 650;
+  letter-spacing: 0.03em;
 }
 
 .project-card:hover .project-glyph {
