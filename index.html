@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,650;0,9..144,700;1,9..144,400;1,9..144,500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/site.css?v=20260804p1">
+  <link rel="stylesheet" href="css/site.css?v=20260804h1">
 </head>
 <body>
 
@@ -27,7 +27,7 @@
 
   <!-- ===== TOP NAV ===== -->
   <header class="top-nav" id="top-nav">
-    <a class="top-nav-brand" href="#top" data-scroll aria-label="Gaelle El Ters, home">
+    <a class="top-nav-brand" href="#about" data-scroll aria-label="Gaelle El Ters, home">
       <img class="top-nav-logo" src="favicon.svg?v=3" alt="" width="36" height="36">
     </a>
     <nav class="top-nav-links" aria-label="Main">
@@ -40,44 +40,6 @@
 
   <main class="page" id="home">
 
-    <!-- ===== HERO ===== -->
-    <section class="hero" id="top">
-      <div class="hero-aura" aria-hidden="true">
-        <span class="aura aura--sea"></span>
-        <span class="aura aura--gold"></span>
-        <span class="aura aura--blush"></span>
-      </div>
-      <div class="grain" aria-hidden="true"></div>
-
-      <div class="hero-inner">
-        <h1 class="hero-name">
-          <span class="hero-name-text">
-            <span class="hero-name-face hero-name-face--front">Gaelle<br><em>El&nbsp;Ters</em></span>
-            <span class="hero-name-face hero-name-face--back" aria-hidden="true">Gaelle<br><em>El&nbsp;Ters</em></span>
-          </span>
-        </h1>
-        <p class="hero-role reveal">Designer &amp; builder of <strong>websites</strong> and <strong>practical&nbsp;tools</strong></p>
-        <p class="hero-lead reveal">I turn everyday work into something that actually inspires: tools that feel light, look good, and just work.</p>
-        <div class="hero-cta reveal">
-          <a class="btn btn--ink" href="#projects" data-scroll>See my projects</a>
-          <a class="btn btn--ghost" href="#about" data-scroll>More about me</a>
-        </div>
-      </div>
-
-      <a class="hero-scroll-hint" href="#about" data-scroll aria-label="Scroll to about">
-        <span class="hero-scroll-line" aria-hidden="true"></span>
-        Scroll
-      </a>
-    </section>
-
-    <!-- ===== MARQUEE ===== -->
-    <div class="marquee" aria-hidden="true">
-      <div class="marquee-track">
-        <span>Websites</span><i>✦</i><span>Practical tools</span><i>✦</i><span>Automation</span><i>✦</i><span>Clean design</span><i>✦</i><span>Everyday made lighter</span><i>✦</i>
-        <span>Websites</span><i>✦</i><span>Practical tools</span><i>✦</i><span>Automation</span><i>✦</i><span>Clean design</span><i>✦</i><span>Everyday made lighter</span><i>✦</i>
-      </div>
-    </div>
-
     <!-- ===== ABOUT ===== -->
     <section class="about section" id="about">
       <div class="section-inner about-grid">
@@ -89,7 +51,8 @@
               alt="Portrait of Gaelle El Ters"
               width="680"
               height="850"
-              loading="lazy"
+              loading="eager"
+              fetchpriority="high"
             >
             <div class="about-card-shade" aria-hidden="true"></div>
             <div class="about-card-content">
@@ -105,7 +68,7 @@
 
         <div class="about-body">
           <p class="section-kicker reveal">01 · About</p>
-          <h2 class="section-title reveal">The person behind<br>the <em>brand</em></h2>
+          <h1 class="section-title reveal">The person behind<br>the <em>brand</em></h1>
           <p class="about-text reveal">
             Hi, I'm Gaelle. I build digital things that remove friction from everyday work. My work sits where
             <strong>useful meets beautiful</strong>.

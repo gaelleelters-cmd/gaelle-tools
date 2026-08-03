@@ -461,6 +461,11 @@ img { max-width: 100%; display: block; }
   background: transparent;
 }
 
+/* Homepage first section sits directly under the fixed nav */
+#home > .section:first-child {
+  padding-top: calc(var(--nav-h) + clamp(2.5rem, 6vw, 4.5rem));
+}
+
 .section:not(.hero) .section-inner {
   background: var(--paper);
   border-radius: 22px;
