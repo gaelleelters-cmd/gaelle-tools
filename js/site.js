@@ -3,20 +3,17 @@
 
   var topNav = document.getElementById('top-nav');
   var progressBar = document.getElementById('scroll-progress-bar');
-  var workspace = document.getElementById('workspace');
-  var frame = document.getElementById('app-frame');
-  var title = document.getElementById('stage-title');
-  var openNew = document.getElementById('open-new');
-  var workspaceHomeBtn = document.getElementById('workspace-home');
 
-  /* ----- Smooth scroll for [data-scroll] links ----- */
+  /* ----- Smooth scroll for [data-scroll] links (hash links only) ----- */
   document.querySelectorAll('a[data-scroll]').forEach(function (link) {
     link.addEventListener('click', function (e) {
-      var target = document.querySelector(link.getAttribute('href'));
+      var href = link.getAttribute('href');
+      if (!href || href.charAt(0) !== '#') return;
+      var target = document.querySelector(href);
       if (!target) return;
       e.preventDefault();
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      history.replaceState(null, '', link.getAttribute('href'));
+      history.replaceState(null, '', href);
     });
   });
 
@@ -34,7 +31,10 @@
   /* ----- Active nav link based on section in view ----- */
   var navLinks = Array.prototype.slice.call(document.querySelectorAll('.top-nav-links a[data-scroll]'));
   var sections = navLinks
-    .map(function (link) { return document.querySelector(link.getAttribute('href')); })
+    .map(function (link) {
+      var href = link.getAttribute('href');
+      return href && href.charAt(0) === '#' ? document.querySelector(href) : null;
+    })
     .filter(Boolean);
 
   function updateActiveLink() {
@@ -66,50 +66,6 @@
     revealEls.forEach(function (el) { observer.observe(el); });
   } else {
     revealEls.forEach(function (el) { el.classList.add('is-visible'); });
-  }
-
-  /* ----- Workspace (open tools in-page) ----- */
-  function embedSrc(src) {
-    var join = src.indexOf('?') >= 0 ? '&' : '?';
-    return src + join + 'embed=1';
-  }
-
-  function openTool(src, label) {
-    title.textContent = label;
-    openNew.href = src;
-    frame.title = label;
-    frame.src = embedSrc(src);
-    workspace.classList.remove('is-hidden');
-    workspace.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-    history.replaceState({ view: 'tool', src: src, label: label }, '', '#' + encodeURIComponent(label));
-    if (label === 'Mail Mass') {
-      try {
-        var wake = document.createElement('iframe');
-        wake.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0';
-        wake.src = 'mailmass://start';
-        document.body.appendChild(wake);
-        setTimeout(function () { try { wake.remove(); } catch (e) {} }, 3000);
-      } catch (e) {}
-    }
-  }
-
-  function closeTool() {
-    workspace.classList.add('is-hidden');
-    workspace.setAttribute('aria-hidden', 'true');
-    frame.src = 'about:blank';
-    document.body.style.overflow = '';
-    history.replaceState(null, '', location.pathname + location.search + '#projects');
-  }
-
-  document.querySelectorAll('.project-card[data-src]').forEach(function (card) {
-    card.addEventListener('click', function () {
-      openTool(card.getAttribute('data-src'), card.getAttribute('data-label'));
-    });
-  });
-
-  if (workspaceHomeBtn) {
-    workspaceHomeBtn.addEventListener('click', closeTool);
   }
 
   /* ----- About stats count-up on scroll ----- */

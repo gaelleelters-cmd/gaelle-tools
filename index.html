@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,650;0,9..144,700;1,9..144,400;1,9..144,500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/site.css?v=20260804c1">
+  <link rel="stylesheet" href="css/site.css?v=20260804p1">
 </head>
 <body>
 
@@ -32,7 +32,7 @@
     </a>
     <nav class="top-nav-links" aria-label="Main">
       <a href="#about" data-scroll>About</a>
-      <a href="#projects" data-scroll>Projects</a>
+      <a href="projects.html">Projects</a>
       <a href="#contact" data-scroll>Contact</a>
     </nav>
     <a class="top-nav-cta" href="mailto:info@gaelleelters.com">Work with me</a>
@@ -138,58 +138,15 @@
         <h2 class="section-title reveal">Selected <em>work</em></h2>
         <p class="section-lead reveal">Live tools you can open and use right now. No account, no install.</p>
 
-        <div class="project-list">
-          <button type="button" class="project-card reveal" data-src="Gaelle%20Whatsapp%20Tool/index.html" data-label="WhatsApp Tool">
-            <span class="project-num" aria-hidden="true">01</span>
-            <div class="project-media project-media--wa" aria-hidden="true">
-              <span class="project-glyph">💬</span>
-            </div>
-            <div class="project-body">
-              <p class="project-tags"><span>Work tool</span><span>Messaging</span></p>
-              <h3 class="project-name">WhatsApp Tool</h3>
-              <p class="project-copy">Send messages, generate Excel / Sheets formulas, and bulk-create WhatsApp links, all from the browser.</p>
-              <span class="project-open">Open project <i aria-hidden="true">→</i></span>
-            </div>
-          </button>
+        <ul class="projects-teaser-chips reveal">
+          <li>WhatsApp Tool</li>
+          <li>Mail Mass</li>
+          <li>CV / Resume Generator</li>
+          <li>Interview Question Practice</li>
+        </ul>
 
-          <button type="button" class="project-card reveal" data-src="Mail%20Mass/index.html" data-label="Mail Mass">
-            <span class="project-num" aria-hidden="true">02</span>
-            <div class="project-media project-media--mail" aria-hidden="true">
-              <span class="project-glyph">✉️</span>
-            </div>
-            <div class="project-body">
-              <p class="project-tags"><span>Work tool</span><span>Email</span></p>
-              <h3 class="project-name">Mail Mass</h3>
-              <p class="project-copy">Mail merge from Excel. Format your message beautifully and send from your own Outlook.</p>
-              <span class="project-open">Open project <i aria-hidden="true">→</i></span>
-            </div>
-          </button>
-
-          <button type="button" class="project-card reveal" data-src="generators/cv-resume/index.html" data-label="CV / Resume Generator">
-            <span class="project-num" aria-hidden="true">03</span>
-            <div class="project-media project-media--cv" aria-hidden="true">
-              <span class="project-glyph">📄</span>
-            </div>
-            <div class="project-body">
-              <p class="project-tags"><span>Generator</span><span>Documents</span></p>
-              <h3 class="project-name">CV / Resume Generator</h3>
-              <p class="project-copy">Pick a template, add your details, preview live, and download a ready-to-send CV, free.</p>
-              <span class="project-open">Open project <i aria-hidden="true">→</i></span>
-            </div>
-          </button>
-
-          <button type="button" class="project-card reveal" data-src="generators/interview-practice/index.html" data-label="Interview Question Practice">
-            <span class="project-num" aria-hidden="true">04</span>
-            <div class="project-media project-media--interview" aria-hidden="true">
-              <span class="project-glyph project-glyph--interview">Q·A</span>
-            </div>
-            <div class="project-body">
-              <p class="project-tags"><span>Career</span><span>Practice</span></p>
-              <h3 class="project-name">Interview Question Practice</h3>
-              <p class="project-copy">Prepare with role-specific questions, guided answers, and realistic mock interviews.</p>
-              <span class="project-open">Open project <i aria-hidden="true">→</i></span>
-            </div>
-          </button>
+        <div class="projects-teaser-cta reveal">
+          <a class="btn btn--ink btn--lg" href="projects.html">View all projects <i aria-hidden="true">→</i></a>
         </div>
       </div>
     </section>
@@ -295,29 +252,9 @@
     </div>
   </div>
 
-  <!-- ===== WORKSPACE (tool view) ===== -->
-  <section class="workspace is-hidden" id="workspace" aria-hidden="true">
-    <header class="site-nav workspace-bar">
-      <div class="workspace-bar-start">
-        <button type="button" class="home-back-btn" id="workspace-home">
-          <span class="home-back-btn-icon" aria-hidden="true">←</span>
-          <span class="home-back-btn-text">Home page</span>
-        </button>
-        <p class="workspace-now">
-          <span class="workspace-now-label">Now using</span>
-          <strong class="workspace-now-name" id="stage-title">WhatsApp Tool</strong>
-        </p>
-      </div>
-      <a class="site-nav-action open-new" id="open-new" href="Gaelle%20Whatsapp%20Tool/index.html" target="_blank" rel="noopener">Open in new tab</a>
-    </header>
-    <div class="frame-wrap">
-      <iframe id="app-frame" class="app-frame" title="Tool" src="about:blank"></iframe>
-    </div>
-  </section>
-
   <script src="js/bg-workflow.js?v=4"></script>
   <script src="js/help-bot.js?v=5"></script>
-  <script src="js/site.js?v=20260728r2"></script>
+  <script src="js/site.js?v=20260804p1"></script>
   <script src="js/cookie-consent.js?v=20260804c1"></script>
 </body>
 </html>
