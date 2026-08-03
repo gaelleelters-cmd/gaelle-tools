@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,650;0,9..144,700;1,9..144,400;1,9..144,500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/site.css?v=20260728r13">
+  <link rel="stylesheet" href="css/site.css?v=20260804c1">
 </head>
 <body>
 
@@ -220,8 +220,39 @@
         <a class="site-foot-link" href="mailto:info@gaelleelters.com">info@gaelleelters.com</a>
         <a class="site-foot-link" href="https://www.linkedin.com/in/gaelle-el-ters-4b41b61a5/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
       </div>
+      <div class="site-foot-legal">
+        <p class="site-foot-label">Legal</p>
+        <a class="site-foot-link" href="privacy.html">Privacy</a>
+        <button type="button" class="site-foot-link site-foot-btn" data-cookie-settings>Cookie settings</button>
+      </div>
     </div>
   </footer>
+
+  <!-- ===== COOKIE / PRIVACY BANNER ===== -->
+  <div
+    id="cookie-banner"
+    class="cookie-banner"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="cookie-banner-title"
+    aria-describedby="cookie-banner-desc"
+    aria-hidden="true"
+    hidden
+  >
+    <div class="cookie-banner-inner">
+      <div class="cookie-banner-copy">
+        <p class="cookie-banner-title" id="cookie-banner-title">Cookies &amp; privacy</p>
+        <p class="cookie-banner-text" id="cookie-banner-desc">
+          We use essential cookies for security and delivery, and optional analytics only if you accept.
+          Details in the <a href="privacy.html">Privacy Policy</a>.
+        </p>
+      </div>
+      <div class="cookie-banner-actions">
+        <button type="button" class="btn btn--ghost cookie-btn" id="cookie-reject">Essential only</button>
+        <button type="button" class="btn btn--ink cookie-btn" id="cookie-accept">Accept</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== HELP BOT ===== -->
   <div class="help-bot" id="help-bot">
@@ -287,5 +318,6 @@
   <script src="js/bg-workflow.js?v=4"></script>
   <script src="js/help-bot.js?v=5"></script>
   <script src="js/site.js?v=20260728r2"></script>
+  <script src="js/cookie-consent.js?v=20260804c1"></script>
 </body>
 </html>
