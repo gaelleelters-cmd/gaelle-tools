@@ -9,7 +9,6 @@ const { spawn } = require("node:child_process");
 const ROOT = path.resolve(__dirname, "../../..");
 const BASE_URL = "http://127.0.0.1:8765";
 const APP_URL = `${BASE_URL}/generators/interview-practice/index.html`;
-const HOME_URL = `${BASE_URL}/index.html`;
 const CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const STORAGE_KEY = "gaelle-interview-practice-v1";
 
@@ -601,47 +600,43 @@ test("Interview Practice browser workflows", { timeout: 120000 }, async (t) => {
       await evaluate("document.querySelector('#reset-dialog [value=\"cancel\"]').click()");
     });
 
-    await t.test("homepage card 04 opens the Interview Practice workspace iframe", async () => {
+    await t.test("projects card 04 launches Interview Practice from the detail page", async () => {
       await cdp.send("Emulation.setDeviceMetricsOverride", {
         width: 1280,
         height: 900,
         deviceScaleFactor: 1,
         mobile: false,
       }, sessionId);
-      await navigate(HOME_URL);
+      await navigate(`${BASE_URL}/projects.html`);
       const card = await evaluate(`(() => {
         const candidate = [...document.querySelectorAll(".project-card")]
           .find((item) => item.querySelector(".project-num")?.textContent.trim() === "04");
         return candidate && {
-          src: candidate.getAttribute("data-src"),
-          label: candidate.getAttribute("data-label"),
+          href: candidate.getAttribute("href"),
+          name: candidate.querySelector(".project-name")?.textContent.trim(),
           number: candidate.querySelector(".project-num").textContent.trim(),
         };
       })()`);
       assert.deepEqual(card, {
-        src: "generators/interview-practice/index.html",
-        label: "Interview Question Practice",
+        href: "projects/interview-practice.html",
+        name: "Interview Question Practice",
         number: "04",
       });
-      await evaluate(`(() => {
-        const card = [...document.querySelectorAll(".project-card")]
-          .find((item) => item.querySelector(".project-num")?.textContent.trim() === "04");
-        card.click();
-      })()`);
-      await condition(
-        `document.querySelector("#workspace").getAttribute("aria-hidden") === "false"
-          && document.querySelector("#app-frame").getAttribute("src")
-            === "generators/interview-practice/index.html?embed=1"`,
-        "Interview Practice workspace iframe",
-      );
-      await condition(
-        `document.querySelector("#app-frame").contentDocument?.title === "Interview Practice Studio"`,
-        "Interview Practice iframe content",
-      );
+      await navigate(`${BASE_URL}/projects/interview-practice.html`);
       assert.equal(
-        await evaluate("document.querySelector('#open-new').getAttribute('href')"),
-        "generators/interview-practice/index.html",
+        await evaluate("document.querySelector('.detail-launch-btn')?.getAttribute('href')"),
+        "../generators/interview-practice/index.html",
       );
+      await evaluate("document.querySelector('.detail-launch-btn').click()");
+      await condition(
+        "location.pathname.endsWith('/generators/interview-practice/index.html')",
+        "Interview Practice launch navigation",
+      );
+      await condition(
+        "document.title === 'Interview Practice Studio'",
+        "Interview Practice tool title",
+      );
+      assert.deepEqual(javascriptErrors, []);
     });
   } finally {
     if (browser) {

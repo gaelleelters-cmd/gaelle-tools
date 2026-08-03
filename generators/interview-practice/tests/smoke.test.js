@@ -43,19 +43,26 @@ function createBrowserLikeContext() {
   return vm.createContext(context);
 }
 
-test('homepage lists Interview Question Practice as project 04 after CV', () => {
-  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  const cvIndex = html.indexOf('generators/cv-resume/index.html');
-  const interviewIndex = html.indexOf('generators/interview-practice/index.html');
-  assert.ok(cvIndex > -1, 'CV card missing');
-  assert.ok(interviewIndex > cvIndex, 'Interview card must follow CV card');
-  assert.match(html, /project-num[^>]*>04</);
-  assert.match(html, /data-label="Interview Question Practice"/);
-  assert.match(html, /project-media--interview/);
-  assert.match(html, /data-count="4"/);
+test('projects page lists Interview Question Practice as project 04 after CV', () => {
+  const home = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  assert.match(home, /data-count="4"/);
+  assert.match(home, /href="projects\.html"/);
+
+  const projects = fs.readFileSync(path.join(ROOT, 'projects.html'), 'utf8');
+  const cvCard = projects.indexOf('projects/cv-resume.html');
+  const interviewCard = projects.indexOf('projects/interview-practice.html');
+  assert.ok(cvCard > -1, 'CV card missing on projects.html');
+  assert.ok(interviewCard > cvCard, 'Interview card must follow CV card');
+  assert.match(projects, /project-num[^>]*>04</);
+  assert.match(projects, /project-media--interview/);
+  assert.match(projects, /Interview Question Practice/);
+
+  const detail = fs.readFileSync(path.join(ROOT, 'projects/interview-practice.html'), 'utf8');
+  assert.match(detail, /href="\.\.\/generators\/interview-practice\/index\.html"/);
+  assert.match(detail, /Launch tool/);
 });
 
-test('interview app shell exposes required controls and script order', () => {
+test('interview app shell exposes required controls and cache-busted script order', () => {
   const html = fs.readFileSync(path.join(APP_DIR, 'index.html'), 'utf8');
   for (const id of [
     'setup-form',
@@ -78,8 +85,9 @@ test('interview app shell exposes required controls and script order', () => {
     assert.match(html, new RegExp(`id="${id}"`));
   }
 
+  assert.match(html, /css\/style\.css\?v=/);
   const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(scripts, [
+  assert.deepEqual(scripts.map((src) => src.split('?')[0]), [
     '../../js/embed.js',
     'data/core-questions.js',
     'data/role-packs.js',
@@ -87,6 +95,9 @@ test('interview app shell exposes required controls and script order', () => {
     'js/engine.js',
     'js/app.js',
   ]);
+  for (const src of scripts) {
+    assert.match(src, /\?v=/, `missing cache bust on ${src}`);
+  }
 });
 
 test('data and engine load together and generate a tailored senior session', () => {
@@ -126,15 +137,19 @@ test('data and engine load together and generate a tailored senior session', () 
   assert.ok(session.every((item) => item.question && item.modelAnswer));
 });
 
-test('live server serves homepage and interview app', async () => {
-  const home = await fetch('http://127.0.0.1:8765/index.html');
+test('live server serves projects page, detail launch, and interview app', async () => {
+  const projects = await fetch('http://127.0.0.1:8765/projects.html');
+  const detail = await fetch('http://127.0.0.1:8765/projects/interview-practice.html');
   const app = await fetch('http://127.0.0.1:8765/generators/interview-practice/index.html');
   const css = await fetch('http://127.0.0.1:8765/generators/interview-practice/css/style.css');
   const js = await fetch('http://127.0.0.1:8765/generators/interview-practice/js/app.js');
-  assert.equal(home.status, 200);
+  assert.equal(projects.status, 200);
+  assert.equal(detail.status, 200);
   assert.equal(app.status, 200);
   assert.equal(css.status, 200);
   assert.equal(js.status, 200);
-  const homeText = await home.text();
-  assert.match(homeText, /Interview Question Practice/);
+  const projectsText = await projects.text();
+  const detailText = await detail.text();
+  assert.match(projectsText, /Interview Question Practice/);
+  assert.match(detailText, /generators\/interview-practice\/index\.html/);
 });
