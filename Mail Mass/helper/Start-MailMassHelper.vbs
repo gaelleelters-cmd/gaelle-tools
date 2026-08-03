@@ -72,27 +72,13 @@ If Not WScript.Arguments.Named.Exists("silent") Then
   End If
 End If
 
+' Fully dynamic: only looks next to wherever THIS script currently is.
+' Anywhere else (Downloads, Desktop, USB) the ps1 is fetched from the website.
 Function FindToolkitPs1()
-  Dim paths, i, p, best, bestDate, d
+  Dim p
   FindToolkitPs1 = ""
-  bestDate = 0
-  paths = Array( _
-    fso.GetParentFolderName(WScript.ScriptFullName) & "\MailMassHelper.ps1", _
-    sh.ExpandEnvironmentStrings("%USERPROFILE%") & "\OneDrive - UNHCR\Desktop\gaelleelters\Mail Mass\helper\MailMassHelper.ps1", _
-    sh.ExpandEnvironmentStrings("%USERPROFILE%") & "\Desktop\gaelleelters\Mail Mass\helper\MailMassHelper.ps1", _
-    "C:\Users\ELTERS\OneDrive - UNHCR\Desktop\gaelleelters\Mail Mass\helper\MailMassHelper.ps1" _
-  )
-  For i = 0 To UBound(paths)
-    p = paths(i)
-    If fso.FileExists(p) Then
-      d = fso.GetFile(p).DateLastModified
-      If d >= bestDate Then
-        bestDate = d
-        best = p
-      End If
-    End If
-  Next
-  If best <> "" Then FindToolkitPs1 = best
+  p = fso.GetParentFolderName(WScript.ScriptFullName) & "\MailMassHelper.ps1"
+  If fso.FileExists(p) Then FindToolkitPs1 = p
 End Function
 
 Function HelperIsUp()

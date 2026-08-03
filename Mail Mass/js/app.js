@@ -568,7 +568,9 @@
       outlookPill.textContent = 'Not connected';
       outlookPill.className = 'outlook-pill is-off';
     }
-    if (authStatus) authStatus.textContent = 'Click the blue button below: Connect / Update Outlook';
+    if (authStatus) {
+      authStatus.textContent = 'Optional — you can still send: the Send button downloads a small file that mails from YOUR own Outlook on this computer.';
+    }
     if (btnConnectOutlook) btnConnectOutlook.textContent = 'Connect / Update Outlook';
   }
 
@@ -649,11 +651,9 @@
         candidates.push(base + 'Start%20Mail%20Mass.bat');
       }
     } catch (e) {}
+    // Served from the website: downloads the self-installing helper.
+    // It works from any folder on the visitor's PC (Downloads, Desktop, USB).
     candidates.push('helper/Start-MailMassHelper.vbs');
-    candidates.push('Start Mail Mass.bat');
-    // Absolute fallback for this toolkit install
-    candidates.push('file:///C:/Users/ELTERS/OneDrive%20-%20UNHCR/Desktop/gaelleelters/Mail%20Mass/helper/Start-MailMassHelper.vbs');
-    candidates.push('file:///C:/Users/ELTERS/OneDrive%20-%20UNHCR/Desktop/gaelleelters/Mail%20Mass/Start%20Mail%20Mass.bat');
 
     candidates.forEach(function (href, idx) {
       setTimeout(function () {
@@ -903,17 +903,26 @@
     btnPrepare.disabled = true;
     toast('Sending from your Outlook…');
 
-    ensureHelper(24, true).then(function (ready) {
-      if (!ready) {
+    ensureHelper(6, true).then(function (ready) {
+      if (ready) return sendViaHelper(prepared);
+      // No helper on this PC: download the self-contained sender instead.
+      // It embeds everything and runs from any folder, using the Outlook
+      // of whoever double-clicks it — always the visitor's own mailbox.
+      var result = window.MailMassOneShot
+        ? MailMassOneShot.download(prepared, sharedAttachment)
+        : null;
+      if (!result) {
         if (outlookConnect) outlookConnect.classList.remove('hidden');
         throw new Error('Click «Connect / Update Outlook» in step 1 first. If Windows asks, choose Open.');
       }
-      return sendViaHelper(prepared);
+      toast('Downloaded MailMass_Send_Now.vbs — double-click it to send from YOUR Outlook. It works from any folder.');
+      return result;
     }).then(function (data) {
       btnPrepare.disabled = false;
       refreshButtons();
       refreshAuth();
       if (!data) return;
+      if (data.mode === 'oneshot') return;
       toast('Sent ' + data.processed + ' email' + (data.processed === 1 ? '' : 's') +
         (data.skipped ? ' (skipped ' + data.skipped + ')' : '') + ' from Outlook.');
     }).catch(function (err) {

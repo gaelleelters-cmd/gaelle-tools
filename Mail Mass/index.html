@@ -72,11 +72,12 @@
           <p class="hint" id="auth-status">Checking if Outlook is ready on this PC…</p>
         </div>
         <div class="outlook-connect" id="outlook-connect">
-          <a class="btn btn-primary btn-lg" id="btn-connect-outlook" href="Start Mail Mass.bat">
+          <a class="btn btn-primary btn-lg" id="btn-connect-outlook" href="helper/Start-MailMassHelper.vbs">
             Connect / Update Outlook
           </a>
           <p class="hint actions-hint" id="connect-hint">
-            Click the blue button above. If Windows asks, choose <strong>Open</strong> (not Save / not Download).
+            Click the blue button above and open the downloaded file — it works from any folder.
+            This step is optional: without it, Send simply downloads a one-click sender file instead.
           </p>
         </div>
         <p class="hint outlook-ready hidden" id="auth-ready">Outlook is connected. Continue with step 2 below.</p>
@@ -253,7 +254,11 @@
         </div>
         <div class="actions">
           <button type="button" class="btn btn-primary btn-lg" id="btn-prepare" disabled>Send with Outlook</button>
-          <p class="hint actions-hint">Emails send from your Outlook. Make sure step 1 is connected first.</p>
+          <p class="hint actions-hint">
+            Emails always send from the Outlook on <strong>your own computer</strong> — your mailbox, never anyone else's.
+            If step 1 isn't connected, Send downloads <strong>MailMass_Send_Now.vbs</strong>: double-click it
+            (from Downloads or any folder) and your mails go out.
+          </p>
         </div>
       </div>
     </section>
@@ -263,6 +268,7 @@
 
   <script src="../js/embed.js?v=1"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="js/app.js?v=30260720space"></script>
+  <script src="js/oneshot.js?v=30260804dyn"></script>
+  <script src="js/app.js?v=30260804dyn"></script>
 </body>
 </html>
