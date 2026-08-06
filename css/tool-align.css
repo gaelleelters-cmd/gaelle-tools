@@ -6,6 +6,10 @@ html.is-embed header.hero {
   display: none !important;
 }
 
+html.is-embed .tool-site-nav {
+  display: none !important;
+}
+
 html.is-embed body {
   background: var(--brand-paper, #eef1f4);
 }
@@ -17,6 +21,36 @@ html.is-embed .main {
 
 html.is-embed .app-top {
   border-radius: var(--radius-sm);
+}
+
+/* Back to portfolio from standalone tools */
+.tool-site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.1rem;
+  padding: 0.7rem 1.15rem;
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid rgba(15, 40, 70, 0.1);
+  font-family: var(--font-ui, "Outfit", system-ui, sans-serif);
+  font-size: 0.9rem;
+  position: relative;
+  z-index: 20;
+}
+
+.tool-site-nav a {
+  color: var(--brand-ink, #0f2846);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.tool-site-nav a:hover {
+  color: var(--accent, #0072bc);
+  text-decoration: underline;
+}
+
+.tool-site-nav-home {
+  font-weight: 700 !important;
 }
 
 /* Shared typography */
