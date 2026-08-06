@@ -66,18 +66,21 @@ function Get-GreetingFontStyle([string]$message) {
 }
 
 function Build-MessageHtml([string]$greeting, [string]$firstName, [string]$message, [bool]$messageIsHtml = $false) {
-  if ([string]::IsNullOrWhiteSpace($greeting)) {
-    $open = "$(Html-Escape $firstName),"
-  } else {
-    $open = "$(Html-Escape $greeting) $(Html-Escape $firstName),"
-  }
-
-  $greetStyle = Get-GreetingFontStyle $message
   $parts = New-Object System.Text.StringBuilder
   [void]$parts.Append("<div style=""font-family:Calibri,sans-serif;font-size:11pt;"">")
-  [void]$parts.Append("<p style=""$greetStyle""><span style=""$greetStyle"">$open</span></p>")
-  # Exactly one blank line between greeting and body
-  [void]$parts.Append('<p style="margin:0;line-height:12pt;font-size:11pt;">&nbsp;</p>')
+
+  if ($greeting -ne '__SKIP__') {
+    if ([string]::IsNullOrWhiteSpace($greeting)) {
+      $open = "$(Html-Escape $firstName),"
+    } else {
+      $open = "$(Html-Escape $greeting) $(Html-Escape $firstName),"
+    }
+
+    $greetStyle = Get-GreetingFontStyle $message
+    [void]$parts.Append("<p style=""$greetStyle""><span style=""$greetStyle"">$open</span></p>")
+    # Exactly one blank line between greeting and body
+    [void]$parts.Append('<p style="margin:0;line-height:12pt;font-size:11pt;">&nbsp;</p>')
+  }
 
   if ($messageIsHtml -or (Test-LooksLikeHtml $message)) {
     [void]$parts.Append($message)

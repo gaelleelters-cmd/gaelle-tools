@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>sheet-rich tests</title>
+</head>
+<body>
+  <pre id="out"></pre>
+  <script src="sheet-rich.js"></script>
+  <script>
+    (function () {
+      var out = [];
+      var failed = 0;
+      function assert(cond, msg) {
+        if (!cond) throw new Error(msg || 'assert failed');
+      }
+      function test(name, fn) {
+        try {
+          fn();
+          out.push('ok - ' + name);
+        } catch (err) {
+          failed++;
+          out.push('FAIL - ' + name + '\n' + (err && err.stack ? err.stack : err));
+        }
+      }
+      var rich = window.MailMassSheetRich;
+
+      test('looksLikeHtml detects span markup', function () {
+        assert(rich.looksLikeHtml('hello') === false);
+        assert(rich.looksLikeHtml('<span style="font-weight: bold;">hi</span>') === true);
+        assert(rich.looksLikeHtml('a &nbsp; b') === true);
+      });
+
+      test('cellDisplayValue prefers cell.h rich HTML over plain w/v', function () {
+        var cell = {
+          t: 's',
+          v: 'this text is bold, sure enough',
+          w: 'this text is bold, sure enough',
+          h: 'this text is <span style="font-weight: bold;">bold</span><span style="">, sure enough</span>'
+        };
+        var val = rich.cellDisplayValue(cell);
+        assert(val.indexOf('<span') !== -1, 'expected HTML spans');
+        assert(val.indexOf('font-weight: bold') !== -1, 'expected bold style');
+      });
+
+      test('cellDisplayValue falls back to plain text when no rich HTML', function () {
+        var cell = { t: 's', v: 'plain only', w: 'plain only', h: 'plain only' };
+        assert(rich.cellDisplayValue(cell) === 'plain only');
+      });
+
+      test('cellDisplayValue returns empty for missing cell', function () {
+        assert(rich.cellDisplayValue(null) === '');
+        assert(rich.cellDisplayValue(undefined) === '');
+      });
+
+      test('sheetToRichJson keeps HTML in Message column', function () {
+        window.XLSX = {
+          utils: {
+            decode_range: function () {
+              return { s: { r: 0, c: 0 }, e: { r: 1, c: 1 } };
+            },
+            encode_cell: function (addr) {
+              return String.fromCharCode(65 + addr.c) + String(addr.r + 1);
+            }
+          }
+        };
+        var sheet = {
+          '!ref': 'A1:B2',
+          A1: { t: 's', v: 'First Name', w: 'First Name', h: 'First Name' },
+          B1: { t: 's', v: 'Message', w: 'Message', h: 'Message' },
+          A2: { t: 's', v: 'Gaelle', w: 'Gaelle', h: 'Gaelle' },
+          B2: {
+            t: 's',
+            v: 'Hello please review',
+            w: 'Hello please review',
+            h: 'Hello <span style="font-weight: bold;color:#FF0000;">please</span> <i>review</i>'
+          }
+        };
+        var rows = rich.sheetToRichJson(sheet, { defval: '' });
+        assert(rows.length === 1);
+        assert(rows[0]['First Name'] === 'Gaelle');
+        assert(rows[0].Message.indexOf('font-weight: bold') !== -1, 'Message must keep bold');
+        assert(rows[0].Message.indexOf('<i>review</i>') !== -1, 'Message must keep italic');
+      });
+
+      out.push(failed ? ('FAILED: ' + failed) : 'All tests passed');
+      document.getElementById('out').textContent = out.join('\n');
+      document.title = failed ? 'FAIL' : 'PASS';
+    })();
+  </script>
+</body>
+</html>

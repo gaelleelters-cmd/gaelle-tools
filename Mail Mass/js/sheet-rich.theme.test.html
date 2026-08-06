@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>theme-color tests</title>
+</head>
+<body>
+  <pre id="out"></pre>
+  <script src="sheet-rich.js?v=20260806theme1"></script>
+  <script>
+(function () {
+  var out = [];
+  var failed = 0;
+  function assert(cond, msg) {
+    if (!cond) throw new Error(msg || 'assert failed');
+  }
+  function test(name, fn) {
+    try {
+      fn();
+      out.push('ok - ' + name);
+    } catch (err) {
+      failed++;
+      out.push('FAIL - ' + name + '\n' + (err && err.stack ? err.stack : err));
+    }
+  }
+  var rich = window.MailMassSheetRich;
+
+  test('Excel theme=1 (default text) resolves to black, not white', function () {
+    var xml = '<r><rPr><color theme="1"/><sz val="11"/></rPr><t>elow exclusive offer from Librairie </t></r>';
+    var html = rich.richXmlToHtml(xml, rich.DEFAULT_THEME);
+    assert(/color:#000000/i.test(html), 'theme 1 must be black, got: ' + html);
+    assert(!/color:#FFFFFF/i.test(html), 'theme 1 must not be white');
+  });
+
+  test('Excel theme=0 (background/lt1) resolves to white', function () {
+    var xml = '<r><rPr><color theme="0"/><sz val="11"/></rPr><t>bg</t></r>';
+    var html = rich.richXmlToHtml(xml, rich.DEFAULT_THEME);
+    assert(/color:#FFFFFF/i.test(html), 'theme 0 must be white, got: ' + html);
+  });
+
+  test('full mail body keeps middle plain theme text between colored runs', function () {
+    var xml =
+      '<r><rPr><sz val="11"/></rPr><t xml:space="preserve">Hi everyone,\n\n</t></r>' +
+      '<r><rPr><b/><i/><color rgb="FFC65911"/><sz val="11"/></rPr><t>Sharing the b</t></r>' +
+      '<r><rPr><color theme="1"/><sz val="11"/></rPr><t xml:space="preserve">elow exclusive offer from\nLibrairie </t></r>' +
+      '<r><rPr><b/><color rgb="FF1F4E79"/><sz val="11"/></rPr><t>Point Virgule for all UNHCR staff.</t></r>' +
+      '<r><rPr><color theme="1"/><sz val="11"/></rPr><t xml:space="preserve">\n\nBest,</t></r>';
+    var html = rich.richXmlToHtml(xml, rich.DEFAULT_THEME);
+    var plain = html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    assert(plain.indexOf('Sharing the below exclusive offer from') !== -1, 'missing full phrase: ' + plain);
+    assert(plain.indexOf('Librairie Point Virgule') !== -1, 'missing Librairie: ' + plain);
+    assert(/color:#C65911/i.test(html), 'orange missing');
+    assert(/color:#1F4E79/i.test(html), 'blue missing');
+    // Middle theme text must not be white
+    assert(!/elow exclusive[^<]*style="[^"]*color:#FFFFFF/i.test(html), 'middle must not be white');
+    assert(/color:#000000/i.test(html), 'theme text should be explicit black');
+  });
+
+  test('line breaks become br without raw CR/LF in text', function () {
+    var xml = '<r><rPr><sz val="11"/></rPr><t xml:space="preserve">Hi everyone,\r\n\r\nNext</t></r>';
+    var html = rich.richXmlToHtml(xml, rich.DEFAULT_THEME);
+    assert(html.indexOf('<br>') !== -1, 'expected br');
+    assert(html.indexOf('\r') === -1, 'raw CR must not remain');
+    assert(!/\n/.test(html.replace(/<br>/g, '')), 'raw LF must not remain outside br');
+  });
+
+  document.getElementById('out').textContent = out.join('\n') + '\n' + (failed ? 'FAILED: ' + failed : 'All tests passed');
+  document.title = failed ? 'FAIL' : 'PASS';
+})();
+  </script>
+</body>
+</html>

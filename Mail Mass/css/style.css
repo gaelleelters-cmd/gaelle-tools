@@ -278,30 +278,39 @@ body {
   margin: 0 0 0.15rem;
 }
 
-.sheet-example-label {
+.sheet-example-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
   margin: 0.35rem 0 0.35rem;
+}
+
+.sheet-example-label {
+  margin: 0;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text);
 }
 
 .sheet-example {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
   width: 100%;
   max-width: 44rem;
   margin: 0 0 0.85rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  overflow: hidden;
+  overflow: auto;
   background: var(--bg-card);
   box-shadow: var(--shadow);
 }
 
-.sheet-example span {
-  flex: 1 1 auto;
-  min-width: 5.5rem;
+.sheet-example-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.sheet-example-table th {
   padding: 0.55rem 0.7rem;
   font-size: 0.78rem;
   font-weight: 700;
@@ -310,10 +319,16 @@ body {
   border-right: 1px solid var(--border);
   text-align: center;
   white-space: nowrap;
+  user-select: all;
 }
 
-.sheet-example span:last-child {
+.sheet-example-table th:last-child {
   border-right: none;
+}
+
+.btn-sm {
+  padding: 0.28rem 0.65rem;
+  font-size: 0.78rem;
 }
 
 /* ===== TABS ===== */

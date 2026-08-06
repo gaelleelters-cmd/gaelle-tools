@@ -34,6 +34,8 @@
   var btnPrepare = $('btn-prepare');
   var btnSignOut = $('btn-signout');
   var btnConnectOutlook = $('btn-connect-outlook');
+  var btnCopyHeaders = $('btn-copy-headers');
+  var sheetExampleTable = $('sheet-example-table');
   var outlookConnect = $('outlook-connect');
   var authReady = $('auth-ready');
   var authStatus = $('auth-status');
@@ -89,14 +91,41 @@
       var reader = new FileReader();
       reader.onload = function (e) {
         try {
-          var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+          var data = new Uint8Array(e.target.result);
+          var wb = XLSX.read(data, {
+            type: 'array',
+            cellHTML: true,
+            cellStyles: true
+          });
           var sheet = wb.Sheets[wb.SheetNames[0]];
-          var json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
-          if (!json.length) {
-            reject(new Error('Sheet is empty'));
+          var theme = (window.MailMassSheetRich && MailMassSheetRich.themeFromWorkbook)
+            ? MailMassSheetRich.themeFromWorkbook(wb)
+            : null;
+
+          function finish(finalTheme) {
+            var json = (window.MailMassSheetRich && MailMassSheetRich.sheetToRichJson)
+              ? MailMassSheetRich.sheetToRichJson(sheet, { defval: '', theme: finalTheme })
+              : XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
+            if (!json.length) {
+              reject(new Error('Sheet is empty'));
+              return;
+            }
+            resolve({ headers: Object.keys(json[0]), rows: json });
+          }
+
+          if (window.MailMassSheetRich && MailMassSheetRich.extractRichHtmlMap) {
+            MailMassSheetRich.extractRichHtmlMap(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength), theme)
+              .then(function (result) {
+                MailMassSheetRich.applyRichHtmlMap(sheet, result.map);
+                finish(result.theme || theme);
+              })
+              .catch(function () {
+                // Fall back to SheetJS HTML if ZIP color extraction fails
+                finish(theme);
+              });
             return;
           }
-          resolve({ headers: Object.keys(json[0]), rows: json });
+          finish(theme);
         } catch (err) {
           reject(err);
         }
@@ -419,19 +448,27 @@
     var message = '';
     if (msgMode() === 'custom') {
       message = String(row[colMessage.value] || '').trim();
-      messageIsHtml = looksLikeHtml(message);
+      if (window.MailMassSheetRich && MailMassSheetRich.looksLikeHtml(message)) {
+        message = cleanEmailHtml(message);
+        messageIsHtml = true;
+      } else {
+        messageIsHtml = looksLikeHtml(message);
+      }
     } else {
       message = applyMerge(getBodyHtml(), row, true).trim();
       messageIsHtml = true;
     }
 
-    var greet = String(greeting.value || '').trim();
-    var plainMsg = msgMode() === 'custom'
+    var custom = msgMode() === 'custom';
+    var greet = custom ? String(greeting.value || '').trim() : '__SKIP__';
+    var plainMsg = custom
       ? message
       : applyMerge(getBodyPlain(), row, false).trim();
-    var bodyText = greet
-      ? (greet + ' ' + (first || 'there') + ',\n\n' + plainMsg)
-      : ((first || 'there') + ',\n\n' + plainMsg);
+    var bodyText = custom
+      ? (greet
+        ? (greet + ' ' + (first || 'there') + ',\n\n' + plainMsg)
+        : ((first || 'there') + ',\n\n' + plainMsg))
+      : plainMsg;
 
     return {
       first: first,
@@ -468,17 +505,21 @@
   }
 
   function buildPreviewHtml(mail) {
-    var open = mail.greeting
-      ? (mail.greeting + ' ' + (mail.first || 'FirstName') + ',')
-      : ((mail.first || 'FirstName') + ',');
     var size = detectMessageFontSize(mail.message);
-    var greetStyle = 'margin:0;font-family:Calibri,sans-serif;font-size:' + size +
-      ';font-weight:normal;font-style:normal;';
-    var wrapOpen = '<div style="font-family:Calibri,sans-serif;font-size:11pt;">' +
-      '<p style="' + greetStyle + '"><span style="' + greetStyle + '">' +
-      open.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
-      '</span></p>' +
-      '<p style="margin:0;line-height:12pt;font-size:11pt;">&nbsp;</p>';
+    var wrapOpen = '<div style="font-family:Calibri,sans-serif;font-size:11pt;">';
+    var greet = mail.greeting;
+    if (greet !== '__SKIP__') {
+      var open = greet
+        ? (greet + ' ' + (mail.first || 'FirstName') + ',')
+        : ((mail.first || 'FirstName') + ',');
+      var greetStyle = 'margin:0;font-family:Calibri,sans-serif;font-size:' + size +
+        ';font-weight:normal;font-style:normal;';
+      wrapOpen +=
+        '<p style="' + greetStyle + '"><span style="' + greetStyle + '">' +
+        open.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+        '</span></p>' +
+        '<p style="margin:0;line-height:12pt;font-size:11pt;">&nbsp;</p>';
+    }
     if (mail.messageIsHtml) {
       return wrapOpen + mail.message + '</div>';
     }
@@ -496,15 +537,15 @@
   function updatePreview() {
     updateGreetingPreview();
     if (!rows.length || !colFirst.value) {
-      var greet = String(greeting.value || '').trim();
+      var custom = msgMode() === 'custom';
       var sample = {
         first: 'FirstName',
         email: '',
         cc: '',
         bcc: '',
         subject: 'Document Attached',
-        greeting: greet,
-        message: getBodyHtml() || '…',
+        greeting: custom ? String(greeting.value || '').trim() : '__SKIP__',
+        message: custom ? '…' : (getBodyHtml() || '…'),
         messageIsHtml: true
       };
       previewWho.textContent = 'Sample';
@@ -713,12 +754,64 @@
     });
   }
 
+  function exampleHeaderTitles() {
+    if (!sheetExampleTable) return [];
+    return Array.prototype.map.call(
+      sheetExampleTable.querySelectorAll('th'),
+      function (th) { return (th.textContent || '').trim(); }
+    ).filter(Boolean);
+  }
+
+  function copyExampleHeaders() {
+    var titles = exampleHeaderTitles();
+    if (!titles.length) return Promise.reject(new Error('No headers to copy'));
+    var tsv = titles.join('\t');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(tsv);
+    }
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement('textarea');
+      ta.value = tsv;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        if (!document.execCommand('copy')) reject(new Error('Copy failed'));
+        else resolve();
+      } catch (err) {
+        reject(err);
+      } finally {
+        ta.remove();
+      }
+    });
+  }
+
   browseBtn.addEventListener('click', function () { fileInput.click(); });
   dropzone.addEventListener('click', function (e) {
     if (e.target === browseBtn || e.target === fileRemove) return;
     if (!rows.length) fileInput.click();
   });
 
+  if (btnCopyHeaders) {
+    btnCopyHeaders.addEventListener('click', function () {
+      copyExampleHeaders().then(function () {
+        toast('Headers copied — paste into Excel row 1 (A1)');
+      }).catch(function () {
+        toast('Could not copy headers', true);
+      });
+    });
+  }
+
+  if (sheetExampleTable) {
+    sheetExampleTable.addEventListener('copy', function (e) {
+      var titles = exampleHeaderTitles();
+      if (!titles.length || !e.clipboardData) return;
+      e.preventDefault();
+      e.clipboardData.setData('text/plain', titles.join('\t'));
+    });
+  }
   fileInput.addEventListener('change', function () {
     var file = fileInput.files && fileInput.files[0];
     if (!file) return;

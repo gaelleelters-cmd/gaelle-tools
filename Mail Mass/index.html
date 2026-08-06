@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=30260727design">
+  <link rel="stylesheet" href="css/style.css?v=20260806headers">
   <link rel="stylesheet" href="../css/tool-align.css?v=30260727v2">
 </head>
 <body>
@@ -52,14 +52,24 @@
 
   <main class="main">
     <p class="page-lead">Like Word mail merge — but you can also set <strong>Subject</strong>, <strong>CC</strong>, <strong>BCC</strong>, a <strong>unique message</strong> per row, and an <strong>attachment</strong>. Upload your sheet, click Send — emails go from <strong>your</strong> Outlook on this computer.</p>
-    <p class="sheet-example-label">Excel header row example (copy these titles into row 1):</p>
-    <div class="sheet-example" role="img" aria-label="Example Excel column titles">
-      <span>First Name</span>
-      <span>Email</span>
-      <span>Subject</span>
-      <span>CC</span>
-      <span>BCC</span>
-      <span>Message</span>
+    <div class="sheet-example-wrap">
+      <p class="sheet-example-label">Excel header row example (copy these titles into row 1):</p>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-headers" title="Copy headers for Excel">Copy headers</button>
+    </div>
+    <div class="sheet-example" role="region" aria-label="Example Excel column titles">
+      <table class="sheet-example-table" id="sheet-example-table">
+        <thead>
+          <tr>
+            <th scope="col">First Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Subject</th>
+            <th scope="col">CC</th>
+            <th scope="col">BCC</th>
+            <th scope="col">Message</th>
+            <th scope="col">Attachment</th>
+          </tr>
+        </thead>
+      </table>
     </div>
 
     <section class="panel" id="step-outlook">
@@ -137,22 +147,6 @@
           <h2 class="step">3 · Write your mail</h2>
         </div>
         <div class="form-grid">
-          <div class="field">
-            <label for="greeting">Greeting</label>
-            <select id="greeting">
-              <option value="">(none — first name only)</option>
-              <option value="Dear" selected>Dear</option>
-              <option value="Hello">Hello</option>
-              <option value="Hi">Hi</option>
-              <option value="Assalam Aalaykom">Assalam Aalaykom</option>
-              <option value="Good morning">Good morning</option>
-              <option value="Good afternoon">Good afternoon</option>
-            </select>
-          </div>
-          <div class="field greeting-preview-field">
-            <label>Opens as</label>
-            <p class="greeting-preview" id="greeting-preview">Dear <em>FirstName</em>,</p>
-          </div>
           <div class="field field-full">
             <label>Message mode</label>
             <div class="radio-row">
@@ -230,8 +224,28 @@
             <div class="param-row" id="param-row"></div>
           </div>
           <div class="field field-full hidden" id="custom-msg-wrap">
-            <label for="col-message">Message column</label>
-            <select id="col-message"></select>
+            <div class="form-grid">
+              <div class="field">
+                <label for="greeting">Greeting</label>
+                <select id="greeting">
+                  <option value="">(none — first name only)</option>
+                  <option value="Dear" selected>Dear</option>
+                  <option value="Hello">Hello</option>
+                  <option value="Hi">Hi</option>
+                  <option value="Assalam Aalaykom">Assalam Aalaykom</option>
+                  <option value="Good morning">Good morning</option>
+                  <option value="Good afternoon">Good afternoon</option>
+                </select>
+              </div>
+              <div class="field greeting-preview-field">
+                <label>Opens as</label>
+                <p class="greeting-preview" id="greeting-preview">Dear <em>FirstName</em>,</p>
+              </div>
+              <div class="field field-full">
+                <label for="col-message">Message column</label>
+                <select id="col-message"></select>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -268,7 +282,8 @@
 
   <script src="../js/embed.js?v=1"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="js/oneshot.js?v=30260804dyn"></script>
-  <script src="js/app.js?v=30260804dyn"></script>
+  <script src="js/sheet-rich.js?v=20260806theme1"></script>
+  <script src="js/oneshot.js?v=30260806rich"></script>
+  <script src="js/app.js?v=20260806headers"></script>
 </body>
 </html>
