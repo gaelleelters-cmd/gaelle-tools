@@ -5,7 +5,52 @@
 $ErrorActionPreference = 'Stop'
 $Port = 19527
 $Prefix = "http://127.0.0.1:$Port/"
-# Version bumped in TcpListener block below (v7 — no admin URLACL)
+# Version bumped in TcpListener block below (v8 — persist install + mailmass:// wake)
+
+$MailMassHelperScriptPath = $PSCommandPath
+if (-not $MailMassHelperScriptPath) { $MailMassHelperScriptPath = $MyInvocation.MyCommand.Path }
+
+function Install-MailMassLocal {
+  try {
+    $installDir = Join-Path $env:LOCALAPPDATA 'MailMassHelper'
+    New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+
+    $self = $script:MailMassHelperScriptPath
+    if ($self -and (Test-Path -LiteralPath $self)) {
+      $targetHelper = Join-Path $installDir 'MailMassHelper.ps1'
+      if ((Resolve-Path -LiteralPath $self).Path -ne (Join-Path $installDir 'MailMassHelper.ps1')) {
+        Copy-Item -LiteralPath $self -Destination $targetHelper -Force
+      }
+    }
+
+    $startPs1 = Join-Path $installDir 'Start-MailMassHelper.ps1'
+    $startBody = @'
+$ErrorActionPreference = "SilentlyContinue"
+try {
+  $h = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:19527/health" -TimeoutSec 1
+  if ($h.StatusCode -eq 200) { exit 0 }
+} catch {}
+$helper = Join-Path $env:LOCALAPPDATA "MailMassHelper\MailMassHelper.ps1"
+if (-not (Test-Path -LiteralPath $helper)) { exit 1 }
+Start-Process powershell -ArgumentList @("-NoProfile","-ExecutionPolicy","Bypass","-File",$helper) | Out-Null
+'@
+    Set-Content -LiteralPath $startPs1 -Value $startBody -Encoding UTF8
+
+    $root = 'HKCU:\Software\Classes\mailmass'
+    New-Item -Path $root -Force | Out-Null
+    Set-ItemProperty -Path $root -Name '(default)' -Value 'URL:Mail Mass Protocol'
+    New-ItemProperty -Path $root -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null
+    $cmdKey = 'HKCU:\Software\Classes\mailmass\shell\open\command'
+    New-Item -Path $cmdKey -Force | Out-Null
+    $cmd = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Minimized -File "' + $startPs1 + '" "%1"'
+    Set-ItemProperty -Path $cmdKey -Name '(default)' -Value $cmd
+  } catch {
+    # Non-fatal — Connect still works without protocol wake
+  }
+}
+
+Install-MailMassLocal
+
 
 function Send-Cors([System.Net.HttpListenerResponse]$res) {
   $res.Headers.Add('Access-Control-Allow-Origin', '*')
@@ -286,7 +331,7 @@ function Read-HttpRequest([System.Net.Sockets.NetworkStream]$stream) {
 }
 
 # TcpListener avoids Windows HttpListener URLACL (no admin needed).
-$HelperVersion = 7
+$HelperVersion = 8
 $tcp = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
 
 try {

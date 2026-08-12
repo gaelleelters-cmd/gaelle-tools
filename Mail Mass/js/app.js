@@ -631,9 +631,15 @@
     }
     if (btnConnectOutlook) btnConnectOutlook.textContent = 'Connect Outlook';
     if (connectHint) {
-      connectHint.innerHTML =
-        'Downloads a small <strong>zip</strong>. Open it, run <strong>MailMass_Connect.bat</strong>, then return here — status should say <strong>Connected</strong>. ' +
-        'If Chrome blocks the download, use <strong>Copy PowerShell command</strong>, paste into PowerShell, and press Enter.';
+      if (window.MailMassConnect && MailMassConnect.wasInstalled()) {
+        connectHint.innerHTML =
+          'Already set up on this PC. Click <strong>Connect Outlook</strong> to restart the helper — <strong>no download</strong>. ' +
+          'Only use the zip / PowerShell options if Connect does not become Connected.';
+      } else {
+        connectHint.innerHTML =
+          'First time: downloads a small <strong>zip</strong>. Open it, run <strong>MailMass_Connect.bat</strong>, then return here. ' +
+          'After that, Connect reuses your local helper without downloading again.';
+      }
     }
   }
 
@@ -680,12 +686,13 @@
     });
   }
 
-  function launchHelper() {
-    // http(s): give the visitor a self-contained .bat that downloads the helper
-    // onto THEIR PC and talks to THEIR Outlook only.
+  function launchHelper(forceDownload) {
     if (location.protocol === 'http:' || location.protocol === 'https:') {
       if (window.MailMassConnect) {
-        MailMassConnect.download();
+        MailMassConnect.wakeLocal();
+        if (forceDownload || !MailMassConnect.wasInstalled()) {
+          MailMassConnect.download();
+        }
         return;
       }
     }
@@ -1015,11 +1022,39 @@
     btnConnectOutlook.addEventListener('click', function (e) {
       e.preventDefault();
       setConnectingUi();
-      toast('Downloading MailMass_Connect.zip — open it and run the .bat inside.');
-      launchHelper();
-      ensureHelper(40).then(function (ready) {
+
+      checkHelper().then(function () {
+        if (helperReady()) {
+          if (window.MailMassConnect) MailMassConnect.markInstalled();
+          setAuthUi();
+          toast('Outlook already connected on this PC.');
+          return null;
+        }
+
+        var installed = window.MailMassConnect && MailMassConnect.wasInstalled();
+        if (installed) {
+          toast('Restarting your Outlook helper…');
+          launchHelper(false);
+          return ensureHelper(20).then(function (ready) {
+            if (ready) {
+              setAuthUi();
+              toast('Outlook connected on this PC. You can continue.');
+              return true;
+            }
+            toast('Helper did not start — downloading connector again…');
+            launchHelper(true);
+            return ensureHelper(40);
+          });
+        }
+
+        toast('First-time setup: downloading MailMass_Connect.zip — open it and run the .bat inside.');
+        launchHelper(true);
+        return ensureHelper(40);
+      }).then(function (ready) {
+        if (ready === null) return;
         setAuthUi();
         if (ready) {
+          if (window.MailMassConnect) MailMassConnect.markInstalled();
           toast('Outlook connected on this PC. You can continue.');
           return;
         }

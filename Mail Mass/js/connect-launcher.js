@@ -2,6 +2,8 @@
 (function (global) {
   'use strict';
 
+  var INSTALLED_KEY = 'mailmassHelperInstalled';
+
   function helperScriptUrl() {
     try {
       return new URL('helper/MailMassHelper.ps1', window.location.href).href;
@@ -26,12 +28,20 @@
     }
   }
 
+  function markInstalled() {
+    try { localStorage.setItem(INSTALLED_KEY, '1'); } catch (e) {}
+  }
+
+  function wasInstalled() {
+    try { return localStorage.getItem(INSTALLED_KEY) === '1'; } catch (e) { return false; }
+  }
+
   function powershellCommand() {
     var url = helperScriptUrl().replace(/'/g, "''");
     return [
-      "New-Item -ItemType Directory -Force -Path \"$env:TEMP\\MailMassHelper\" | Out-Null",
-      "Invoke-WebRequest -UseBasicParsing -Uri '" + url + "' -OutFile \"$env:TEMP\\MailMassHelper\\MailMassHelper.ps1\"",
-      "Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"$env:TEMP\\MailMassHelper\\MailMassHelper.ps1\""
+      "New-Item -ItemType Directory -Force -Path \"$env:LOCALAPPDATA\\MailMassHelper\" | Out-Null",
+      "Invoke-WebRequest -UseBasicParsing -Uri '" + url + "' -OutFile \"$env:LOCALAPPDATA\\MailMassHelper\\MailMassHelper.ps1\"",
+      "Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"$env:LOCALAPPDATA\\MailMassHelper\\MailMassHelper.ps1\""
     ].join('; ');
   }
 
@@ -55,6 +65,23 @@
 
   function downloadPs1() {
     return triggerHrefDownload(connectPs1Url(), 'MailMass_Connect.ps1');
+  }
+
+  /** Wake previously installed helper without downloading again. */
+  function wakeLocal() {
+    try {
+      var iframe = document.createElement('iframe');
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none';
+      iframe.src = 'mailmass://start';
+      document.body.appendChild(iframe);
+      setTimeout(function () {
+        try { iframe.remove(); } catch (e) {}
+      }, 2500);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   function copyPowerShell() {
@@ -84,6 +111,9 @@
     powershellCommand: powershellCommand,
     download: download,
     downloadPs1: downloadPs1,
+    wakeLocal: wakeLocal,
+    markInstalled: markInstalled,
+    wasInstalled: wasInstalled,
     copyPowerShell: copyPowerShell
   };
 })(window);
