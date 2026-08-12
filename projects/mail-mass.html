@@ -102,17 +102,5 @@
   </div>
 
   <script src="../js/cookie-consent.js?v=20260804c1"></script>
-  <script>
-    /* Wake the Mail Mass desktop companion (if installed) so it's ready by launch time. */
-    (function () {
-      try {
-        var wake = document.createElement('iframe');
-        wake.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0';
-        wake.src = 'mailmass://start';
-        document.body.appendChild(wake);
-        setTimeout(function () { try { wake.remove(); } catch (e) {} }, 3000);
-      } catch (e) {}
-    })();
-  </script>
 </body>
 </html>
