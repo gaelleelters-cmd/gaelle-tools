@@ -632,9 +632,8 @@
     if (btnConnectOutlook) btnConnectOutlook.textContent = 'Connect Outlook';
     if (connectHint) {
       connectHint.innerHTML =
-        'Downloads <strong>MailMass_Connect.bat</strong> (safe — made by this site). ' +
-        'Chrome may say it “could harm your device”: click <strong>Keep</strong>, then <strong>Keep anyway</strong>, ' +
-        'open the file from Downloads, and come back here — status should say <strong>Connected</strong>.';
+        'Downloads a small <strong>zip</strong>. Open it, run <strong>MailMass_Connect.bat</strong>, then return here — status should say <strong>Connected</strong>. ' +
+        'If Chrome blocks the download, use <strong>Copy PowerShell command</strong>, paste into PowerShell, and press Enter.';
     }
   }
 
@@ -1016,7 +1015,7 @@
     btnConnectOutlook.addEventListener('click', function (e) {
       e.preventDefault();
       setConnectingUi();
-      toast('Chrome may warn about the .bat — click Keep, then Keep anyway, then open MailMass_Connect.bat.');
+      toast('Downloading MailMass_Connect.zip — open it and run the .bat inside.');
       launchHelper();
       ensureHelper(40).then(function (ready) {
         setAuthUi();
@@ -1032,10 +1031,21 @@
             toast('Signed in as ' + (user.username || user.name || 'you') + '.');
           });
         }
-        toast('If Chrome blocked the file: Keep → Keep anyway → open MailMass_Connect.bat, then click Connect again.', true);
+        toast('Open the zip → run MailMass_Connect.bat, or use “Copy PowerShell command”, then click Connect again.', true);
       }).catch(function (err) {
         setAuthUi();
         toast((err && err.message) || 'Connect failed', true);
+      });
+    });
+  }
+
+  var btnCopyPs = $('btn-copy-ps');
+  if (btnCopyPs && window.MailMassConnect) {
+    btnCopyPs.addEventListener('click', function () {
+      MailMassConnect.copyPowerShell().then(function () {
+        toast('Copied. Open PowerShell, paste, press Enter — then come back here.');
+      }).catch(function () {
+        toast('Could not copy. Download MailMass_Connect.zip instead.', true);
       });
     });
   }
