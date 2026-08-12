@@ -785,6 +785,7 @@
 
   function refreshAuth() {
     return checkHelper().then(function () {
+      if (helperReady() && window.MailMassConnect) MailMassConnect.markInstalled();
       if (helperReady() || !graphReady()) {
         setAuthUi();
         return null;
