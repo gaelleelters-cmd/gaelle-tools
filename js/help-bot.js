@@ -16,7 +16,7 @@
       ]
     },
     tools: {
-      bot: 'Choose Work tools or Generators on the home page. Everything runs in your browser. No account needed. Your files stay on your device.',
+      bot: 'Open Projects from the menu, pick a tool, and launch it. Everything runs in your browser. No account needed. Your files stay on your device.',
       options: [
         { id: 'start', label: 'Ask something else' },
         { id: 'email', label: 'Email Gaelle instead' }
@@ -30,7 +30,7 @@
       ]
     },
     mailmass: {
-      bot: 'Mail Mass lets you upload an Excel list, write your message, and send from your own Outlook after signing in with Microsoft. You need the Mail Mass helper installed for sending.',
+      bot: "Mail Mass runs on each person's own computer. They click Connect Outlook, open the small connector file, then send — mail leaves from THEIR Outlook only. No shared mailbox.",
       options: [
         { id: 'start', label: 'Ask something else' },
         { id: 'email', label: 'Email Gaelle instead' }

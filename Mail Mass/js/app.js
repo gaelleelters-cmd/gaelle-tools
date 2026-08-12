@@ -565,54 +565,74 @@
   }
 
   var HELPER_URL = 'http://127.0.0.1:19527';
-  var HELPER_MIN_VERSION = 6;
+  var HELPER_MIN_VERSION = 7;
   var helperOnline = false;
   var helperVersion = 0;
+  var graphUser = null;
   var outlookPill = $('outlook-pill');
   var connectHint = $('connect-hint');
 
-  function setAuthUi() {
-    btnSignOut.classList.add('hidden');
-    var needsUpdate = helperOnline && helperVersion < HELPER_MIN_VERSION;
-    var ready = helperOnline && helperVersion >= HELPER_MIN_VERSION;
+  function graphReady() {
+    return !!(window.MailMassGraph && MailMassGraph.isConfigured());
+  }
 
-    if (ready) {
+  function helperReady() {
+    return helperOnline && helperVersion >= HELPER_MIN_VERSION;
+  }
+
+  function setAuthUi() {
+    if (btnConnectOutlook) {
+      btnConnectOutlook.classList.remove('is-busy');
+      btnConnectOutlook.disabled = false;
+    }
+
+    if (helperReady()) {
       if (outlookConnect) outlookConnect.classList.add('hidden');
-      if (authReady) authReady.classList.remove('hidden');
+      if (authReady) {
+        authReady.classList.remove('hidden');
+        authReady.textContent = 'Outlook on this PC is connected. Continue with step 2 below.';
+      }
+      btnSignOut.classList.add('hidden');
       if (outlookPill) {
         outlookPill.textContent = 'Connected';
         outlookPill.className = 'outlook-pill is-on';
       }
-      if (authStatus) authStatus.textContent = 'Outlook is ready on this PC.';
+      if (authStatus) authStatus.textContent = 'Ready — emails will send from YOUR Outlook.';
+      if (btnConnectOutlook) btnConnectOutlook.textContent = 'Connect Outlook';
+      return;
+    }
+
+    if (graphReady() && graphUser && graphUser.username) {
+      if (outlookConnect) outlookConnect.classList.add('hidden');
+      if (authReady) {
+        authReady.classList.remove('hidden');
+        authReady.textContent = 'Signed in as ' + (graphUser.name || graphUser.username) + '. Continue with step 2 below.';
+      }
+      btnSignOut.classList.remove('hidden');
+      if (outlookPill) {
+        outlookPill.textContent = 'Signed in';
+        outlookPill.className = 'outlook-pill is-on';
+      }
+      if (authStatus) authStatus.textContent = graphUser.username || 'Ready to send from your mailbox.';
+      if (btnConnectOutlook) btnConnectOutlook.textContent = 'Sign in with Microsoft';
       return;
     }
 
     if (outlookConnect) outlookConnect.classList.remove('hidden');
     if (authReady) authReady.classList.add('hidden');
-
-    if (needsUpdate) {
-      if (outlookPill) {
-        outlookPill.textContent = 'Update needed';
-        outlookPill.className = 'outlook-pill is-off';
-      }
-      if (authStatus) {
-        authStatus.textContent = 'Click the blue button below: Connect / Update Outlook';
-      }
-      if (btnConnectOutlook) btnConnectOutlook.textContent = 'Connect / Update Outlook';
-      if (connectHint) {
-        connectHint.innerHTML = 'Click the blue button. If Windows asks, choose <strong>Open</strong>.';
-      }
-      return;
-    }
+    btnSignOut.classList.add('hidden');
 
     if (outlookPill) {
       outlookPill.textContent = 'Not connected';
       outlookPill.className = 'outlook-pill is-off';
     }
     if (authStatus) {
-      authStatus.textContent = 'Optional — you can still send: the Send button downloads a small file that mails from YOUR own Outlook on this computer.';
+      authStatus.textContent = 'One click on your computer — connects YOUR Outlook only.';
     }
-    if (btnConnectOutlook) btnConnectOutlook.textContent = 'Connect / Update Outlook';
+    if (btnConnectOutlook) btnConnectOutlook.textContent = 'Connect Outlook';
+    if (connectHint) {
+      connectHint.innerHTML = 'Downloads <strong>MailMass_Connect.bat</strong>. Open it (from Downloads is fine). A helper window starts and links to <strong>your</strong> Outlook on <strong>this</strong> PC — not anyone else\'s.';
+    }
   }
 
   function setConnectingUi() {
@@ -620,7 +640,7 @@
       outlookPill.textContent = 'Connecting…';
       outlookPill.className = 'outlook-pill is-wait';
     }
-    if (authStatus) authStatus.textContent = 'Updating Outlook helper — wait a few seconds…';
+    if (authStatus) authStatus.textContent = 'Starting Outlook helper…';
     if (btnConnectOutlook) {
       btnConnectOutlook.classList.add('is-busy');
       btnConnectOutlook.textContent = 'Connecting…';
@@ -647,66 +667,51 @@
       });
   }
 
-  function wakeHelper() {
-    try {
-      var iframe = document.createElement('iframe');
-      iframe.setAttribute('aria-hidden', 'true');
-      iframe.style.cssText = 'position:fixed;left:-100px;top:-100px;width:1px;height:1px;opacity:0;border:0;pointer-events:none';
-      iframe.src = 'mailmass://start';
-      document.body.appendChild(iframe);
-      setTimeout(function () {
-        try { iframe.remove(); } catch (e) {}
-      }, 4000);
-    } catch (e) {}
-    // Also try opening the protocol in a way Windows may prompt once
-    try {
-      var a = document.createElement('a');
-      a.href = 'mailmass://start';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function () { try { a.remove(); } catch (e2) {} }, 500);
-    } catch (e3) {}
-  }
-
-  function ensureHelper(attemptsLeft, requireCurrent) {
-    var left = typeof attemptsLeft === 'number' ? attemptsLeft : 20;
-    var needVersion = !!requireCurrent;
+  function ensureHelper(attemptsLeft) {
+    var left = typeof attemptsLeft === 'number' ? attemptsLeft : 24;
     return checkHelper().then(function (online) {
-      if (online && (!needVersion || helperVersion >= HELPER_MIN_VERSION)) return true;
+      if (online && helperVersion >= HELPER_MIN_VERSION) return true;
       if (left <= 0) return false;
-      if (left === 20 || left === 15 || left === 10 || left === 5) wakeHelper();
       return sleep(500).then(function () {
-        return ensureHelper(left - 1, needVersion);
+        return ensureHelper(left - 1);
       });
     });
   }
 
-  function launchUpdaterFromApp() {
-    wakeHelper();
+  function launchHelper() {
+    // http(s): give the visitor a self-contained .bat that downloads the helper
+    // onto THEIR PC and talks to THEIR Outlook only.
+    if (location.protocol === 'http:' || location.protocol === 'https:') {
+      if (window.MailMassConnect) {
+        MailMassConnect.download();
+        return;
+      }
+    }
+
     var candidates = [];
     try {
       if (location.protocol === 'file:') {
         var base = location.href.replace(/[^\/?#]*([?#].*)?$/, '');
-        candidates.push(base + 'helper/Start-MailMassHelper.vbs');
         candidates.push(base + 'Start%20Mail%20Mass.bat');
+        candidates.push(base + 'helper/Start-MailMassHelper.bat');
       }
     } catch (e) {}
-    // Served from the website: downloads the self-installing helper.
-    // It works from any folder on the visitor's PC (Downloads, Desktop, USB).
-    candidates.push('helper/Start-MailMassHelper.vbs');
+    candidates.push('Start%20Mail%20Mass.bat');
+    candidates.push('helper/Start-MailMassHelper.bat');
+    candidates.push('helper/MailMass_Connect.bat');
 
     candidates.forEach(function (href, idx) {
       setTimeout(function () {
         try {
           var link = document.createElement('a');
           link.href = href;
+          link.download = '';
           link.style.display = 'none';
           document.body.appendChild(link);
           link.click();
           setTimeout(function () { try { link.remove(); } catch (e2) {} }, 1500);
         } catch (e3) {}
-      }, idx * 400);
+      }, idx * 350);
     });
   }
 
@@ -743,14 +748,47 @@
         if (!res.ok || !data.ok) {
           throw new Error((data && data.error) || 'Outlook send failed');
         }
-        return data;
+        return {
+          processed: data.processed,
+          skipped: data.skipped,
+          mode: 'helper'
+        };
       });
+    });
+  }
+
+  function sendViaGraph(prepared) {
+    var lastToast = 0;
+    return MailMassGraph.sendAll(prepared, sharedAttachment, function (done, total) {
+      var now = Date.now();
+      if (done === total || now - lastToast > 1200) {
+        lastToast = now;
+        toast('Sending ' + done + ' / ' + total + '…');
+      }
+    }).then(function (data) {
+      return {
+        processed: data.processed,
+        skipped: data.skipped,
+        mode: 'graph'
+      };
     });
   }
 
   function refreshAuth() {
     return checkHelper().then(function () {
-      setAuthUi();
+      if (helperReady() || !graphReady()) {
+        setAuthUi();
+        return null;
+      }
+      return MailMassGraph.currentUser().then(function (user) {
+        graphUser = user;
+        setAuthUi();
+        return user;
+      }).catch(function () {
+        graphUser = null;
+        setAuthUi();
+        return null;
+      });
     });
   }
 
@@ -956,31 +994,45 @@
   }
 
   btnSignOut.addEventListener('click', function () {
-    if (window.MailMassGraph) {
-      MailMassGraph.signOut().then(function () {
-        setAuthUi();
-        toast('Signed out');
-      }).catch(function () { setAuthUi(); });
+    if (!window.MailMassGraph) {
+      graphUser = null;
+      setAuthUi();
+      return;
     }
+    MailMassGraph.signOut().then(function () {
+      graphUser = null;
+      setAuthUi();
+      toast('Signed out');
+    }).catch(function () {
+      graphUser = null;
+      setAuthUi();
+    });
   });
 
   if (btnConnectOutlook) {
     btnConnectOutlook.addEventListener('click', function (e) {
       e.preventDefault();
       setConnectingUi();
-      toast('Connecting Outlook… If Windows asks, choose Open.');
-      launchUpdaterFromApp();
-      ensureHelper(30, true).then(function (ready) {
-        if (btnConnectOutlook) {
-          btnConnectOutlook.classList.remove('is-busy');
-          btnConnectOutlook.textContent = 'Connect / Update Outlook';
-        }
+      toast('Downloading MailMass_Connect.bat — open it to link YOUR Outlook.');
+      launchHelper();
+      ensureHelper(40).then(function (ready) {
         setAuthUi();
         if (ready) {
-          toast('Outlook connected. You can continue.');
-        } else {
-          toast('Still updating… Click Connect / Update Outlook again, and choose Open if Windows asks.', true);
+          toast('Outlook connected on this PC. You can continue.');
+          return;
         }
+        if (graphReady()) {
+          toast('Helper not running yet — trying Microsoft sign-in…');
+          return MailMassGraph.signIn().then(function (user) {
+            graphUser = user;
+            setAuthUi();
+            toast('Signed in as ' + (user.username || user.name || 'you') + '.');
+          });
+        }
+        toast('Open the downloaded MailMass_Connect.bat, then click Connect again.', true);
+      }).catch(function (err) {
+        setAuthUi();
+        toast((err && err.message) || 'Connect failed', true);
       });
     });
   }
@@ -996,47 +1048,29 @@
     btnPrepare.disabled = true;
     toast('Sending from your Outlook…');
 
-    ensureHelper(6, true).then(function (ready) {
+    ensureHelper(8).then(function (ready) {
       if (ready) return sendViaHelper(prepared);
-      // No helper on this PC: download the self-contained sender instead.
-      // It embeds everything and runs from any folder, using the Outlook
-      // of whoever double-clicks it — always the visitor's own mailbox.
-      var result = window.MailMassOneShot
-        ? MailMassOneShot.download(prepared, sharedAttachment)
-        : null;
-      if (!result) {
-        if (outlookConnect) outlookConnect.classList.remove('hidden');
-        throw new Error('Click «Connect / Update Outlook» in step 1 first. If Windows asks, choose Open.');
-      }
-      toast('Downloaded MailMass_Send_Now.vbs — double-click it to send from YOUR Outlook. It works from any folder.');
-      return result;
+      if (graphReady()) return sendViaGraph(prepared);
+      throw new Error('Click «Connect Outlook» in step 1 first (opens the helper — no VBS).');
     }).then(function (data) {
       btnPrepare.disabled = false;
       refreshButtons();
-      refreshAuth();
+      return refreshAuth().then(function () { return data; });
+    }).then(function (data) {
       if (!data) return;
-      if (data.mode === 'oneshot') return;
       toast('Sent ' + data.processed + ' email' + (data.processed === 1 ? '' : 's') +
-        (data.skipped ? ' (skipped ' + data.skipped + ')' : '') + ' from Outlook.');
+        (data.skipped ? ' (skipped ' + data.skipped + ')' : '') + ' from your Outlook.');
     }).catch(function (err) {
       btnPrepare.disabled = false;
       refreshButtons();
       refreshAuth();
-      toast(err.message || 'Send failed', true);
+      toast((err && err.message) || 'Send failed', true);
     });
   });
 
-  // Wake Outlook bridge as soon as the page opens
   setConnectingUi();
-  wakeHelper();
-  ensureHelper(16, true).then(function () {
-    if (btnConnectOutlook) {
-      btnConnectOutlook.classList.remove('is-busy');
-      btnConnectOutlook.textContent = 'Connect / Update Outlook';
-    }
-    refreshAuth();
-  });
-  setInterval(refreshAuth, 5000);
+  ensureHelper(10).then(function () { refreshAuth(); });
+  setInterval(function () { refreshAuth(); }, 4000);
   updatePreview();
   refreshButtons();
 })();

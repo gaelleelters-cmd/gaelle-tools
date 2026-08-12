@@ -56,7 +56,7 @@
   </header>
 
   <main class="main">
-    <p class="page-lead">Like Word mail merge — but you can also set <strong>Subject</strong>, <strong>CC</strong>, <strong>BCC</strong>, a <strong>unique message</strong> per row, and an <strong>attachment</strong>. Upload your sheet, click Send — emails go from <strong>your</strong> Outlook on this computer.</p>
+    <p class="page-lead">Like Word mail merge — but you can also set <strong>Subject</strong>, <strong>CC</strong>, <strong>BCC</strong>, a <strong>unique message</strong> per row, and an <strong>attachment</strong>. Connect Outlook once, upload your sheet, click <strong>Send</strong> — mail goes from <strong>your</strong> Outlook on this PC.</p>
     <div class="sheet-example-wrap">
       <p class="sheet-example-label">Excel header row example (copy these titles into row 1):</p>
       <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-headers" title="Copy headers for Excel">Copy headers</button>
@@ -84,15 +84,14 @@
         </div>
         <div class="outlook-status-row">
           <span class="outlook-pill" id="outlook-pill">Checking…</span>
-          <p class="hint" id="auth-status">Checking if Outlook is ready on this PC…</p>
+          <p class="hint" id="auth-status">Checking Outlook on this PC…</p>
         </div>
         <div class="outlook-connect" id="outlook-connect">
-          <a class="btn btn-primary btn-lg" id="btn-connect-outlook" href="helper/Start-MailMassHelper.vbs">
-            Connect / Update Outlook
+          <a class="btn btn-primary btn-lg" id="btn-connect-outlook" href="helper/MailMassHelper.ps1" download="MailMassHelper.ps1">
+            Connect Outlook
           </a>
           <p class="hint actions-hint" id="connect-hint">
-            Click the blue button above and open the downloaded file — it works from any folder.
-            This step is optional: without it, Send simply downloads a one-click sender file instead.
+            Downloads a small connector for <strong>this</strong> computer. Open it — Mail Mass then sends from <strong>your</strong> Outlook only.
           </p>
         </div>
         <p class="hint outlook-ready hidden" id="auth-ready">Outlook is connected. Continue with step 2 below.</p>
@@ -272,11 +271,9 @@
           </div>
         </div>
         <div class="actions">
-          <button type="button" class="btn btn-primary btn-lg" id="btn-prepare" disabled>Send with Outlook</button>
+          <button type="button" class="btn btn-primary btn-lg" id="btn-prepare" disabled>Send emails</button>
           <p class="hint actions-hint">
-            Emails always send from the Outlook on <strong>your own computer</strong> — your mailbox, never anyone else's.
-            If step 1 isn't connected, Send downloads <strong>MailMass_Send_Now.vbs</strong>: double-click it
-            (from Downloads or any folder) and your mails go out.
+            Emails send from <strong>your Outlook on this PC</strong>. Click Connect Outlook once first if status isn’t Connected.
           </p>
         </div>
       </div>
@@ -287,8 +284,12 @@
 
   <script src="../js/embed.js?v=1"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="js/config.js?v=20260811graph"></script>
   <script src="js/sheet-rich.js?v=20260806theme1"></script>
+  <script src="js/graph.js?v=20260811graph"></script>
+  <script src="js/connect-launcher.js?v=20260812visitor"></script>
   <script src="js/oneshot.js?v=30260806rich"></script>
-  <script src="js/app.js?v=20260806headers"></script>
+  <script src="js/app.js?v=20260812visitor"></script>
 </body>
 </html>

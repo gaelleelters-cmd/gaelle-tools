@@ -45,8 +45,11 @@ function createBrowserLikeContext() {
 
 test('projects page lists Interview Question Practice as project 04 after CV', () => {
   const home = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  assert.match(home, /data-count="4"/);
   assert.match(home, /href="projects\.html"/);
+  assert.match(home, /about-brand/);
+  assert.match(home, /Gaelle El Ters/);
+  assert.doesNotMatch(home, /about-stats/);
+  assert.doesNotMatch(home, />About</);
 
   const projects = fs.readFileSync(path.join(ROOT, 'projects.html'), 'utf8');
   const cvCard = projects.indexOf('projects/cv-resume.html');
@@ -56,6 +59,7 @@ test('projects page lists Interview Question Practice as project 04 after CV', (
   assert.match(projects, /project-num[^>]*>04</);
   assert.match(projects, /project-media--interview/);
   assert.match(projects, /Interview Question Practice/);
+  assert.doesNotMatch(projects, />About</);
 
   const detail = fs.readFileSync(path.join(ROOT, 'projects/interview-practice.html'), 'utf8');
   assert.match(detail, /href="\.\.\/generators\/interview-practice\/index\.html"/);
@@ -137,8 +141,14 @@ test('data and engine load together and generate a tailored senior session', () 
   assert.ok(session.every((item) => item.question && item.modelAnswer));
 });
 
-test('live server serves projects page, detail launch, and interview app', async () => {
-  const projects = await fetch('http://127.0.0.1:8765/projects.html');
+test('live server serves projects page, detail launch, and interview app', async (t) => {
+  let projects;
+  try {
+    projects = await fetch('http://127.0.0.1:8765/projects.html');
+  } catch (err) {
+    t.skip('local static server not running on :8765');
+    return;
+  }
   const detail = await fetch('http://127.0.0.1:8765/projects/interview-practice.html');
   const app = await fetch('http://127.0.0.1:8765/generators/interview-practice/index.html');
   const css = await fetch('http://127.0.0.1:8765/generators/interview-practice/css/style.css');

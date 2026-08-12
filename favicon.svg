@@ -1,19 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Gaelle El Ters">
   <defs>
     <linearGradient id="sea" x1="10" y1="6" x2="54" y2="58" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1a455c"/>
-      <stop offset="1" stop-color="#2f6f8f"/>
+      <stop offset="0" stop-color="#0f3d52"/>
+      <stop offset="1" stop-color="#1f6b8a"/>
     </linearGradient>
     <radialGradient id="spark" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(44 22) scale(10)">
-      <stop offset="0" stop-color="#e8d4b5"/>
-      <stop offset="1" stop-color="#b8956c"/>
+      <stop offset="0" stop-color="#e8f2f7"/>
+      <stop offset="1" stop-color="#9ec2d4"/>
     </radialGradient>
   </defs>
-  <rect width="64" height="64" rx="16" fill="url(#sea)"/>
+  <rect width="64" height="64" rx="14" fill="url(#sea)"/>
   <path
     d="M18 40 Q32 18 46 40"
     fill="none"
-    stroke="#f7f5f2"
+    stroke="#f7fafc"
     stroke-width="2.2"
     stroke-linecap="round"
     opacity="0.55"
@@ -21,19 +21,19 @@
   <path
     d="M22 44 L32 26 L42 44"
     fill="none"
-    stroke="#f7f5f2"
+    stroke="#f7fafc"
     stroke-width="2.2"
     stroke-linecap="round"
     stroke-linejoin="round"
     opacity="0.9"
   />
-  <circle cx="22" cy="44" r="3.2" fill="#f7f5f2"/>
-  <circle cx="32" cy="26" r="3.2" fill="#f7f5f2"/>
-  <circle cx="42" cy="44" r="3.2" fill="#f7f5f2"/>
+  <circle cx="22" cy="44" r="3.2" fill="#f7fafc"/>
+  <circle cx="32" cy="26" r="3.2" fill="#f7fafc"/>
+  <circle cx="42" cy="44" r="3.2" fill="#f7fafc"/>
   <circle cx="44" cy="22" r="4.2" fill="url(#spark)"/>
   <path
     d="M44 17.5 L45.8 21.8 L50.2 22.2 L46.8 25 L47.8 29.4 L44 27.2 L40.2 29.4 L41.2 25 L37.8 22.2 L42.2 21.8 Z"
-    fill="#f7f5f2"
+    fill="#f7fafc"
     opacity="0.95"
   />
 </svg>

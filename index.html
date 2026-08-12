@@ -13,108 +13,68 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,650;0,9..144,700;1,9..144,400;1,9..144,500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/site.css?v=20260806home">
+  <link rel="stylesheet" href="css/site.css?v=20260812tier">
 </head>
-<body>
+<body class="page-home">
 
-  <!-- Workflow node background (full page, behind content) -->
   <div class="workflow-bg" aria-hidden="true">
     <canvas id="workflow-canvas"></canvas>
   </div>
 
-  <!-- Scroll progress -->
   <div class="scroll-progress" aria-hidden="true"><span id="scroll-progress-bar"></span></div>
 
-  <!-- ===== TOP NAV ===== -->
   <header class="top-nav" id="top-nav">
     <a class="top-nav-brand" href="#about" data-scroll aria-label="Gaelle El Ters, home">
       <img class="top-nav-logo" src="favicon.svg?v=3" alt="" width="36" height="36">
     </a>
     <nav class="top-nav-links" aria-label="Main">
-      <a href="#home" data-scroll>Home</a>
-      <a href="#about" data-scroll>About</a>
+      <a href="#about" data-scroll>Home</a>
       <a href="projects.html">Projects</a>
-      <a href="#contact" data-scroll>Contact</a>
+      <a href="#site-foot" data-scroll>Contact</a>
     </nav>
     <a class="top-nav-cta" href="mailto:info@gaelleelters.com">Work with me</a>
   </header>
 
   <main class="page" id="home">
-
-    <!-- ===== ABOUT ===== -->
-    <section class="about section" id="about">
-      <div class="section-inner about-grid">
-        <div class="about-side reveal">
-          <div class="about-card">
-            <img
-              class="about-card-photo"
-              src="images/gaelle-el-ters-about.png"
-              alt="Portrait of Gaelle El Ters"
-              width="680"
-              height="850"
-              loading="eager"
-              fetchpriority="high"
-            >
-            <div class="about-card-shade" aria-hidden="true"></div>
-            <div class="about-card-content">
-              <p class="about-card-name">Gaelle El Ters</p>
-              <p class="about-card-role">Websites &amp; practical tools</p>
-              <div class="about-card-links">
-                <a href="mailto:info@gaelleelters.com">info@gaelleelters.com</a>
-                <a href="https://www.linkedin.com/in/gaelle-el-ters-4b41b61a5/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
-              </div>
-            </div>
-          </div>
+    <section class="about section about--stage" id="about">
+      <div class="about-stage">
+        <div class="about-visual reveal">
+          <img
+            class="about-photo"
+            src="images/gaelle-el-ters-about.png"
+            alt="Portrait of Gaelle El Ters"
+            width="900"
+            height="1125"
+            loading="eager"
+            fetchpriority="high"
+          >
+          <div class="about-visual-shade" aria-hidden="true"></div>
         </div>
 
-        <div class="about-body">
-          <h1 class="section-title reveal">The person behind<br>the <em>brand</em></h1>
+        <div class="about-copy">
+          <p class="about-brand reveal">Gaelle El Ters</p>
+          <h1 class="about-headline reveal">Useful meets <em>beautiful</em></h1>
           <p class="about-text reveal">
-            Hi, I'm Gaelle. I build digital things that remove friction from everyday work. My work sits where
-            <strong>useful meets beautiful</strong>.
+            I design and build websites and practical tools that remove friction from everyday work —
+            the quiet details that turn software into something people actually enjoy using.
           </p>
-          <p class="about-text reveal">
-            I care about the details most people skip, like the empty states, the wording, the way a
-            button feels. That's what turns a "tool" into something people actually enjoy using.
-          </p>
-
+          <div class="about-actions reveal">
+            <a class="btn btn--ink" href="projects.html">View projects</a>
+            <a class="btn btn--ghost" href="mailto:info@gaelleelters.com">Work with me</a>
+          </div>
           <ul class="about-values reveal">
             <li>Design-led</li>
             <li>Detail-obsessed</li>
             <li>Fast &amp; practical</li>
             <li>Human wording</li>
           </ul>
-
-          <dl class="about-stats reveal">
-            <div><dt class="about-stat-num" data-count="4" data-suffix="+">0</dt><dd>Tools shipped</dd></div>
-            <div><dt class="about-stat-num" data-count="100" data-suffix="%">0</dt><dd>Designed &amp; built by me</dd></div>
-            <div><dt class="about-stat-num" data-count="0" data-suffix="">0</dt><dd>Sign-ups required</dd></div>
-          </dl>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== CONTACT ===== -->
-    <section class="contact section" id="contact">
-      <div class="section-inner contact-inner">
-        <p class="section-kicker reveal">Contact</p>
-        <h2 class="contact-title reveal">Have an idea?<br>Let's make it <em>real</em>.</h2>
-        <p class="contact-lead reveal">A new tool, a website, or an improvement to something that already exists. I read every message.</p>
-        <div class="contact-actions reveal">
-          <a class="btn btn--ink btn--lg" href="mailto:info@gaelleelters.com">info@gaelleelters.com</a>
-          <a class="btn btn--ghost btn--lg" href="https://www.linkedin.com/in/gaelle-el-ters-4b41b61a5/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- ===== FOOTER ===== -->
   <footer class="site-foot" id="site-foot">
     <div class="site-foot-inner">
-      <div class="site-foot-brand">
-        <span class="brand-mini">Gaelle El Ters</span>
-        <p class="site-foot-tagline">Websites &amp; practical tools</p>
-      </div>
       <div class="site-foot-contact">
         <p class="site-foot-label">Contact</p>
         <a class="site-foot-link" href="mailto:info@gaelleelters.com">info@gaelleelters.com</a>
@@ -128,7 +88,6 @@
     </div>
   </footer>
 
-  <!-- ===== COOKIE / PRIVACY BANNER ===== -->
   <div
     id="cookie-banner"
     class="cookie-banner"
@@ -154,7 +113,6 @@
     </div>
   </div>
 
-  <!-- ===== HELP BOT ===== -->
   <div class="help-bot" id="help-bot">
     <button
       type="button"
@@ -195,9 +153,9 @@
     </div>
   </div>
 
-  <script src="js/bg-workflow.js?v=4"></script>
-  <script src="js/help-bot.js?v=5"></script>
-  <script src="js/site.js?v=20260804p1"></script>
+  <script src="js/bg-workflow.js?v=5"></script>
+  <script src="js/help-bot.js?v=6"></script>
+  <script src="js/site.js?v=20260812tier"></script>
   <script src="js/cookie-consent.js?v=20260804c1"></script>
 </body>
 </html>

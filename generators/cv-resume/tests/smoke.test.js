@@ -147,7 +147,7 @@ test('CV app coalesces preview updates instead of binding duplicate save handler
   );
 });
 
-test('live server serves CV app and project detail launch pages', async () => {
+test('live server serves CV app and project detail launch pages', async (t) => {
   const pages = [
     'http://127.0.0.1:8765/projects.html',
     'http://127.0.0.1:8765/projects/cv-resume.html',
@@ -155,7 +155,15 @@ test('live server serves CV app and project detail launch pages', async () => {
     'http://127.0.0.1:8765/generators/cv-resume/js/logic.js',
     'http://127.0.0.1:8765/generators/cv-resume/js/app.js',
   ];
-  for (const url of pages) {
+  let first;
+  try {
+    first = await fetch(pages[0]);
+  } catch (err) {
+    t.skip('local static server not running on :8765');
+    return;
+  }
+  assert.equal(first.status, 200, pages[0]);
+  for (const url of pages.slice(1)) {
     const response = await fetch(url);
     assert.equal(response.status, 200, url);
   }

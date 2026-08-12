@@ -5,7 +5,7 @@
 $ErrorActionPreference = 'Stop'
 $Port = 19527
 $Prefix = "http://127.0.0.1:$Port/"
-$HelperVersion = 6
+# Version bumped in TcpListener block below (v7 — no admin URLACL)
 
 function Send-Cors([System.Net.HttpListenerResponse]$res) {
   $res.Headers.Add('Access-Control-Allow-Origin', '*')
@@ -209,11 +209,88 @@ function Send-MailBatch($payload) {
   return @{ processed = $sent; skipped = $skipped }
 }
 
-$listener = [System.Net.HttpListener]::new()
-$listener.Prefixes.Add($Prefix)
+function Write-TcpHttpResponse([System.Net.Sockets.NetworkStream]$stream, [int]$code, [string]$contentType, [byte[]]$bytes) {
+  $statusText = switch ($code) {
+    200 { 'OK' }
+    204 { 'No Content' }
+    404 { 'Not Found' }
+    500 { 'Internal Server Error' }
+    default { 'OK' }
+  }
+  $header = "HTTP/1.1 $code $statusText`r`n" +
+    "Access-Control-Allow-Origin: *`r`n" +
+    "Access-Control-Allow-Methods: GET, POST, OPTIONS`r`n" +
+    "Access-Control-Allow-Headers: Content-Type`r`n" +
+    "Content-Type: $contentType`r`n" +
+    "Content-Length: $($bytes.Length)`r`n" +
+    "Connection: close`r`n`r`n"
+  $headerBytes = [Text.Encoding]::ASCII.GetBytes($header)
+  $stream.Write($headerBytes, 0, $headerBytes.Length)
+  if ($bytes.Length -gt 0) { $stream.Write($bytes, 0, $bytes.Length) }
+  $stream.Flush()
+}
+
+function Write-TcpJson([System.Net.Sockets.NetworkStream]$stream, [int]$code, $obj) {
+  $json = ($obj | ConvertTo-Json -Compress -Depth 8)
+  $bytes = [Text.Encoding]::UTF8.GetBytes($json)
+  Write-TcpHttpResponse $stream $code 'application/json; charset=utf-8' $bytes
+}
+
+function Read-HttpRequest([System.Net.Sockets.NetworkStream]$stream) {
+  $buffer = New-Object byte[] 65536
+  $ms = New-Object IO.MemoryStream
+  $deadline = [DateTime]::UtcNow.AddSeconds(30)
+  while ([DateTime]::UtcNow -lt $deadline) {
+    if (-not $stream.DataAvailable -and $ms.Length -gt 0) { Start-Sleep -Milliseconds 20 }
+    if (-not $stream.DataAvailable -and $ms.Length -eq 0) { Start-Sleep -Milliseconds 20; continue }
+    if (-not $stream.DataAvailable) { break }
+    $read = $stream.Read($buffer, 0, $buffer.Length)
+    if ($read -le 0) { break }
+    $ms.Write($buffer, 0, $read)
+    $textSoFar = [Text.Encoding]::ASCII.GetString($ms.ToArray())
+    $headerEnd = $textSoFar.IndexOf("`r`n`r`n")
+    if ($headerEnd -ge 0) {
+      $headers = $textSoFar.Substring(0, $headerEnd)
+      $clMatch = [regex]::Match($headers, '(?im)^Content-Length:\s*(\d+)')
+      $contentLength = if ($clMatch.Success) { [int]$clMatch.Groups[1].Value } else { 0 }
+      $bodyStart = $headerEnd + 4
+      $totalNeeded = $bodyStart + $contentLength
+      $rawBytes = $ms.ToArray()
+      while ($rawBytes.Length -lt $totalNeeded -and [DateTime]::UtcNow -lt $deadline) {
+        if ($stream.DataAvailable) {
+          $read = $stream.Read($buffer, 0, $buffer.Length)
+          if ($read -le 0) { break }
+          $ms.Write($buffer, 0, $read)
+          $rawBytes = $ms.ToArray()
+        } else {
+          Start-Sleep -Milliseconds 15
+        }
+      }
+      break
+    }
+  }
+
+  $raw = [Text.Encoding]::UTF8.GetString($ms.ToArray())
+  $sep = $raw.IndexOf("`r`n`r`n")
+  if ($sep -lt 0) { throw 'Invalid HTTP request' }
+  $headerText = $raw.Substring(0, $sep)
+  $body = if ($raw.Length -gt $sep + 4) { $raw.Substring($sep + 4) } else { '' }
+  $lines = $headerText -split "`r`n"
+  $requestLine = $lines[0]
+  $parts = $requestLine -split ' '
+  return @{
+    Method = $parts[0]
+    Path = ([uri]('http://local' + $parts[1])).AbsolutePath
+    Body = $body
+  }
+}
+
+# TcpListener avoids Windows HttpListener URLACL (no admin needed).
+$HelperVersion = 7
+$tcp = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
 
 try {
-  $listener.Start()
+  $tcp.Start()
 } catch {
   Write-Host "Could not start on $Prefix"
   Write-Host $_.Exception.Message
@@ -228,42 +305,46 @@ Write-Host "Listening on $Prefix"
 Write-Host "Close this window to stop."
 Write-Host ""
 
-while ($listener.IsListening) {
-  $ctx = $listener.GetContext()
-  $req = $ctx.Request
-  $res = $ctx.Response
+while ($true) {
+  $client = $null
+  $stream = $null
   try {
-    if ($req.HttpMethod -eq 'OPTIONS') {
-      Send-Cors $res
-      $res.StatusCode = 204
-      $res.Close()
+    $client = $tcp.AcceptTcpClient()
+    $stream = $client.GetStream()
+    $req = Read-HttpRequest $stream
+    $method = [string]$req.Method
+    $path = ([string]$req.Path).TrimEnd('/').ToLowerInvariant()
+
+    if ($method -eq 'OPTIONS') {
+      Write-TcpHttpResponse $stream 204 'text/plain' ([byte[]]@())
       continue
     }
 
-    $path = $req.Url.AbsolutePath.TrimEnd('/').ToLowerInvariant()
-    if ($req.HttpMethod -eq 'GET' -and ($path -eq '' -or $path -eq '/health' -or $path -eq '/status')) {
-      Write-JsonResponse $res 200 @{ ok = $true; service = 'MailMassHelper'; version = $HelperVersion }
+    if ($method -eq 'GET' -and ($path -eq '' -or $path -eq '/health' -or $path -eq '/status')) {
+      Write-TcpJson $stream 200 @{ ok = $true; service = 'MailMassHelper'; version = $HelperVersion }
       continue
     }
 
-    if ($req.HttpMethod -eq 'POST' -and $path -eq '/send') {
-      $reader = New-Object IO.StreamReader($req.InputStream, [Text.Encoding]::UTF8)
-      $raw = $reader.ReadToEnd()
-      $reader.Close()
-      $payload = $raw | ConvertFrom-Json
+    if ($method -eq 'POST' -and $path -eq '/send') {
+      $payload = $req.Body | ConvertFrom-Json
       $result = Send-MailBatch $payload
-      Write-JsonResponse $res 200 @{ ok = $true; processed = $result.processed; skipped = $result.skipped; version = $HelperVersion }
+      Write-TcpJson $stream 200 @{ ok = $true; processed = $result.processed; skipped = $result.skipped; version = $HelperVersion }
       $msg = '[{0}] Sent {1}, skipped {2}' -f (Get-Date -Format 'HH:mm:ss'), $result.processed, $result.skipped
       Write-Host $msg
       continue
     }
 
-    Write-JsonResponse $res 404 @{ ok = $false; error = 'Not found' }
+    Write-TcpJson $stream 404 @{ ok = $false; error = 'Not found' }
   } catch {
     try {
-      Write-JsonResponse $res 500 @{ ok = $false; error = $_.Exception.Message }
+      if ($stream) {
+        Write-TcpJson $stream 500 @{ ok = $false; error = $_.Exception.Message }
+      }
     } catch {}
     $errMsg = 'ERROR: ' + $_.Exception.Message
     Write-Host $errMsg
+  } finally {
+    try { if ($stream) { $stream.Close() } } catch {}
+    try { if ($client) { $client.Close() } } catch {}
   }
 }

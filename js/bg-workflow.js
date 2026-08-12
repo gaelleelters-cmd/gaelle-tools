@@ -14,8 +14,8 @@
   var pulses = [];
   var sparks = [];
 
-  var SEA = '47, 111, 143';
-  var GOLD = '184, 149, 108';
+  var SEA = '31, 107, 138';
+  var GOLD = '168, 196, 212';
 
   var running = !reducedMotion;
   var rafId = null;
