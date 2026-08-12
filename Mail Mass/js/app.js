@@ -631,7 +631,10 @@
     }
     if (btnConnectOutlook) btnConnectOutlook.textContent = 'Connect Outlook';
     if (connectHint) {
-      connectHint.innerHTML = 'Downloads <strong>MailMass_Connect.bat</strong>. Open it (from Downloads is fine). A helper window starts and links to <strong>your</strong> Outlook on <strong>this</strong> PC — not anyone else\'s.';
+      connectHint.innerHTML =
+        'Downloads <strong>MailMass_Connect.bat</strong> (safe — made by this site). ' +
+        'Chrome may say it “could harm your device”: click <strong>Keep</strong>, then <strong>Keep anyway</strong>, ' +
+        'open the file from Downloads, and come back here — status should say <strong>Connected</strong>.';
     }
   }
 
@@ -1013,7 +1016,7 @@
     btnConnectOutlook.addEventListener('click', function (e) {
       e.preventDefault();
       setConnectingUi();
-      toast('Downloading MailMass_Connect.bat — open it to link YOUR Outlook.');
+      toast('Chrome may warn about the .bat — click Keep, then Keep anyway, then open MailMass_Connect.bat.');
       launchHelper();
       ensureHelper(40).then(function (ready) {
         setAuthUi();
@@ -1029,7 +1032,7 @@
             toast('Signed in as ' + (user.username || user.name || 'you') + '.');
           });
         }
-        toast('Open the downloaded MailMass_Connect.bat, then click Connect again.', true);
+        toast('If Chrome blocked the file: Keep → Keep anyway → open MailMass_Connect.bat, then click Connect again.', true);
       }).catch(function (err) {
         setAuthUi();
         toast((err && err.message) || 'Connect failed', true);
