@@ -72,7 +72,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASS,SMTP_FROM,SMTP_SECURE,CONTACT_TO
+          envs: SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASS,SMTP_FROM,SMTP_SECURE,CONTACT_TO,CONTACT_MX_HOST,CONTACT_MX_PORT,CONTACT_FROM
           script_stop: true
           script: |
             set -euo pipefail
@@ -86,6 +86,9 @@ jobs:
               echo "SMTP_FROM=${SMTP_FROM}"
               echo "SMTP_SECURE=${SMTP_SECURE:-false}"
               echo "CONTACT_TO=${CONTACT_TO:-info@gaelleelters.com}"
+              echo "CONTACT_MX_HOST=${CONTACT_MX_HOST:-route3.mx.cloudflare.net}"
+              echo "CONTACT_MX_PORT=${CONTACT_MX_PORT:-25}"
+              echo "CONTACT_FROM=${CONTACT_FROM:-Ask me <noreply@gaelleelters.com>}"
             } > .env
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
@@ -95,6 +98,9 @@ jobs:
           SMTP_FROM: ${{ secrets.SMTP_FROM }}
           SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
           CONTACT_TO: ${{ secrets.CONTACT_TO }}
+          CONTACT_MX_HOST: ${{ secrets.CONTACT_MX_HOST }}
+          CONTACT_MX_PORT: ${{ secrets.CONTACT_MX_PORT }}
+          CONTACT_FROM: ${{ secrets.CONTACT_FROM }}
 
       - name: Start / refresh container
         uses: appleboy/ssh-action@v1.2.0

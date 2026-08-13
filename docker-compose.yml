@@ -11,6 +11,9 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_SECURE: ${SMTP_SECURE:-false}
       CONTACT_TO: ${CONTACT_TO:-info@gaelleelters.com}
+      CONTACT_MX_HOST: ${CONTACT_MX_HOST:-route3.mx.cloudflare.net}
+      CONTACT_MX_PORT: ${CONTACT_MX_PORT:-25}
+      CONTACT_FROM: ${CONTACT_FROM:-Ask me <noreply@gaelleelters.com>}
       MAIL_MAX_BATCH: ${MAIL_MAX_BATCH:-100}
     expose:
       - "3000"

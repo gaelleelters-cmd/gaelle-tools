@@ -15,6 +15,9 @@ const SMTP_PASS = process.env.SMTP_PASS || '';
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 const SMTP_SECURE = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true';
 const CONTACT_TO = process.env.CONTACT_TO || 'info@gaelleelters.com';
+const CONTACT_MX_HOST = process.env.CONTACT_MX_HOST || 'route3.mx.cloudflare.net';
+const CONTACT_MX_PORT = Number(process.env.CONTACT_MX_PORT || 25);
+const CONTACT_FROM = process.env.CONTACT_FROM || 'Ask me <noreply@gaelleelters.com>';
 
 const app = express();
 const upload = multer({
@@ -44,6 +47,27 @@ app.use('/contact', rateLimit({
 
 function smtpConfigured() {
   return Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS && SMTP_FROM);
+}
+
+function createContactTransport() {
+  if (smtpConfigured()) {
+    return nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE || SMTP_PORT === 465,
+      auth: { user: SMTP_USER, pass: SMTP_PASS }
+    });
+  }
+  // Deliver to the domain mailbox (Cloudflare Email Routing → Gmail)
+  // without a Gmail App Password.
+  return nodemailer.createTransport({
+    host: CONTACT_MX_HOST,
+    port: CONTACT_MX_PORT,
+    secure: false,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000
+  });
 }
 
 function htmlEsc(s) {
@@ -137,7 +161,9 @@ app.get('/health', (_req, res) => {
     ok: true,
     service: 'mail-mass-api',
     smtpConfigured: smtpConfigured(),
-    from: smtpConfigured() ? SMTP_FROM : null
+    contactConfigured: true,
+    contactDelivery: smtpConfigured() ? 'smtp' : 'mx',
+    from: smtpConfigured() ? SMTP_FROM : CONTACT_FROM
   });
 });
 
@@ -248,13 +274,6 @@ app.post('/contact', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'Question is too long.' });
     }
 
-    if (!smtpConfigured()) {
-      return res.status(503).json({
-        ok: false,
-        error: 'Question forwarding is not configured on the server yet.'
-      });
-    }
-
     const submitted = new Date();
     const payload = { name, email, question };
     const meta = {
@@ -264,16 +283,11 @@ app.post('/contact', async (req, res) => {
     };
     const preview = question.slice(0, 64);
     const subject = headerSafe(`[Ask me] ${name} — ${preview}${question.length > 64 ? '…' : ''}`).slice(0, 180);
+    const from = smtpConfigured() ? SMTP_FROM : CONTACT_FROM;
 
-    const transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_SECURE || SMTP_PORT === 465,
-      auth: { user: SMTP_USER, pass: SMTP_PASS }
-    });
-
+    const transporter = createContactTransport();
     await transporter.sendMail({
-      from: SMTP_FROM,
+      from,
       to: CONTACT_TO,
       replyTo: `${name} <${email}>`,
       subject,
