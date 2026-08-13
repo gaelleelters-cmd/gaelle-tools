@@ -18,7 +18,8 @@ try {
   exit 1
 }
 Start-Process powershell -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $helper)
-Write-Host ' Helper opened. Go back to Mail Mass — status should say Connected.'
-Write-Host ' Next visits: click Connect Outlook only (no re-download).'
-Write-Host ' Keep that window open while you send.'
+Write-Host ' Helper opened. Go back to Mail Mass.'
+Write-Host ' If Chrome asks to allow local network access — click Allow.'
+Write-Host ' Then click Connect Outlook if status is not Connected yet.'
+Write-Host ' Keep the helper window open while you send.'
 Start-Sleep -Seconds 3

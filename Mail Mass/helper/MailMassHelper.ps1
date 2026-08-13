@@ -56,6 +56,8 @@ function Send-Cors([System.Net.HttpListenerResponse]$res) {
   $res.Headers.Add('Access-Control-Allow-Origin', '*')
   $res.Headers.Add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   $res.Headers.Add('Access-Control-Allow-Headers', 'Content-Type')
+  # Chrome Private Network Access / Local Network Access (HTTPS site → 127.0.0.1)
+  $res.Headers.Add('Access-Control-Allow-Private-Network', 'true')
 }
 
 function Write-JsonResponse([System.Net.HttpListenerResponse]$res, [int]$code, $obj) {
@@ -266,6 +268,7 @@ function Write-TcpHttpResponse([System.Net.Sockets.NetworkStream]$stream, [int]$
     "Access-Control-Allow-Origin: *`r`n" +
     "Access-Control-Allow-Methods: GET, POST, OPTIONS`r`n" +
     "Access-Control-Allow-Headers: Content-Type`r`n" +
+    "Access-Control-Allow-Private-Network: true`r`n" +
     "Content-Type: $contentType`r`n" +
     "Content-Length: $($bytes.Length)`r`n" +
     "Connection: close`r`n`r`n"
@@ -376,7 +379,7 @@ function Read-HttpRequest([System.Net.Sockets.NetworkStream]$stream) {
 
 
 # TcpListener avoids Windows HttpListener URLACL (no admin needed).
-$HelperVersion = 9
+$HelperVersion = 10
 $tcp = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
 
 try {
@@ -390,9 +393,11 @@ try {
 }
 
 Write-Host "Mail Mass Helper v$HelperVersion is running."
-Write-Host "Go back to Mail Mass and click Send with Outlook."
+Write-Host "Go back to the Mail Mass tab in your browser."
+Write-Host "If Chrome asks to allow local network access - click Allow."
+Write-Host "Status should turn Connected (click Connect Outlook if it does not)."
 Write-Host "Listening on $Prefix"
-Write-Host "Close this window to stop."
+Write-Host "Keep this window open while you send. Close it to stop."
 Write-Host ""
 
 while ($true) {
@@ -428,19 +433,19 @@ while ($true) {
     Write-TcpJson $stream 404 @{ ok = $false; error = 'Not found' }
   } catch {
     $msg = [string]$_.Exception.Message
-    # Quietly ignore empty / incomplete probes — do not scare visitors
-    if ($msg -match '(?i)invalid http|empty|timeout') {
-      # no console spam
-    } else {
+    $quiet = $msg -match '(?i)invalid http|empty|timeout'
+    if (-not $quiet) {
       try {
         if ($stream) {
           Write-TcpJson $stream 500 @{ ok = $false; error = $msg }
         }
-      } catch {}
+      } catch {
+        # ignore write failures on broken sockets
+      }
       Write-Host ('ERROR: ' + $msg)
     }
   } finally {
-    try { if ($stream) { $stream.Close() } } catch {}
-    try { if ($client) { $client.Close() } } catch {}
+    try { if ($stream) { $stream.Close() } } catch { }
+    try { if ($client) { $client.Close() } } catch { }
   }
 }

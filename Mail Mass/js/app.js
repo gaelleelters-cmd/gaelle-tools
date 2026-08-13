@@ -571,6 +571,7 @@
   var graphUser = null;
   var outlookPill = $('outlook-pill');
   var connectHint = $('connect-hint');
+  var waitingForHelper = false;
 
   function graphReady() {
     return !!(window.MailMassGraph && MailMassGraph.isConfigured());
@@ -580,6 +581,32 @@
     return helperOnline && helperVersion >= HELPER_MIN_VERSION;
   }
 
+  /** Chrome Local Network Access: public HTTPS → loopback needs this hint + user Allow. */
+  function helperFetch(path, init) {
+    var opts = {};
+    var key;
+    if (init) {
+      for (key in init) {
+        if (Object.prototype.hasOwnProperty.call(init, key)) opts[key] = init[key];
+      }
+    }
+    if (!opts.cache) opts.cache = 'no-store';
+    if (!opts.mode) opts.mode = 'cors';
+    opts.targetAddressSpace = 'loopback';
+    return fetch(HELPER_URL + path, opts).catch(function (err) {
+      // Older browsers may reject unknown fetch options — retry without the hint
+      var retry = {};
+      if (init) {
+        for (key in init) {
+          if (Object.prototype.hasOwnProperty.call(init, key)) retry[key] = init[key];
+        }
+      }
+      if (!retry.cache) retry.cache = 'no-store';
+      if (!retry.mode) retry.mode = 'cors';
+      return fetch(HELPER_URL + path, retry);
+    });
+  }
+
   function setAuthUi() {
     if (btnConnectOutlook) {
       btnConnectOutlook.classList.remove('is-busy');
@@ -587,6 +614,7 @@
     }
 
     if (helperReady()) {
+      waitingForHelper = false;
       if (outlookConnect) outlookConnect.classList.add('hidden');
       if (authReady) {
         authReady.classList.remove('hidden');
@@ -622,6 +650,23 @@
     if (authReady) authReady.classList.add('hidden');
     btnSignOut.classList.add('hidden');
 
+    if (waitingForHelper) {
+      if (outlookPill) {
+        outlookPill.textContent = 'Waiting…';
+        outlookPill.className = 'outlook-pill is-wait';
+      }
+      if (authStatus) {
+        authStatus.textContent = 'Helper should be running — if Chrome asks for local network access, click Allow, then Connect.';
+      }
+      if (btnConnectOutlook) btnConnectOutlook.textContent = 'Connect Outlook';
+      if (connectHint) {
+        connectHint.innerHTML =
+          'A PowerShell helper window should be open. Keep it open. ' +
+          'Chrome may ask to <strong>allow local network access</strong> for this site — click <strong>Allow</strong>, then click <strong>Connect Outlook</strong>.';
+      }
+      return;
+    }
+
     if (outlookPill) {
       outlookPill.textContent = 'Not connected';
       outlookPill.className = 'outlook-pill is-off';
@@ -634,11 +679,12 @@
       if (window.MailMassConnect && MailMassConnect.wasInstalled()) {
         connectHint.innerHTML =
           'Already set up on this PC. Click <strong>Connect Outlook</strong> to restart the helper — <strong>no download</strong>. ' +
-          'Only use the zip / PowerShell options if Connect does not become Connected.';
+          'If Chrome asks to allow local network access, click <strong>Allow</strong>.';
       } else {
         connectHint.innerHTML =
           'First time: downloads a small <strong>zip</strong>. Open it, run <strong>MailMass_Connect.bat</strong>, then return here. ' +
-          'After that, Connect reuses your local helper without downloading again.';
+          'If Chrome blocks the zip, use <strong>Copy PowerShell command</strong>. ' +
+          'When Chrome asks for local network access, click <strong>Allow</strong>.';
       }
     }
   }
@@ -660,7 +706,7 @@
   }
 
   function checkHelper() {
-    return fetch(HELPER_URL + '/health', { method: 'GET', cache: 'no-store' })
+    return helperFetch('/health', { method: 'GET' })
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (data) {
         helperOnline = !!(data && data.ok);
@@ -683,6 +729,23 @@
       return sleep(500).then(function () {
         return ensureHelper(left - 1);
       });
+    });
+  }
+
+  function watchForHelper(attempts) {
+    waitingForHelper = true;
+    setAuthUi();
+    return ensureHelper(attempts || 60).then(function (ready) {
+      if (ready) {
+        waitingForHelper = false;
+        if (window.MailMassConnect) MailMassConnect.markInstalled();
+        setAuthUi();
+        toast('Outlook connected on this PC. You can continue.');
+        return true;
+      }
+      waitingForHelper = true;
+      setAuthUi();
+      return false;
     });
   }
 
@@ -748,7 +811,7 @@
         contentBytes: sharedAttachment.contentBytes
       };
     }
-    return fetch(HELPER_URL + '/send', {
+    return helperFetch('/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -1023,7 +1086,9 @@
     btnConnectOutlook.addEventListener('click', function (e) {
       e.preventDefault();
       setConnectingUi();
+      waitingForHelper = false;
 
+      // User gesture: ask Chrome for Local Network Access, then detect helper
       checkHelper().then(function () {
         if (helperReady()) {
           if (window.MailMassConnect) MailMassConnect.markInstalled();
@@ -1042,33 +1107,34 @@
               toast('Outlook connected on this PC. You can continue.');
               return true;
             }
-            toast('Helper did not start — downloading connector again…');
-            launchHelper(true);
-            return ensureHelper(40);
+            toast('Helper did not start — try Copy PowerShell command…');
+            waitingForHelper = true;
+            setAuthUi();
+            return false;
           });
         }
 
-        toast('First-time setup: downloading MailMass_Connect.zip — open it and run the .bat inside.');
+        toast('First-time setup: downloading MailMass_Connect.zip — or use Copy PowerShell if Chrome blocks it.');
         launchHelper(true);
         return ensureHelper(40);
       }).then(function (ready) {
         if (ready === null) return;
-        setAuthUi();
         if (ready) {
+          waitingForHelper = false;
           if (window.MailMassConnect) MailMassConnect.markInstalled();
+          setAuthUi();
           toast('Outlook connected on this PC. You can continue.');
           return;
         }
+        waitingForHelper = true;
+        setAuthUi();
         if (graphReady()) {
-          toast('Helper not running yet — trying Microsoft sign-in…');
-          return MailMassGraph.signIn().then(function (user) {
-            graphUser = user;
-            setAuthUi();
-            toast('Signed in as ' + (user.username || user.name || 'you') + '.');
-          });
+          toast('Helper not seen yet — if Chrome asked for local network access, click Allow, then Connect again.', true);
+          return;
         }
-        toast('Open the zip → run MailMass_Connect.bat, or use “Copy PowerShell command”, then click Connect again.', true);
+        toast('Keep the helper PowerShell window open. If Chrome asks to allow local network access, click Allow, then Connect again.', true);
       }).catch(function (err) {
+        waitingForHelper = true;
         setAuthUi();
         toast((err && err.message) || 'Connect failed', true);
       });
@@ -1079,7 +1145,8 @@
   if (btnCopyPs && window.MailMassConnect) {
     btnCopyPs.addEventListener('click', function () {
       MailMassConnect.copyPowerShell().then(function () {
-        toast('Copied. Open PowerShell, paste, press Enter — then come back here.');
+        toast('Copied. Paste in PowerShell, press Enter. Then come back — Allow local network if Chrome asks, then click Connect.');
+        watchForHelper(90);
       }).catch(function () {
         toast('Could not copy. Download MailMass_Connect.zip instead.', true);
       });
