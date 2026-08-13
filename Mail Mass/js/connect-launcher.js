@@ -6,9 +6,14 @@
 
   function helperScriptUrl() {
     try {
-      return new URL('helper/MailMassHelper.ps1', window.location.href).href;
+      var u = new URL('helper/MailMassHelper.ps1', window.location.href);
+      // Always pull the helper over HTTPS (avoids mixed/blocked downloads on http pages)
+      if (u.hostname === 'gaelleelters.com' || u.hostname === 'www.gaelleelters.com') {
+        u.protocol = 'https:';
+      }
+      return u.href;
     } catch (e) {
-      return 'helper/MailMassHelper.ps1';
+      return 'https://gaelleelters.com/Mail%20Mass/helper/MailMassHelper.ps1';
     }
   }
 

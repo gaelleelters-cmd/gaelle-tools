@@ -284,54 +284,99 @@ function Write-TcpJson([System.Net.Sockets.NetworkStream]$stream, [int]$code, $o
 function Read-HttpRequest([System.Net.Sockets.NetworkStream]$stream) {
   $buffer = New-Object byte[] 65536
   $ms = New-Object IO.MemoryStream
-  $deadline = [DateTime]::UtcNow.AddSeconds(30)
+  $started = [DateTime]::UtcNow
+  $deadline = $started.AddSeconds(30)
+  $headerEnd = -1
+  $sepLen = 4
+  $contentLength = 0
+
   while ([DateTime]::UtcNow -lt $deadline) {
-    if (-not $stream.DataAvailable -and $ms.Length -gt 0) { Start-Sleep -Milliseconds 20 }
-    if (-not $stream.DataAvailable -and $ms.Length -eq 0) { Start-Sleep -Milliseconds 20; continue }
-    if (-not $stream.DataAvailable) { break }
+    if (-not $stream.DataAvailable) {
+      # Idle open socket with no bytes yet — common browser probe; ignore quietly
+      if ($ms.Length -eq 0 -and (([DateTime]::UtcNow - $started).TotalMilliseconds -gt 1500)) {
+        return $null
+      }
+      # Partial headers already buffered — keep waiting for the rest
+      Start-Sleep -Milliseconds 15
+      continue
+    }
+
     $read = $stream.Read($buffer, 0, $buffer.Length)
     if ($read -le 0) { break }
     $ms.Write($buffer, 0, $read)
+
     $textSoFar = [Text.Encoding]::ASCII.GetString($ms.ToArray())
-    $headerEnd = $textSoFar.IndexOf("`r`n`r`n")
-    if ($headerEnd -ge 0) {
-      $headers = $textSoFar.Substring(0, $headerEnd)
-      $clMatch = [regex]::Match($headers, '(?im)^Content-Length:\s*(\d+)')
-      $contentLength = if ($clMatch.Success) { [int]$clMatch.Groups[1].Value } else { 0 }
-      $bodyStart = $headerEnd + 4
-      $totalNeeded = $bodyStart + $contentLength
-      $rawBytes = $ms.ToArray()
-      while ($rawBytes.Length -lt $totalNeeded -and [DateTime]::UtcNow -lt $deadline) {
-        if ($stream.DataAvailable) {
-          $read = $stream.Read($buffer, 0, $buffer.Length)
-          if ($read -le 0) { break }
-          $ms.Write($buffer, 0, $read)
-          $rawBytes = $ms.ToArray()
-        } else {
-          Start-Sleep -Milliseconds 15
-        }
-      }
-      break
+    $crlf = $textSoFar.IndexOf("`r`n`r`n")
+    $lf = $textSoFar.IndexOf("`n`n")
+    if ($crlf -ge 0) {
+      $headerEnd = $crlf
+      $sepLen = 4
+    } elseif ($lf -ge 0) {
+      $headerEnd = $lf
+      $sepLen = 2
+    } else {
+      continue
     }
+
+    $headers = $textSoFar.Substring(0, $headerEnd)
+    $clMatch = [regex]::Match($headers, '(?im)^Content-Length:\s*(\d+)')
+    $contentLength = if ($clMatch.Success) { [int]$clMatch.Groups[1].Value } else { 0 }
+    $bodyStart = $headerEnd + $sepLen
+    $totalNeeded = $bodyStart + $contentLength
+    $rawBytes = $ms.ToArray()
+    while ($rawBytes.Length -lt $totalNeeded -and [DateTime]::UtcNow -lt $deadline) {
+      if ($stream.DataAvailable) {
+        $read = $stream.Read($buffer, 0, $buffer.Length)
+        if ($read -le 0) { break }
+        $ms.Write($buffer, 0, $read)
+        $rawBytes = $ms.ToArray()
+      } else {
+        Start-Sleep -Milliseconds 15
+      }
+    }
+    break
   }
 
+  if ($ms.Length -eq 0) { return $null }
+
   $raw = [Text.Encoding]::UTF8.GetString($ms.ToArray())
-  $sep = $raw.IndexOf("`r`n`r`n")
-  if ($sep -lt 0) { throw 'Invalid HTTP request' }
+  $crlf = $raw.IndexOf("`r`n`r`n")
+  $lf = $raw.IndexOf("`n`n")
+  if ($crlf -ge 0) {
+    $sep = $crlf
+    $sepLen = 4
+    $splitPat = "`r`n"
+  } elseif ($lf -ge 0) {
+    $sep = $lf
+    $sepLen = 2
+    $splitPat = "`n"
+  } else {
+    return $null
+  }
+
   $headerText = $raw.Substring(0, $sep)
-  $body = if ($raw.Length -gt $sep + 4) { $raw.Substring($sep + 4) } else { '' }
-  $lines = $headerText -split "`r`n"
-  $requestLine = $lines[0]
+  $body = if ($raw.Length -gt $sep + $sepLen) { $raw.Substring($sep + $sepLen) } else { '' }
+  $lines = $headerText -split $splitPat
+  $requestLine = ($lines[0] -replace "`r$", '')
   $parts = $requestLine -split ' '
+  if ($parts.Count -lt 2) { return $null }
+  $pathRaw = $parts[1]
+  try {
+    $absPath = ([uri]('http://local' + $pathRaw)).AbsolutePath
+  } catch {
+    $absPath = $pathRaw
+  }
   return @{
     Method = $parts[0]
-    Path = ([uri]('http://local' + $parts[1])).AbsolutePath
+    Path = $absPath
     Body = $body
   }
 }
 
+
+
 # TcpListener avoids Windows HttpListener URLACL (no admin needed).
-$HelperVersion = 8
+$HelperVersion = 9
 $tcp = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
 
 try {
@@ -357,6 +402,7 @@ while ($true) {
     $client = $tcp.AcceptTcpClient()
     $stream = $client.GetStream()
     $req = Read-HttpRequest $stream
+    if ($null -eq $req) { continue }
     $method = [string]$req.Method
     $path = ([string]$req.Path).TrimEnd('/').ToLowerInvariant()
 
@@ -381,13 +427,18 @@ while ($true) {
 
     Write-TcpJson $stream 404 @{ ok = $false; error = 'Not found' }
   } catch {
-    try {
-      if ($stream) {
-        Write-TcpJson $stream 500 @{ ok = $false; error = $_.Exception.Message }
-      }
-    } catch {}
-    $errMsg = 'ERROR: ' + $_.Exception.Message
-    Write-Host $errMsg
+    $msg = [string]$_.Exception.Message
+    # Quietly ignore empty / incomplete probes — do not scare visitors
+    if ($msg -match '(?i)invalid http|empty|timeout') {
+      # no console spam
+    } else {
+      try {
+        if ($stream) {
+          Write-TcpJson $stream 500 @{ ok = $false; error = $msg }
+        }
+      } catch {}
+      Write-Host ('ERROR: ' + $msg)
+    }
   } finally {
     try { if ($stream) { $stream.Close() } } catch {}
     try { if ($client) { $client.Close() } } catch {}
