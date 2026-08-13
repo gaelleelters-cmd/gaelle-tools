@@ -1649,6 +1649,11 @@ body.has-cookie-banner .help-bot {
   gap: 0.85rem;
 }
 
+.ask-form-fields[hidden],
+.ask-form.is-sent .ask-form-fields {
+  display: none !important;
+}
+
 .ask-field label {
   display: block;
   font-size: 0.68rem;

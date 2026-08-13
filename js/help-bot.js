@@ -123,7 +123,7 @@
     if (submitBtn) {
       submitBtn.disabled = sending || isSent;
       submitBtn.setAttribute('aria-busy', sending ? 'true' : 'false');
-      if (!isSent) submitBtn.textContent = sending ? 'Sending…' : 'Send Question';
+      submitBtn.textContent = isSent ? 'Sent' : sending ? 'Sending…' : 'Send Question';
     }
     [nameInput, emailInput, messageInput].forEach(function (el) {
       if (el) el.disabled = sending || isSent;
@@ -214,6 +214,7 @@
       });
     }).then(function () {
       isSent = true;
+      form.classList.add('is-sent');
       if (fieldsWrap) fieldsWrap.hidden = true;
       showStatus('success', 'Thank you. Your question has been sent. I will get back to you by email.');
       setSending(false);
