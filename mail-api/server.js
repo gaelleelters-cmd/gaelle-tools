@@ -49,25 +49,59 @@ function smtpConfigured() {
   return Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS && SMTP_FROM);
 }
 
-function createContactTransport() {
-  if (smtpConfigured()) {
-    return nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_SECURE || SMTP_PORT === 465,
-      auth: { user: SMTP_USER, pass: SMTP_PASS }
-    });
-  }
-  // Deliver to the domain mailbox (Cloudflare Email Routing → Gmail)
-  // without a Gmail App Password.
+function createSmtpTransport() {
   return nodemailer.createTransport({
-    host: CONTACT_MX_HOST,
-    port: CONTACT_MX_PORT,
-    secure: false,
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE || SMTP_PORT === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS }
   });
+}
+
+function formSubmitSuccess(data) {
+  return data && (data.success === true || data.success === 'true');
+}
+
+async function sendViaFormSubmit(to, payload, meta, subject) {
+  const res = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(to), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      name: payload.name,
+      email: payload.email,
+      _replyto: payload.email,
+      _subject: subject,
+      _template: 'table',
+      _captcha: 'false',
+      message: buildContactText(payload, meta)
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !formSubmitSuccess(data)) {
+    const err = new Error(data.message || data.error || ('Mail relay HTTP ' + res.status));
+    err.relay = data;
+    throw err;
+  }
+  return data;
+}
+
+async function sendContactEmail(payload, meta, subject) {
+  if (smtpConfigured()) {
+    await createSmtpTransport().sendMail({
+      from: SMTP_FROM,
+      to: CONTACT_TO,
+      replyTo: `${payload.name} <${payload.email}>`,
+      subject,
+      text: buildContactText(payload, meta),
+      html: buildContactHtml(payload, meta)
+    });
+    return 'smtp';
+  }
+  await sendViaFormSubmit(CONTACT_TO, payload, meta, subject);
+  return 'relay';
 }
 
 function htmlEsc(s) {
@@ -162,7 +196,7 @@ app.get('/health', (_req, res) => {
     service: 'mail-mass-api',
     smtpConfigured: smtpConfigured(),
     contactConfigured: true,
-    contactDelivery: smtpConfigured() ? 'smtp' : 'mx',
+    contactDelivery: smtpConfigured() ? 'smtp' : 'relay',
     from: smtpConfigured() ? SMTP_FROM : CONTACT_FROM
   });
 });
@@ -283,20 +317,12 @@ app.post('/contact', async (req, res) => {
     };
     const preview = question.slice(0, 64);
     const subject = headerSafe(`[Ask me] ${name} — ${preview}${question.length > 64 ? '…' : ''}`).slice(0, 180);
-    const from = smtpConfigured() ? SMTP_FROM : CONTACT_FROM;
 
-    const transporter = createContactTransport();
-    await transporter.sendMail({
-      from,
-      to: CONTACT_TO,
-      replyTo: `${name} <${email}>`,
-      subject,
-      text: buildContactText(payload, meta),
-      html: buildContactHtml(payload, meta)
-    });
-
+    await sendContactEmail(payload, meta, subject);
     return res.json({ ok: true, forwarded: true });
   } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('contact send failed', err && err.message);
     return res.status(500).json({ ok: false, error: 'Could not send your question.' });
   }
 });
