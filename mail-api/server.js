@@ -67,7 +67,10 @@ async function sendViaFormSubmit(to, payload, meta, subject) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Accept: 'application/json'
+      Accept: 'application/json',
+      Origin: 'https://gaelleelters.com',
+      Referer: 'https://gaelleelters.com/',
+      'User-Agent': 'Mozilla/5.0 (compatible; GaelleElTersContact/1.0)'
     },
     body: JSON.stringify({
       name: payload.name,
