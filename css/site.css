@@ -682,18 +682,24 @@ img { max-width: 100%; display: block; }
 
 .about-headline {
   font-family: var(--display);
+  font-weight: 650;
+  font-size: clamp(1.35rem, 2.7vw, 1.85rem);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  color: var(--sea-deep);
+  margin-bottom: 0.5rem;
+  max-width: 22ch;
+}
+
+.about-lede {
+  font-family: var(--display);
   font-weight: 500;
-  font-size: clamp(1.2rem, 2.4vw, 1.55rem);
-  line-height: 1.35;
+  font-size: clamp(1.05rem, 2.1vw, 1.28rem);
+  line-height: 1.4;
   letter-spacing: -0.02em;
   color: var(--ink-soft);
   margin-bottom: 1.25rem;
   max-width: 36ch;
-}
-
-.about-headline em {
-  font-style: italic;
-  color: var(--sea-deep);
 }
 
 .about-bio {
@@ -716,7 +722,96 @@ img { max-width: 100%; display: block; }
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 2.25rem;
+  margin-top: 0.15rem;
+  margin-bottom: 0;
+}
+
+.section--solid {
+  background: rgba(247, 250, 252, 0.9);
+  border-top: 1px solid var(--line);
+}
+
+.section-note {
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 58ch;
+  margin: 0 0 2rem;
+}
+
+.section-lead + .section-note {
+  margin-top: -1.6rem;
+}
+
+.projects-more {
+  margin-top: 1.35rem;
+}
+
+.projects-more a,
+.ask-cta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--sea-deep);
+  text-decoration: none;
+}
+
+.projects-more a:hover,
+.ask-cta a:hover {
+  color: var(--ink);
+}
+
+.ask-cta {
+  margin: 0.65rem 0 0.15rem;
+}
+
+.work-cta-inner {
+  max-width: 40rem;
+}
+
+.work-cta-text {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1.15rem, 2.2vw, 1.45rem);
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 1.15rem;
+  max-width: 28ch;
+}
+
+.privacy-doc {
+  max-width: 68ch;
+}
+
+.privacy-doc h2 {
+  font-family: var(--display);
+  font-weight: 650;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  margin: 2rem 0 0.75rem;
+}
+
+.privacy-doc p,
+.privacy-doc ul {
+  margin-bottom: 1rem;
+  color: var(--ink-soft);
+}
+
+.privacy-doc ul {
+  padding-left: 1.25rem;
+}
+
+.privacy-doc li {
+  margin-bottom: 0.35rem;
+}
+
+.privacy-updated {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
 }
 
 .about-values {
@@ -1703,10 +1798,14 @@ body.has-cookie-banner .help-bot {
 
 .ask-honeypot {
   position: absolute;
-  left: -9999px;
   width: 1px;
   height: 1px;
-  opacity: 0;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
   pointer-events: none;
 }
 
