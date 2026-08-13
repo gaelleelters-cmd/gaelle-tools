@@ -72,7 +72,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASS,SMTP_FROM,SMTP_SECURE
+          envs: SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASS,SMTP_FROM,SMTP_SECURE,CONTACT_TO
           script_stop: true
           script: |
             set -euo pipefail

@@ -1,224 +1,36 @@
 (function () {
   'use strict';
 
-  var CONTACT_EMAIL = 'info@gaelleelters.com';
   var CONTACT_API = '/api/contact';
-
-  var FAQ = {
-    start: {
-      bot: 'Hi! I can answer quick questions about the tools here. Pick a topic or type your question below.',
-      options: [
-        { id: 'tools', label: 'How do the tools work?' },
-        { id: 'privacy', label: 'Is my data stored anywhere?' },
-        { id: 'mailmass', label: 'Help with Mail Mass' },
-        { id: 'cv', label: 'Help with the CV generator' },
-        { id: 'custom', label: 'Something else' }
-      ]
-    },
-    tools: {
-      bot: 'Open Projects from the menu, pick a tool, and launch it. Everything runs in your browser. No account needed. Your files stay on your device.',
-      options: [
-        { id: 'start', label: 'Ask something else' },
-        { id: 'email', label: 'Email Gaelle instead' }
-      ]
-    },
-    privacy: {
-      bot: 'Your files are processed locally in your browser. Nothing is uploaded to a server unless a tool explicitly asks you to sign in (for example Mail Mass with your own Outlook).',
-      options: [
-        { id: 'start', label: 'Ask something else' },
-        { id: 'email', label: 'Email Gaelle instead' }
-      ]
-    },
-    mailmass: {
-      bot: "Mail Mass runs on each person's own computer. They click Connect Outlook, open the small connector file, then send — mail leaves from THEIR Outlook only. No shared mailbox.",
-      options: [
-        { id: 'start', label: 'Ask something else' },
-        { id: 'email', label: 'Email Gaelle instead' }
-      ]
-    },
-    cv: {
-      bot: 'The CV generator walks you through templates step by step. Fill in your details, preview live, then download as PDF, free and with no paywall.',
-      options: [
-        { id: 'start', label: 'Ask something else' },
-        { id: 'email', label: 'Email Gaelle instead' }
-      ]
-    },
-    custom: {
-      bot: 'For anything specific, like a new tool idea, a bug, or a partnership, email is best and I read every message.',
-      options: [
-        { id: 'email', label: 'Open email to ' + CONTACT_EMAIL },
-        { id: 'start', label: 'Back to questions' }
-      ]
-    }
-  };
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   var botRoot = document.getElementById('help-bot');
   var toggleBtn = document.getElementById('help-bot-toggle');
   var closeBtn = document.getElementById('help-bot-close');
   var backdrop = document.getElementById('help-bot-backdrop');
   var panel = document.getElementById('help-bot-panel');
-  var messagesEl = document.getElementById('help-bot-messages');
-  var optionsEl = document.getElementById('help-bot-options');
-  var form = document.getElementById('help-bot-form');
-  var input = document.getElementById('help-bot-input');
-  var replyEmailInput = document.getElementById('help-bot-reply-email');
-  var honeypotInput = document.getElementById('help-bot-website');
-  var sendBtn = document.getElementById('help-bot-send');
+  var form = document.getElementById('ask-form');
+  var fieldsWrap = document.getElementById('ask-form-fields');
+  var nameInput = document.getElementById('ask-name');
+  var emailInput = document.getElementById('ask-email');
+  var messageInput = document.getElementById('ask-message');
+  var honeypotInput = document.getElementById('ask-website');
+  var startedInput = document.getElementById('ask-started');
+  var submitBtn = document.getElementById('ask-submit');
+  var statusEl = document.getElementById('ask-form-status');
 
-  if (!botRoot || !toggleBtn || !panel || !messagesEl || !optionsEl || !form || !input) return;
+  if (!botRoot || !toggleBtn || !panel) return;
 
   var isOpen = false;
+  var startedAt = Date.now();
   var isSending = false;
+  var isSent = false;
 
-  function scrollMessages() {
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-  }
-
-  function addMessage(text, role) {
-    var bubble = document.createElement('div');
-    bubble.className = 'help-bot-msg help-bot-msg--' + role;
-    bubble.textContent = text;
-    messagesEl.appendChild(bubble);
-    scrollMessages();
-  }
-
-  function renderOptions(options) {
-    optionsEl.innerHTML = '';
-    options.forEach(function (opt) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'help-bot-option' + (opt.id === 'email' ? ' help-bot-option--mail' : '');
-      btn.textContent = opt.label;
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleOption(opt);
-      });
-      optionsEl.appendChild(btn);
-    });
-  }
-
-  function showStep(stepId, userLabel) {
-    if (userLabel) addMessage(userLabel, 'user');
-    var step = FAQ[stepId];
-    if (!step) return;
-    addMessage(step.bot, 'bot');
-    renderOptions(step.options);
-  }
-
-  function resetChat() {
-    messagesEl.innerHTML = '';
-    showStep('start');
-  }
-
-  function matchFaqTopic(lower) {
-    if (/mail mass|outlook|merge/.test(lower)) return 'mailmass';
-    if (/cv|resume|curriculum/.test(lower)) return 'cv';
-    if (/data|privacy|upload|store|safe/.test(lower)) return 'privacy';
-    if (/tool|how|work|whatsapp|excel/.test(lower)) return 'tools';
-    return null;
-  }
-
-  function setSending(sending) {
-    isSending = sending;
-    if (sendBtn) sendBtn.disabled = sending;
-    if (input) input.disabled = sending;
-    if (replyEmailInput) replyEmailInput.disabled = sending;
-  }
-
-  function forwardQuestion(question, replyEmail) {
-    return fetch(CONTACT_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        question: question,
-        replyEmail: replyEmail || '',
-        page: window.location.href,
-        website: honeypotInput ? honeypotInput.value : ''
-      })
-    }).then(function (res) {
-      return res.json().catch(function () {
-        return { ok: false, error: 'Unexpected server response.' };
-      }).then(function (data) {
-        if (!res.ok || !data.ok) {
-          var err = new Error((data && data.error) || 'Could not send your question.');
-          err.status = res.status;
-          throw err;
-        }
-        return data;
-      });
-    });
-  }
-
-  function handleOption(opt) {
-    if (opt.id === 'email') {
-      addMessage(opt.label, 'user');
-      addMessage('Opening your email app…', 'bot');
-      window.location.href = 'mailto:' + CONTACT_EMAIL;
-      renderOptions(FAQ.custom.options);
-      return;
-    }
-    if (opt.id === 'start') {
-      resetChat();
-      return;
-    }
-    showStep(opt.id, opt.label);
-  }
-
-  function handleTypedQuestion(text) {
-    var question = text.trim();
-    if (!question || isSending) return;
-
-    var replyEmail = replyEmailInput ? replyEmailInput.value.trim() : '';
-    var faqTopic = matchFaqTopic(question.toLowerCase());
-
-    addMessage(question, 'user');
-    input.value = '';
-    setSending(true);
-
-    var sendingBubble = document.createElement('div');
-    sendingBubble.className = 'help-bot-msg help-bot-msg--bot';
-    sendingBubble.textContent = 'Sending your question…';
-    messagesEl.appendChild(sendingBubble);
-    scrollMessages();
-
-    function clearSendingBubble() {
-      if (sendingBubble.parentNode) {
-        sendingBubble.parentNode.removeChild(sendingBubble);
-      }
-    }
-
-    forwardQuestion(question, replyEmail).then(function () {
-      clearSendingBubble();
-
-      if (faqTopic) {
-        addMessage(FAQ[faqTopic].bot, 'bot');
-        addMessage('Your question was also sent to Gaelle.', 'bot');
-        renderOptions(FAQ[faqTopic].options);
-        return;
-      }
-
-      addMessage('Thanks! Your question was sent to Gaelle. She\'ll reply by email if you left your address.', 'bot');
-      renderOptions(FAQ.custom.options);
-    }).catch(function (err) {
-      clearSendingBubble();
-
-      if (faqTopic) {
-        addMessage(FAQ[faqTopic].bot, 'bot');
-        addMessage('I couldn\'t forward this to email right now. Use the email button below if you need a reply.', 'bot');
-        renderOptions(FAQ[faqTopic].options);
-        return;
-      }
-
-      addMessage('Couldn\'t send your question right now. Try the email button below.', 'bot');
-      renderOptions(FAQ.custom.options);
-    }).finally(function () {
-      setSending(false);
-    });
-  }
+  if (startedInput) startedInput.value = String(startedAt);
 
   function openBot() {
     isOpen = true;
+    botRoot.classList.add('is-open');
     panel.classList.remove('is-hidden');
     if (backdrop) {
       backdrop.classList.remove('is-hidden');
@@ -226,14 +38,12 @@
       backdrop.setAttribute('aria-hidden', 'false');
     }
     toggleBtn.setAttribute('aria-expanded', 'true');
-    if (messagesEl.childElementCount === 0) {
-      resetChat();
-    }
-    input.focus();
+    if (closeBtn) closeBtn.focus();
   }
 
   function closeBot() {
     isOpen = false;
+    botRoot.classList.remove('is-open');
     panel.classList.add('is-hidden');
     if (backdrop) {
       backdrop.classList.add('is-hidden');
@@ -250,11 +60,13 @@
     else openBot();
   });
 
-  closeBtn.addEventListener('click', function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    closeBot();
-  });
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeBot();
+    });
+  }
 
   if (backdrop) {
     backdrop.addEventListener('click', function (e) {
@@ -267,22 +79,6 @@
     e.stopPropagation();
   });
 
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    handleTypedQuestion(input.value);
-  });
-
-  input.addEventListener('keydown', function (e) {
-    e.stopPropagation();
-  });
-
-  if (replyEmailInput) {
-    replyEmailInput.addEventListener('keydown', function (e) {
-      e.stopPropagation();
-    });
-  }
-
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && isOpen) {
       e.stopPropagation();
@@ -291,4 +87,150 @@
   });
 
   window.openHelpBot = openBot;
+
+  document.querySelectorAll('.ask-item').forEach(function (item) {
+    item.addEventListener('toggle', function () {
+      if (!item.open) return;
+      document.querySelectorAll('.ask-item[open]').forEach(function (openItem) {
+        if (openItem !== item) openItem.removeAttribute('open');
+      });
+    });
+  });
+
+  if (!form) return;
+
+  function setFieldError(input, message) {
+    var field = input.closest('.ask-field');
+    var errorId = input.id + '-error';
+    var errorEl = document.getElementById(errorId);
+    if (field) field.classList.toggle('is-invalid', !!message);
+    input.setAttribute('aria-invalid', message ? 'true' : 'false');
+    if (errorEl) {
+      errorEl.hidden = !message;
+      errorEl.textContent = message || '';
+    }
+  }
+
+  function showStatus(type, message) {
+    if (!statusEl) return;
+    statusEl.hidden = !message;
+    statusEl.className = 'ask-form-status' + (type ? ' is-' + type : '');
+    statusEl.textContent = message || '';
+  }
+
+  function setSending(sending) {
+    isSending = sending;
+    if (submitBtn) {
+      submitBtn.disabled = sending || isSent;
+      submitBtn.setAttribute('aria-busy', sending ? 'true' : 'false');
+      if (!isSent) submitBtn.textContent = sending ? 'Sending…' : 'Send Question';
+    }
+    [nameInput, emailInput, messageInput].forEach(function (el) {
+      if (el) el.disabled = sending || isSent;
+    });
+  }
+
+  function validate() {
+    var valid = true;
+    var name = nameInput.value.trim();
+    var email = emailInput.value.trim();
+    var question = messageInput.value.trim();
+
+    if (!name) {
+      setFieldError(nameInput, 'Please enter your name.');
+      valid = false;
+    } else if (name.length < 2) {
+      setFieldError(nameInput, 'Please enter your full name.');
+      valid = false;
+    } else {
+      setFieldError(nameInput, '');
+    }
+
+    if (!email) {
+      setFieldError(emailInput, 'Please enter your email address.');
+      valid = false;
+    } else if (!EMAIL_RE.test(email)) {
+      setFieldError(emailInput, 'Please enter a valid email address.');
+      valid = false;
+    } else {
+      setFieldError(emailInput, '');
+    }
+
+    if (!question) {
+      setFieldError(messageInput, 'Please enter your question or message.');
+      valid = false;
+    } else if (question.length < 10) {
+      setFieldError(messageInput, 'Please add a little more detail so I can reply usefully.');
+      valid = false;
+    } else {
+      setFieldError(messageInput, '');
+    }
+
+    return valid;
+  }
+
+  [nameInput, emailInput, messageInput].forEach(function (el) {
+    if (!el) return;
+    el.addEventListener('input', function () {
+      if (el.getAttribute('aria-invalid') === 'true') setFieldError(el, '');
+      if (statusEl && statusEl.classList.contains('is-error')) showStatus('', '');
+    });
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isSending || isSent) return;
+    showStatus('', '');
+    if (!validate()) {
+      var firstInvalid = form.querySelector('.ask-field.is-invalid input, .ask-field.is-invalid textarea');
+      if (firstInvalid) firstInvalid.focus();
+      return;
+    }
+
+    setSending(true);
+
+    fetch(CONTACT_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: nameInput.value.trim(),
+        email: emailInput.value.trim(),
+        question: messageInput.value.trim(),
+        page: window.location.href,
+        website: honeypotInput ? honeypotInput.value : '',
+        startedAt: startedInput ? startedInput.value : String(startedAt)
+      })
+    }).then(function (res) {
+      return res.json().catch(function () {
+        return { ok: false, error: 'Unexpected server response.' };
+      }).then(function (data) {
+        if (!res.ok || !data.ok) {
+          var err = new Error((data && data.error) || 'Could not send your question.');
+          err.status = res.status;
+          throw err;
+        }
+        return data;
+      });
+    }).then(function () {
+      isSent = true;
+      if (fieldsWrap) fieldsWrap.hidden = true;
+      showStatus('success', 'Thank you. Your question has been sent. I will get back to you by email.');
+      setSending(false);
+      if (statusEl) statusEl.scrollIntoView({ block: 'nearest' });
+    }).catch(function (err) {
+      var tooMany = err && err.status === 429;
+      var failedFetch = err && (err.name === 'TypeError' || /failed to fetch|networkerror|unexpected server/i.test(String(err.message || '')));
+      showStatus(
+        'error',
+        tooMany
+          ? 'Too many questions were sent just now. Please wait a few minutes and try again.'
+          : failedFetch
+            ? 'Could not send your question right now. Please try again, or email info@gaelleelters.com.'
+            : (err && err.message) || 'Could not send your question. Please try again, or email info@gaelleelters.com.'
+      );
+      setSending(false);
+      if (statusEl) statusEl.scrollIntoView({ block: 'nearest' });
+    });
+  });
 })();

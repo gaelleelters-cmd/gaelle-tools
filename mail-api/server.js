@@ -77,41 +77,59 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
 }
 
-function buildContactHtml(question, replyEmail, meta) {
+function headerSafe(value) {
+  return String(value == null ? '' : value).replace(/[\r\n]+/g, ' ').trim();
+}
+
+function formatSubmittedAt(date) {
+  try {
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'UTC',
+      dateStyle: 'long',
+      timeStyle: 'short'
+    }).format(date) + ' UTC';
+  } catch (_err) {
+    return date.toISOString();
+  }
+}
+
+function buildContactHtml(payload, meta) {
+  const email = payload.email || '';
   const rows = [
-    ['Question', question],
-    ['Reply email', replyEmail || '(not provided)'],
-    ['Page', meta.page || '(unknown)'],
-    ['Time (UTC)', meta.time || '(unknown)']
+    ['Visitor name', payload.name || '(not provided)'],
+    ['Visitor email', email || '(not provided)'],
+    ['Submitted', meta.timeDisplay || meta.time || '(unknown)'],
+    ['Page', meta.page || '(unknown)']
   ];
   const body = rows.map(function (row) {
-    return `<tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:600;vertical-align:top;">${htmlEsc(row[0])}</td>`
-      + `<td style="padding:8px 12px;border:1px solid #e5e7eb;white-space:pre-wrap;">${htmlEsc(row[1])}</td></tr>`;
+    const value = row[0] === 'Visitor email' && email
+      ? `<a href="mailto:${htmlEsc(email)}">${htmlEsc(email)}</a>`
+      : htmlEsc(row[1]);
+    return `<tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:600;vertical-align:top;width:160px;">${htmlEsc(row[0])}</td>`
+      + `<td style="padding:8px 12px;border:1px solid #e5e7eb;white-space:pre-wrap;">${value}</td></tr>`;
   }).join('');
   return `<div style="font-family:Calibri,sans-serif;font-size:11pt;">`
-    + `<p style="margin:0 0 12px 0;">New question from the site help bot:</p>`
-    + `<table style="border-collapse:collapse;width:100%;max-width:640px;">${body}</table></div>`;
+    + `<p style="margin:0 0 12px 0;">New question from the Ask me form on gaelleelters.com.</p>`
+    + `<p style="margin:0 0 12px 0;">Reply directly to this email to respond to the visitor.</p>`
+    + `<table style="border-collapse:collapse;width:100%;max-width:640px;">${body}</table>`
+    + `<p style="margin:16px 0 8px 0;font-weight:600;">Question / Message</p>`
+    + `<p style="margin:0;white-space:pre-wrap;">${htmlEsc(payload.question)}</p>`
+    + `</div>`;
 }
 
-function buildContactText(question, replyEmail, meta) {
+function buildContactText(payload, meta) {
   return [
-    'New question from the site help bot:',
+    'New question from the Ask me form on gaelleelters.com.',
+    'Reply directly to this email to respond to the visitor.',
     '',
-    'Question:',
-    question,
-    '',
-    'Reply email: ' + (replyEmail || '(not provided)'),
+    'Visitor name: ' + (payload.name || '(not provided)'),
+    'Visitor email: ' + (payload.email || '(not provided)'),
+    'Submitted: ' + (meta.timeDisplay || meta.time || '(unknown)'),
     'Page: ' + (meta.page || '(unknown)'),
-    'Time (UTC): ' + (meta.time || '(unknown)')
+    '',
+    'Question / Message:',
+    payload.question
   ].join('\n');
-}
-
-function matchFaqTopic(lower) {
-  if (/mail mass|outlook|merge/.test(lower)) return 'mailmass';
-  if (/cv|resume|curriculum/.test(lower)) return 'cv';
-  if (/data|privacy|upload|store|safe/.test(lower)) return 'privacy';
-  if (/tool|how|work|whatsapp|excel/.test(lower)) return 'tools';
-  return null;
 }
 
 app.get('/health', (_req, res) => {
@@ -213,17 +231,21 @@ app.post('/contact', async (req, res) => {
       return res.json({ ok: true });
     }
 
-    const question = String(req.body.question || '').trim();
-    const replyEmail = String(req.body.replyEmail || '').trim();
+    const name = headerSafe(req.body.name).slice(0, 120);
+    const email = headerSafe(req.body.email || req.body.replyEmail).slice(0, 120);
+    const question = String(req.body.question || req.body.message || '').trim();
 
-    if (!question || question.length < 3) {
+    if (!name || name.length < 2) {
+      return res.status(400).json({ ok: false, error: 'Please enter your name.' });
+    }
+    if (!email || !isValidEmail(email)) {
+      return res.status(400).json({ ok: false, error: 'Please enter a valid email address.' });
+    }
+    if (!question || question.length < 10) {
       return res.status(400).json({ ok: false, error: 'Please enter a question.' });
     }
-    if (question.length > 2000) {
+    if (question.length > 4000) {
       return res.status(400).json({ ok: false, error: 'Question is too long.' });
-    }
-    if (replyEmail && !isValidEmail(replyEmail)) {
-      return res.status(400).json({ ok: false, error: 'Please enter a valid email address.' });
     }
 
     if (!smtpConfigured()) {
@@ -233,13 +255,15 @@ app.post('/contact', async (req, res) => {
       });
     }
 
-    const faqTopic = matchFaqTopic(question.toLowerCase());
+    const submitted = new Date();
+    const payload = { name, email, question };
     const meta = {
-      page: String(req.body.page || req.get('referer') || '').trim(),
-      time: new Date().toISOString()
+      page: headerSafe(req.body.page || req.get('referer') || '').slice(0, 500),
+      time: submitted.toISOString(),
+      timeDisplay: formatSubmittedAt(submitted)
     };
-    const subjectPrefix = faqTopic ? '[Help bot · auto-answered]' : '[Help bot · needs reply]';
-    const subject = `${subjectPrefix} ${question.slice(0, 72)}${question.length > 72 ? '…' : ''}`;
+    const preview = question.slice(0, 64);
+    const subject = headerSafe(`[Ask me] ${name} — ${preview}${question.length > 64 ? '…' : ''}`).slice(0, 180);
 
     const transporter = nodemailer.createTransport({
       host: SMTP_HOST,
@@ -251,15 +275,15 @@ app.post('/contact', async (req, res) => {
     await transporter.sendMail({
       from: SMTP_FROM,
       to: CONTACT_TO,
-      replyTo: replyEmail || undefined,
+      replyTo: `${name} <${email}>`,
       subject,
-      text: buildContactText(question, replyEmail, meta),
-      html: buildContactHtml(question, replyEmail, meta)
+      text: buildContactText(payload, meta),
+      html: buildContactHtml(payload, meta)
     });
 
     return res.json({ ok: true, forwarded: true });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message || 'Could not send your question.' });
+    return res.status(500).json({ ok: false, error: 'Could not send your question.' });
   }
 });
 

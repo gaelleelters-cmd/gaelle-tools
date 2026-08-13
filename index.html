@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,650;0,9..144,700;1,9..144,400;1,9..144,500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/site.css?v=20260812contact">
+  <link rel="stylesheet" href="css/site.css?v=20260813ask3">
 </head>
 <body class="page-home">
 
@@ -127,29 +127,73 @@
       <header class="help-bot-head">
         <div>
           <p class="help-bot-kicker">Gaelle El Ters</p>
-          <h2 class="help-bot-title" id="help-bot-title">Quick help</h2>
+          <h2 class="help-bot-title" id="help-bot-title">Ask me</h2>
         </div>
         <button type="button" class="help-bot-close" id="help-bot-close" aria-label="Close">&times;</button>
       </header>
-      <div class="help-bot-messages" id="help-bot-messages" aria-live="polite"></div>
-      <div class="help-bot-options" id="help-bot-options"></div>
-      <form class="help-bot-compose" id="help-bot-form">
-        <div class="help-bot-compose-fields">
-          <label class="visually-hidden" for="help-bot-reply-email">Your email (optional)</label>
-          <input type="email" id="help-bot-reply-email" class="help-bot-input help-bot-input--email" placeholder="Your email (optional, for a reply)" autocomplete="email" maxlength="120">
-          <div class="help-bot-compose-row">
-            <label class="visually-hidden" for="help-bot-input">Your question</label>
-            <input type="text" id="help-bot-input" class="help-bot-input" placeholder="Type your question&hellip;" autocomplete="off" maxlength="240" required>
-            <button type="submit" class="help-bot-send" id="help-bot-send">Send</button>
-          </div>
+      <div class="help-bot-body">
+        <div class="ask-accordion">
+          <details class="ask-item" name="ask-faq">
+            <summary class="ask-question">What kind of digital solutions do you build?</summary>
+            <p class="ask-answer">I build practical digital solutions including websites, browser-based tools, workflow automations, data and reporting solutions, and productivity tools designed to solve real operational needs.</p>
+          </details>
+          <details class="ask-item" name="ask-faq">
+            <summary class="ask-question">What is the idea behind your projects?</summary>
+            <p class="ask-answer">Most of my projects start with a simple question: can this process be made easier, faster or more efficient? I then turn that need into a functional digital solution, from the initial logic and design through development, testing and implementation.</p>
+          </details>
+          <details class="ask-item" name="ask-faq">
+            <summary class="ask-question">Are the tools on this website free to use?</summary>
+            <p class="ask-answer">Yes. The tools currently available on this website are free to use, with no installation required. Some features may require authentication with the service they use.</p>
+          </details>
+          <details class="ask-item" name="ask-faq">
+            <summary class="ask-question">Do your tools store my data?</summary>
+            <p class="ask-answer">Most tools process information directly in your browser, meaning your files and data normally stay on your device unless a specific feature requires connection to a third-party service.</p>
+          </details>
+          <details class="ask-item" name="ask-faq">
+            <summary class="ask-question">Are you working on more projects?</summary>
+            <p class="ask-answer">Yes. This website is an evolving portfolio, and I am continuously developing and adding new tools, solutions and projects.</p>
+          </details>
+          <details class="ask-item" name="ask-faq">
+            <summary class="ask-question">Can you build a custom solution for me or my business?</summary>
+            <p class="ask-answer">Yes. I&rsquo;m open to discussing websites, digital tools, automation and other custom solutions based on specific needs and workflows.</p>
+          </details>
         </div>
-        <input type="text" class="help-bot-honeypot" id="help-bot-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      </form>
+
+        <div class="ask-followup">
+          <h3 class="ask-followup-title">Still have a question?</h3>
+          <p class="ask-followup-text">Have a question, an idea or a digital challenge you&rsquo;d like to discuss? Send me a message and I&rsquo;ll get back to you.</p>
+
+          <form class="ask-form" id="ask-form" novalidate>
+            <div class="ask-form-fields" id="ask-form-fields">
+              <div class="ask-field">
+                <label for="ask-name">Name</label>
+                <input type="text" id="ask-name" name="name" autocomplete="name" maxlength="120" required>
+                <p class="ask-field-error" id="ask-name-error" hidden></p>
+              </div>
+              <div class="ask-field">
+                <label for="ask-email">Email address</label>
+                <input type="email" id="ask-email" name="email" autocomplete="email" inputmode="email" maxlength="120" required>
+                <p class="ask-field-error" id="ask-email-error" hidden></p>
+              </div>
+              <div class="ask-field">
+                <label for="ask-message">Question / Message</label>
+                <textarea id="ask-message" name="question" rows="4" maxlength="4000" required></textarea>
+                <p class="ask-field-error" id="ask-message-error" hidden></p>
+              </div>
+              <label class="ask-honeypot" for="ask-website" aria-hidden="true">Company</label>
+              <input class="ask-honeypot" type="text" id="ask-website" name="website" tabindex="-1" autocomplete="off">
+              <input type="hidden" id="ask-started" name="startedAt" value="">
+              <button type="submit" class="btn btn--ink" id="ask-submit">Send Question</button>
+            </div>
+            <p class="ask-form-status" id="ask-form-status" role="status" aria-live="polite" hidden></p>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 
   <script src="js/bg-workflow.js?v=5"></script>
-  <script src="js/help-bot.js?v=6"></script>
+  <script src="js/help-bot.js?v=20260813ask3"></script>
   <script src="js/site.js?v=20260812tier"></script>
   <script src="js/cookie-consent.js?v=20260804c1"></script>
 </body>
