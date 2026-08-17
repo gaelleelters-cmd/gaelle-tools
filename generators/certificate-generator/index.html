@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bulk Certificate Generator — Gaelle El Ters</title>
+  <meta name="description" content="Upload a certificate template and an Excel list, place the fields yourself, and download personalised PDFs in bulk.">
+  <link rel="icon" href="../../favicon.svg?v=3" type="image/svg+xml">
+  <link rel="icon" href="../../favicon.ico?v=3" sizes="any">
+  <link rel="icon" href="../../favicon-32.png?v=3" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="../../apple-touch-icon.png?v=3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,500;0,600;1,500&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Great+Vibes&family=Outfit:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=20260817a1">
+  <link rel="stylesheet" href="../../css/tool-align.css?v=20260806home">
+</head>
+<body>
+  <nav class="tool-site-nav" aria-label="Site">
+    <a class="tool-site-nav-home" href="../../index.html">← Home</a>
+    <a href="../../projects.html">Projects</a>
+    <a href="../../projects/certificate-generator.html">About this tool</a>
+  </nav>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">CG</span>
+        <div>
+          <p class="eyebrow">Documents</p>
+          <h1>Bulk Certificate Generator</h1>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span class="save-status" id="save-status">Files stay on this device</span>
+        <button type="button" class="btn-quiet" id="btn-undo" disabled>Undo</button>
+        <button type="button" class="btn-quiet" id="btn-redo" disabled>Redo</button>
+      </div>
+    </header>
+
+    <ol class="stepper" id="stepper" aria-label="Workflow">
+      <li><button type="button" class="step is-active" data-step="1"><span>1</span> Template</button></li>
+      <li><button type="button" class="step" data-step="2"><span>2</span> Excel</button></li>
+      <li><button type="button" class="step" data-step="3"><span>3</span> Fields</button></li>
+      <li><button type="button" class="step" data-step="4"><span>4</span> Preview</button></li>
+      <li><button type="button" class="step" data-step="5"><span>5</span> Generate</button></li>
+    </ol>
+
+    <div class="workspace">
+      <aside class="side" id="side-panel">
+        <section class="panel is-active" data-panel="1" aria-labelledby="panel-template-title">
+          <h2 id="panel-template-title">Certificate template</h2>
+          <p class="hint">Upload the certificate design. Only the fields you add later will change — dates, logos and signatures stay as they are.</p>
+          <label class="dropzone" id="template-drop" for="template-input">
+            <strong>Drop a PDF, PNG or JPG</strong>
+            <span>or click to browse. Word files should be exported to PDF first.</span>
+          </label>
+          <input id="template-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" hidden>
+          <p class="file-status" id="template-status">No template uploaded yet.</p>
+          <div class="split-actions">
+            <div class="field">
+              <label for="config-name">Setup name</label>
+              <input id="config-name" type="text" maxlength="80" placeholder="Employee Training Certificate">
+            </div>
+            <button type="button" class="btn-secondary" id="btn-save-config">Save setup</button>
+          </div>
+          <div id="saved-list" class="saved-list" hidden></div>
+        </section>
+
+        <section class="panel" data-panel="2" hidden aria-labelledby="panel-excel-title">
+          <h2 id="panel-excel-title">Upload Excel data</h2>
+          <p class="hint">One spreadsheet row becomes one certificate. Column names can be anything — they are detected automatically.</p>
+          <label class="dropzone" id="excel-drop" for="excel-input">
+            <strong>Drop an Excel or CSV file</strong>
+            <span>.xlsx, .xls or .csv</span>
+          </label>
+          <input id="excel-input" type="file" accept=".xlsx,.xls,.csv" hidden>
+          <p class="file-status" id="excel-status">No spreadsheet uploaded yet.</p>
+          <div class="field" id="sheet-field" hidden>
+            <label for="sheet-select">Select Excel sheet</label>
+            <select id="sheet-select"></select>
+          </div>
+          <p class="count-pill" id="row-count" hidden></p>
+          <div class="table-wrap" id="excel-preview-wrap" hidden>
+            <p class="mini-title">Preview</p>
+            <div class="table-scroll">
+              <table class="data-table" id="excel-preview"></table>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" data-panel="3" hidden aria-labelledby="panel-fields-title">
+          <h2 id="panel-fields-title">Dynamic fields</h2>
+          <p class="hint">Add a field only where something should change. Other text on the certificate is left untouched.</p>
+          <button type="button" class="btn-primary" id="btn-add-field">+ Add dynamic field</button>
+          <div id="field-list" class="field-list"></div>
+          <div class="table-wrap" id="mapping-wrap" hidden>
+            <p class="mini-title">Field mapping</p>
+            <div class="table-scroll">
+              <table class="data-table" id="mapping-table">
+                <thead><tr><th>Certificate field</th><th>Excel column</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <form class="field-form" id="field-form" hidden>
+            <p class="mini-title">Selected field</p>
+            <div class="field"><label for="field-label">Field name</label><input id="field-label" type="text" maxlength="80"></div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="field-type">Type</label>
+                <select id="field-type"></select>
+              </div>
+              <div class="field">
+                <label for="field-column">Map to Excel column</label>
+                <select id="field-column"></select>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="field-font">Font</label>
+                <select id="field-font"></select>
+              </div>
+              <div class="field">
+                <label for="field-size">Font size</label>
+                <input id="field-size" type="number" min="8" max="200" step="1">
+              </div>
+            </div>
+            <div class="toggle-row">
+              <label class="check"><input id="field-bold" type="checkbox"> Bold</label>
+              <label class="check"><input id="field-italic" type="checkbox"> Italic</label>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="field-align">Alignment</label>
+                <select id="field-align">
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="field-color">Text colour</label>
+                <input id="field-color" type="color">
+              </div>
+            </div>
+            <label class="check"><input id="field-autofit" type="checkbox"> Auto fit text</label>
+            <div class="field">
+              <label for="field-min">Minimum font size</label>
+              <input id="field-min" type="number" min="6" max="72" step="1">
+            </div>
+            <div class="field" id="date-format-field" hidden>
+              <label for="field-date-format">Date format</label>
+              <select id="field-date-format"></select>
+            </div>
+            <div class="grid-2" id="number-format-fields" hidden>
+              <div class="field">
+                <label for="field-decimals">Decimal places</label>
+                <input id="field-decimals" type="number" min="0" max="4" step="1">
+              </div>
+              <div class="field" id="currency-field" hidden>
+                <label for="field-currency">Currency</label>
+                <select id="field-currency"></select>
+              </div>
+            </div>
+            <label class="check"><input id="field-cover" type="checkbox"> Cover existing text</label>
+            <div class="field" id="cover-color-field" hidden>
+              <label for="field-cover-color">Cover colour</label>
+              <input id="field-cover-color" type="color">
+            </div>
+            <label class="check"><input id="field-required" type="checkbox"> Required for generation</label>
+            <div class="grid-4">
+              <div class="field"><label for="field-x">X</label><input id="field-x" type="number" step="1"></div>
+              <div class="field"><label for="field-y">Y</label><input id="field-y" type="number" step="1"></div>
+              <div class="field"><label for="field-w">W</label><input id="field-w" type="number" step="1" min="8"></div>
+              <div class="field"><label for="field-h">H</label><input id="field-h" type="number" step="1" min="8"></div>
+            </div>
+            <button type="button" class="btn-danger" id="btn-remove-field">Remove field</button>
+          </form>
+        </section>
+
+        <section class="panel" data-panel="4" hidden aria-labelledby="panel-preview-title">
+          <h2 id="panel-preview-title">Preview certificate</h2>
+          <p class="hint">Check a few rows before generating everything. The original layout does not change.</p>
+          <p class="count-pill" id="preview-status">Upload a template and Excel file first.</p>
+          <div class="split-actions">
+            <button type="button" class="btn-secondary" id="btn-prev-row">Previous record</button>
+            <button type="button" class="btn-secondary" id="btn-next-row">Next record</button>
+          </div>
+          <div class="field">
+            <label for="filename-pattern">File naming pattern</label>
+            <input id="filename-pattern" type="text" value="{Name}_Certificate">
+            <p class="input-hint">Use column names in braces, for example {Name} or {ID}.</p>
+            <div class="chip-row" id="placeholder-chips"></div>
+          </div>
+          <div class="field">
+            <label for="output-format">Output format</label>
+            <select id="output-format">
+              <option value="pdf" selected>PDF (recommended)</option>
+              <option value="png">PNG</option>
+              <option value="jpg">JPG</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="panel" data-panel="5" hidden aria-labelledby="panel-generate-title">
+          <h2 id="panel-generate-title">Generate certificates</h2>
+          <div class="summary" id="summary-box">
+            <p>Upload a template, spreadsheet and at least one mapped field to generate.</p>
+          </div>
+          <div id="invalid-block" hidden>
+            <p class="mini-title">Invalid rows</p>
+            <ul class="issue-list" id="invalid-list"></ul>
+            <fieldset class="mode-set">
+              <legend>If some rows are invalid</legend>
+              <label class="check"><input type="radio" name="invalid-mode" value="skip" checked> Skip invalid rows</label>
+              <label class="check"><input type="radio" name="invalid-mode" value="include"> Continue generation (leave those values blank)</label>
+              <label class="check"><input type="radio" name="invalid-mode" value="cancel"> Cancel and fix the Excel file</label>
+            </fieldset>
+          </div>
+          <button type="button" class="btn-primary btn-generate" id="btn-generate">Generate certificates</button>
+          <div class="progress" id="progress-wrap" hidden>
+            <p id="progress-label">Generating certificates</p>
+            <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+            <p class="progress-count" id="progress-count"></p>
+          </div>
+          <p class="file-status" id="generate-status" role="status" aria-live="polite"></p>
+          <div id="results-block" hidden>
+            <div class="results-head">
+              <p class="mini-title">Generated certificates</p>
+              <input id="results-search" type="search" placeholder="Search, for example Sarah">
+            </div>
+            <div class="split-actions">
+              <button type="button" class="btn-primary" id="btn-download-all">Download all as ZIP</button>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table" id="results-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Download</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="canvas-col" aria-label="Certificate editor">
+        <div class="canvas-toolbar">
+          <button type="button" class="btn-secondary" id="btn-add-field-canvas">+ Add dynamic field</button>
+          <div class="zoom-ctrl" aria-label="Editor zoom">
+            <button type="button" id="zoom-out" title="Zoom out">−</button>
+            <span id="zoom-label">Fit</span>
+            <button type="button" id="zoom-in" title="Zoom in">+</button>
+            <button type="button" class="btn-quiet" id="zoom-fit">Fit</button>
+            <button type="button" class="btn-quiet" id="zoom-100">100%</button>
+          </div>
+        </div>
+        <div class="stage-scroll" id="stage-scroll">
+          <p class="stage-empty" id="stage-empty">Upload a certificate template to start editing.</p>
+          <div class="stage-scaler" id="stage-scaler">
+            <div class="stage" id="stage">
+              <img id="template-image" alt="Certificate template" hidden>
+              <div class="guide guide-x" id="guide-x" hidden></div>
+              <div class="guide guide-y" id="guide-y" hidden></div>
+              <div class="fields-layer" id="fields-layer"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden role="status"></div>
+
+  <script src="../../js/embed.js?v=1"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="js/format.js?v=20260817a1"></script>
+  <script src="js/fields.js?v=20260817a1"></script>
+  <script src="js/excel.js?v=20260817a1"></script>
+  <script src="js/validate.js?v=20260817a1"></script>
+  <script src="js/history.js?v=20260817a1"></script>
+  <script src="js/template.js?v=20260817a1"></script>
+  <script src="js/storage.js?v=20260817a1"></script>
+  <script src="js/generate.js?v=20260817a1"></script>
+  <script src="js/editor.js?v=20260817a1"></script>
+  <script src="js/app.js?v=20260817a1"></script>
+</body>
+</html>

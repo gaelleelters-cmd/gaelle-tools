@@ -925,6 +925,10 @@ img { max-width: 100%; display: block; }
 .project-media--interview::before,
 .project-media--interview::after { display: none; }
 
+.project-media--cert {
+  background: linear-gradient(145deg, #d9e4ee, #eef3f7);
+}
+
 .project-glyph {
   font-family: var(--display);
   font-size: clamp(1.05rem, 2.2vw, 1.3rem);
