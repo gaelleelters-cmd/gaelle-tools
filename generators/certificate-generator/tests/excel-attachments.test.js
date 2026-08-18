@@ -54,8 +54,6 @@ async function loadBrowserModules() {
   vm.createContext(context);
   vm.runInContext(await ensureLib('xlsx.full.min.js', LIBS['xlsx.full.min.js']), context, { filename: 'xlsx.full.min.js' });
   vm.runInContext(await ensureLib('jszip.min.js', LIBS['jszip.min.js']), context, { filename: 'jszip.min.js' });
-  assert.ok(context.XLSX, 'SheetJS did not attach to the test window');
-  assert.ok(context.JSZip, 'JSZip did not attach to the test window');
   ['format.js', 'excel.js', 'generate.js'].forEach((file) => {
     vm.runInContext(
       fs.readFileSync(path.join(APP_DIR, 'js', file), 'utf8'),
@@ -63,6 +61,9 @@ async function loadBrowserModules() {
       { filename: file },
     );
   });
+  context.CertGen._oleIconBytes = new Uint8Array(
+    fs.readFileSync(path.join(APP_DIR, 'assets', 'ole-icon.emf')),
+  );
   assert.ok(context.XLSX && context.JSZip && context.CertGen && context.CertGen.Excel);
   return context;
 }
@@ -77,13 +78,17 @@ function writeBlob(filePath, blob) {
   });
 }
 
-function extractZip(zipPath, dest) {
-  fs.mkdirSync(dest, { recursive: true });
-  const result = spawnSync('tar', ['-xf', zipPath, '-C', dest], { encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr || result.stdout || 'tar extract failed');
+function pdfFromOleBin(context, oleBytes) {
+  const cfb = context.XLSX.CFB.read(oleBytes, { type: 'array' });
+  const native = cfb.FileIndex.find((entry) => /Ole10Native/i.test(entry.name));
+  assert.ok(native && native.content, 'missing Ole10Native stream');
+  const buf = Buffer.from(native.content);
+  const marker = buf.indexOf(Buffer.from('%PDF-1.1'));
+  assert.ok(marker >= 0, 'embedded OLE stream does not contain a PDF');
+  return buf.slice(marker).toString('latin1');
 }
 
-function excelHyperlinks(xlsxPath) {
+function excelOleAndLinks(xlsxPath) {
   const escaped = String(xlsxPath).replace(/'/g, "''");
   const script = `
 $ErrorActionPreference = 'Stop'
@@ -93,18 +98,12 @@ $excel.Visible = $false
 $excel.DisplayAlerts = $false
 $excel.AskToUpdateLinks = $false
 try {
-  $wb = $excel.Workbooks.Open($xlsx, 0, $true)
+  $wb = $excel.Workbooks.Open($xlsx)
   $ws = $wb.Worksheets.Item(1)
-  $links = @()
-  for ($i = 1; $i -le $ws.Hyperlinks.Count; $i++) {
-    $h = $ws.Hyperlinks.Item($i)
-    $links += @{
-      Address = [string]$h.Address
-      TextToDisplay = [string]$h.TextToDisplay
-    }
-  }
+  $ole = $ws.OLEObjects().Count
+  $links = $ws.Hyperlinks.Count
   $wb.Close($false)
-  @{ ok = $true; count = $links.Count; links = $links } | ConvertTo-Json -Compress -Depth 5
+  @{ ok = $true; ole = $ole; links = $links } | ConvertTo-Json -Compress
 } catch {
   @{ ok = $false; error = $_.Exception.Message } | ConvertTo-Json -Compress
 } finally {
@@ -123,7 +122,7 @@ try {
   return JSON.parse(jsonLine);
 }
 
-test('Excel attachment download is a zip of clickable PDF links plus the PDF files', async () => {
+test('Excel attachment download embeds each PDF so Excel can open it from the workbook', async () => {
   const context = await loadBrowserModules();
   const G = context.CertGen;
   const columns = ['name', 'date'];
@@ -150,66 +149,42 @@ test('Excel attachment download is a zip of clickable PDF links plus the PDF fil
   ];
 
   const packed = G.Excel.rowsWithAttachments(columns, rows, results);
-  const out = await G.Excel.workbookWithAttachmentsZip(
+  const out = await G.Excel.workbookWithEmbeddedAttachments(
     packed.columns,
     packed.rows,
     packed.attachmentColumn,
     results,
     'Certificates',
   );
-  assert.equal(out.name, 'Certificates_with_attachments.zip');
+  assert.equal(out.name, 'Certificates.xlsx');
   assert.ok(out.blob && out.blob.size > 0);
 
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'cert-attach-'));
-  const zipPath = path.join(work, out.name);
-  await writeBlob(zipPath, out.blob);
-  extractZip(zipPath, work);
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'cert-embed-'));
+  const xlsxPath = path.join(work, out.name);
+  await writeBlob(xlsxPath, out.blob);
 
-  const xlsxPath = path.join(work, 'Certificates.xlsx');
-  const gaellePdf = path.join(work, 'Certificates', 'Gaelle_El_Ters_Certificate.pdf');
-  const joellePdf = path.join(work, 'Certificates', 'Joelle_El_Feghaly_Certificate.pdf');
-  assert.equal(fs.existsSync(xlsxPath), true);
-  assert.equal(fs.existsSync(gaellePdf), true);
-  assert.equal(fs.existsSync(joellePdf), true);
-  assert.match(fs.readFileSync(gaellePdf, 'utf8'), /GAELLE-CERT/);
-  assert.match(fs.readFileSync(joellePdf, 'utf8'), /JOELLE-CERT/);
-  assert.equal(fs.existsSync(path.join(work, 'Certificates', 'Skipped person.pdf')), false);
+  const zip = await context.JSZip.loadAsync(fs.readFileSync(xlsxPath));
+  assert.ok(zip.file('xl/embeddings/oleObject1.bin'));
+  assert.ok(zip.file('xl/embeddings/oleObject2.bin'));
+  assert.equal(zip.file('xl/embeddings/oleObject3.bin'), null);
 
-  const xlsxBuf = fs.readFileSync(xlsxPath);
-  const inner = await context.JSZip.loadAsync(xlsxBuf);
-  const rels = await inner.file('xl/worksheets/_rels/sheet1.xml.rels').async('string');
-  assert.match(rels, /Target="Certificates\/Gaelle_El_Ters_Certificate\.pdf"/);
-  assert.match(rels, /Target="Certificates\/Joelle_El_Feghaly_Certificate\.pdf"/);
-  assert.match(rels, /TargetMode="External"/);
+  const ole1 = await zip.file('xl/embeddings/oleObject1.bin').async('uint8array');
+  const ole2 = await zip.file('xl/embeddings/oleObject2.bin').async('uint8array');
+  assert.match(pdfFromOleBin(context, ole1), /GAELLE-CERT/);
+  assert.match(pdfFromOleBin(context, ole2), /JOELLE-CERT/);
 
-  const wb = context.XLSX.read(xlsxBuf, { type: 'buffer' });
+  const rels = await zip.file('xl/worksheets/_rels/sheet1.xml.rels').async('string');
+  assert.match(rels, /oleObject/);
+  assert.doesNotMatch(rels, /TargetMode="External"/);
+
+  const wb = context.XLSX.read(fs.readFileSync(xlsxPath), { type: 'buffer' });
   const sheet = wb.Sheets[wb.SheetNames[0]];
-  assert.equal(sheet.A1.v, 'name');
-  assert.equal(sheet.B1.v, 'date');
   assert.equal(sheet.C1.v, 'Attachment');
   assert.equal(sheet.C2.v, 'Certificates/Gaelle_El_Ters_Certificate.pdf');
-  assert.equal(sheet.C3.v, 'Certificates/Joelle_El_Feghaly_Certificate.pdf');
-  assert.equal(sheet.C2.l.Target, 'Certificates/Gaelle_El_Ters_Certificate.pdf');
-  assert.equal(sheet.C3.l.Target, 'Certificates/Joelle_El_Feghaly_Certificate.pdf');
-  assert.ok(!sheet.C4 || !sheet.C4.l);
+  assert.ok(!sheet.C2.l, 'attachment cells must not be external hyperlinks');
 
-  function resolveTarget(target) {
-    return path.resolve(work, String(target).replace(/\//g, path.sep));
-  }
-  assert.equal(fs.existsSync(resolveTarget(sheet.C2.l.Target)), true);
-  assert.equal(fs.existsSync(resolveTarget(sheet.C3.l.Target)), true);
-  assert.match(fs.readFileSync(resolveTarget(sheet.C2.l.Target), 'utf8'), /%PDF-1\.1/);
-  assert.match(fs.readFileSync(resolveTarget(sheet.C3.l.Target), 'utf8'), /%PDF-1\.1/);
-
-  const excel = excelHyperlinks(xlsxPath);
+  const excel = excelOleAndLinks(xlsxPath);
   assert.equal(excel.ok, true, excel.error || 'Excel could not open the workbook');
-  assert.equal(excel.count, 2, JSON.stringify(excel));
-  const addresses = excel.links.map((link) => String(link.Address).replace(/\\/g, '/'));
-  assert.ok(addresses.includes('Certificates/Gaelle_El_Ters_Certificate.pdf'), JSON.stringify(excel.links));
-  assert.ok(addresses.includes('Certificates/Joelle_El_Feghaly_Certificate.pdf'), JSON.stringify(excel.links));
-  excel.links.forEach((link) => {
-    const resolved = resolveTarget(link.Address);
-    assert.equal(fs.existsSync(resolved), true, 'Excel hyperlink does not open a file: ' + link.Address);
-    assert.match(fs.readFileSync(resolved, 'utf8'), /%PDF-1\.1/);
-  });
+  assert.equal(excel.ole, 2, JSON.stringify(excel));
+  assert.equal(excel.links, 0, 'Excel must not follow a missing file path');
 });

@@ -1533,7 +1533,7 @@
     if ($('btn-download-excel')) {
       $('btn-download-excel').addEventListener('click', function () {
         var packed = G.Excel.rowsWithAttachments(state.columns, state.rows, state.results);
-        G.Excel.workbookWithAttachmentsZip(
+        G.Excel.workbookWithEmbeddedAttachments(
           packed.columns,
           packed.rows,
           packed.attachmentColumn,
