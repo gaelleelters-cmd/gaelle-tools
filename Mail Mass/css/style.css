@@ -513,6 +513,30 @@ body {
 
 .field textarea { resize: vertical; min-height: 110px; }
 
+.subject-compose {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.subject-compose input {
+  flex: 1;
+  min-width: 0;
+}
+
+.subject-compose input.is-bold {
+  font-weight: 700;
+}
+
+.subject-compose .rte-btn {
+  flex: 0 0 2.35rem;
+  min-width: 2.35rem;
+  height: auto;
+  font-size: 0.95rem;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
 /* ===== RICH TEXT (Word-like) ===== */
 .rte-wrap {
   border: 1px solid var(--border);
@@ -591,6 +615,24 @@ body {
 .rte-btn i { font-style: italic; }
 .rte-btn u { text-decoration: underline; }
 .rte-btn s { text-decoration: line-through; }
+
+.rte-painter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.rte-painter svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+  pointer-events: none;
+}
+
+.rte-editor.is-painting {
+  cursor: copy;
+}
 
 .rte-color {
   position: relative;

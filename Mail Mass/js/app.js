@@ -26,6 +26,9 @@
   var greeting = $('greeting');
   var greetingPreview = $('greeting-preview');
   var bodyEl = $('body');
+  var mailSubject = $('mail-subject');
+  var mailSubjectBold = $('mail-subject-bold');
+  var subjectBoldOn = false;
   var sameWrap = $('same-msg-wrap');
   var customWrap = $('custom-msg-wrap');
   var paramRow = $('param-row');
@@ -47,6 +50,8 @@
   var rteHighlight = $('rte-highlight');
   var rteColorSwatch = $('rte-color-swatch');
   var rteHlSwatch = $('rte-hl-swatch');
+  var painterBtn = $('rte-painter');
+  var paintState = { on: false, sticky: false, fmt: null };
 
   function toast(msg, isError) {
     var el = document.createElement('div');
@@ -389,10 +394,29 @@
       walk(child, cleaned);
     });
 
-    // Drop empty paragraphs that are only &nbsp;
-    Array.prototype.slice.call(cleaned.querySelectorAll('p')).forEach(function (p) {
+    function isEmptyPara(p) {
+      if (p.querySelector('img')) return false;
       var t = (p.textContent || '').replace(/\u00a0/g, ' ').trim();
-      if (!t && !p.querySelector('img')) p.remove();
+      return !t;
+    }
+
+    var paras = Array.prototype.slice.call(cleaned.children).filter(function (el) {
+      return el.tagName && el.tagName.toLowerCase() === 'p';
+    });
+    while (paras.length && isEmptyPara(paras[0])) {
+      paras[0].remove();
+      paras.shift();
+    }
+    while (paras.length && isEmptyPara(paras[paras.length - 1])) {
+      paras[paras.length - 1].remove();
+      paras.pop();
+    }
+    // Outlook collapses empty <p></p> / <p><br></p>. Keep intentional blank
+    // lines (e.g. after Dear {First Name},) as a non-empty spacer.
+    paras.forEach(function (p) {
+      if (!isEmptyPara(p)) return;
+      p.innerHTML = '&nbsp;';
+      p.setAttribute('style', 'margin:0;line-height:12pt;font-size:11pt;');
     });
 
     return cleaned.innerHTML.trim();
@@ -433,6 +457,165 @@
         el.style.fontSize = pt + 'pt';
       }
     });
+    updatePreview();
+  }
+
+  function rgbToHex(color) {
+    var s = String(color || '').trim();
+    if (!s || /^transparent$/i.test(s)) return '';
+    if (/^#([0-9a-f]{6})$/i.test(s)) return s.toLowerCase();
+    if (/^#([0-9a-f]{3})$/i.test(s)) {
+      return ('#' + s.charAt(1) + s.charAt(1) + s.charAt(2) + s.charAt(2) + s.charAt(3) + s.charAt(3)).toLowerCase();
+    }
+    var m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if (!m) return '';
+    function h(n) {
+      var x = Number(n).toString(16);
+      return x.length === 1 ? '0' + x : x;
+    }
+    return ('#' + h(m[1]) + h(m[2]) + h(m[3])).toLowerCase();
+  }
+
+  function pxToPt(px) {
+    var n = parseFloat(px);
+    if (!n) return 11;
+    var pt = Math.round(n * 72 / 96);
+    var sizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36];
+    var best = 11;
+    var diff = 99;
+    sizes.forEach(function (size) {
+      var d = Math.abs(size - pt);
+      if (d < diff) {
+        diff = d;
+        best = size;
+      }
+    });
+    return best;
+  }
+
+  function selectionInEditor() {
+    var sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return false;
+    var node = sel.anchorNode;
+    return !!(node && bodyEl.contains(node));
+  }
+
+  function capturePaintFormat() {
+    if (!selectionInEditor()) return null;
+    var sel = window.getSelection();
+    var node = sel.anchorNode;
+    if (node && node.nodeType === 3) node = node.parentElement;
+    if (!node || !bodyEl.contains(node)) return null;
+    var cs = window.getComputedStyle(node);
+    var weight = String(cs.fontWeight || '');
+    var deco = String(cs.textDecorationLine || cs.textDecoration || '');
+    var block = node;
+    while (block && block !== bodyEl && !(block.tagName && /^(P|DIV|LI)$/i.test(block.tagName))) {
+      block = block.parentElement;
+    }
+    var align = 'left';
+    if (block && block !== bodyEl) {
+      align = window.getComputedStyle(block).textAlign || 'left';
+    }
+    var highlight = '';
+    var el = node;
+    while (el && el !== bodyEl) {
+      if (el.nodeType === 1) {
+        var bg = window.getComputedStyle(el).backgroundColor;
+        if (bg && !/^(transparent|rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\))$/i.test(bg)) {
+          highlight = rgbToHex(bg);
+          break;
+        }
+      }
+      el = el.parentElement;
+    }
+    var family = String(cs.fontFamily || 'Calibri').split(',')[0].replace(/['"]/g, '').trim();
+    return {
+      bold: weight === 'bold' || parseInt(weight, 10) >= 600,
+      italic: cs.fontStyle === 'italic' || cs.fontStyle === 'oblique',
+      underline: /underline/i.test(deco),
+      strike: /line-through/i.test(deco),
+      fontName: family || 'Calibri',
+      fontSize: pxToPt(cs.fontSize),
+      color: rgbToHex(cs.color) || '#000000',
+      highlight: highlight,
+      align: /center/i.test(align) ? 'center' : (/right/i.test(align) ? 'right' : 'left')
+    };
+  }
+
+  function setPaintUi() {
+    if (painterBtn) {
+      painterBtn.classList.toggle('is-active', paintState.on);
+      painterBtn.setAttribute('aria-pressed', paintState.on ? 'true' : 'false');
+    }
+    bodyEl.classList.toggle('is-painting', paintState.on);
+  }
+
+  function armPaint(sticky) {
+    var fmt = capturePaintFormat();
+    if (!fmt) {
+      toast('Select formatted text first, then click Format Painter');
+      return;
+    }
+    paintState.on = true;
+    paintState.sticky = !!sticky;
+    paintState.fmt = fmt;
+    setPaintUi();
+  }
+
+  function disarmPaint() {
+    paintState.on = false;
+    paintState.sticky = false;
+    paintState.fmt = null;
+    setPaintUi();
+  }
+
+  function expandToWordIfCollapsed() {
+    var sel = window.getSelection();
+    if (!sel || !sel.rangeCount || !sel.isCollapsed) return;
+    var range = sel.getRangeAt(0);
+    var node = range.startContainer;
+    if (node.nodeType !== 3) return;
+    var text = node.nodeValue || '';
+    var start = range.startOffset;
+    var end = start;
+    while (start > 0 && /[^\s]/.test(text.charAt(start - 1))) start -= 1;
+    while (end < text.length && /[^\s]/.test(text.charAt(end))) end += 1;
+    if (end <= start) return;
+    range.setStart(node, start);
+    range.setEnd(node, end);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function applyPaintFormat(fmt) {
+    if (!fmt) return;
+    bodyEl.focus();
+    try {
+      document.execCommand('styleWithCSS', false, true);
+    } catch (e) {}
+    function matchToggle(cmd, want) {
+      var have = false;
+      try { have = document.queryCommandState(cmd); } catch (err) {}
+      if (!!have !== !!want) document.execCommand(cmd, false, null);
+    }
+    matchToggle('bold', fmt.bold);
+    matchToggle('italic', fmt.italic);
+    matchToggle('underline', fmt.underline);
+    matchToggle('strikeThrough', fmt.strike);
+    if (fmt.fontName) document.execCommand('fontName', false, fmt.fontName);
+    if (fmt.fontSize) applyFontSize(fmt.fontSize);
+    if (fmt.color) document.execCommand('foreColor', false, fmt.color);
+    if (fmt.highlight) {
+      if (!document.execCommand('hiliteColor', false, fmt.highlight)) {
+        document.execCommand('backColor', false, fmt.highlight);
+      }
+    } else {
+      document.execCommand('hiliteColor', false, 'transparent');
+    }
+    if (fmt.align === 'center') document.execCommand('justifyCenter', false, null);
+    else if (fmt.align === 'right') document.execCommand('justifyRight', false, null);
+    else document.execCommand('justifyLeft', false, null);
     updatePreview();
   }
 
@@ -510,18 +693,41 @@
     });
   }
 
+  function toMathBold(str) {
+    var s = String(str || '');
+    var out = '';
+    for (var i = 0; i < s.length; ) {
+      var cp = s.codePointAt(i);
+      var ch = String.fromCodePoint(cp);
+      i += ch.length;
+      if (cp >= 0x41 && cp <= 0x5A) out += String.fromCodePoint(0x1D400 + (cp - 0x41));
+      else if (cp >= 0x61 && cp <= 0x7A) out += String.fromCodePoint(0x1D41A + (cp - 0x61));
+      else if (cp >= 0x30 && cp <= 0x39) out += String.fromCodePoint(0x1D7CE + (cp - 0x30));
+      else out += ch;
+    }
+    return out;
+  }
+
+  function resolveSubject(row) {
+    var typed = mailSubject ? String(mailSubject.value || '').trim() : '';
+    var merged = typed ? applyMerge(typed, row || {}, false).trim() : '';
+    var fromSheet = colSubject.value ? String((row || {})[colSubject.value] || '').trim() : '';
+    var subject = merged || fromSheet || 'Document Attached';
+    if (subjectBoldOn) subject = toMathBold(subject);
+    return subject;
+  }
+
   function buildRow(row) {
     var first = String(row[colFirst.value] || '').trim();
     var email = String(row[colEmail.value] || '').trim();
     var cc = colCc.value ? String(row[colCc.value] || '').trim() : '';
     var bcc = colBcc.value ? String(row[colBcc.value] || '').trim() : '';
-    var subject = colSubject.value ? String(row[colSubject.value] || '').trim() : '';
+    var subject = resolveSubject(row);
     var attach = (colAttach && colAttach.value) ? cellToAttachPath(row[colAttach.value]) : '';
     var fileAttachment = null;
     if (colAttach && colAttach.value && row.__oleByHeader && row.__oleByHeader[colAttach.value]) {
       fileAttachment = oleToMailAttachment(row.__oleByHeader[colAttach.value]);
     }
-    if (!subject) subject = 'Document Attached';
 
     var messageIsHtml = false;
     var message = '';
@@ -624,13 +830,13 @@
         email: '',
         cc: '',
         bcc: '',
-        subject: 'Document Attached',
+        subject: resolveSubject({}),
         greeting: custom ? String(greeting.value || '').trim() : '__SKIP__',
         message: custom ? '…' : (getBodyHtml() || '…'),
         messageIsHtml: true
       };
       previewWho.textContent = 'Sample';
-      previewMeta.textContent = 'Subject: Document Attached';
+      previewMeta.textContent = 'Subject: ' + sample.subject;
       previewMail.innerHTML = buildPreviewHtml(sample);
       return;
     }
@@ -1088,6 +1294,20 @@
       el.addEventListener('change', function () { updatePreview(); refreshButtons(); });
     });
 
+  if (mailSubject) {
+    mailSubject.addEventListener('input', function () { updatePreview(); });
+    mailSubject.addEventListener('change', function () { updatePreview(); });
+  }
+  if (mailSubjectBold) {
+    mailSubjectBold.addEventListener('click', function () {
+      subjectBoldOn = !subjectBoldOn;
+      mailSubjectBold.classList.toggle('is-active', subjectBoldOn);
+      mailSubjectBold.setAttribute('aria-pressed', subjectBoldOn ? 'true' : 'false');
+      if (mailSubject) mailSubject.classList.toggle('is-bold', subjectBoldOn);
+      updatePreview();
+    });
+  }
+
   bodyEl.addEventListener('input', function () { updatePreview(); refreshButtons(); });
   bodyEl.addEventListener('keyup', function () { updatePreview(); });
   bodyEl.addEventListener('paste', function (e) {
@@ -1157,6 +1377,38 @@
       updatePreview();
     });
   }
+
+  if (painterBtn) {
+    painterBtn.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+    });
+    painterBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (e.detail >= 2) {
+        armPaint(true);
+        toast('Format Painter stays on — select more text, or click the brush to stop');
+        return;
+      }
+      if (paintState.on) {
+        disarmPaint();
+        return;
+      }
+      armPaint(false);
+    });
+  }
+
+  bodyEl.addEventListener('mouseup', function () {
+    if (!paintState.on || !paintState.fmt || !selectionInEditor()) return;
+    expandToWordIfCollapsed();
+    applyPaintFormat(paintState.fmt);
+    if (!paintState.sticky) disarmPaint();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && paintState.on) {
+      disarmPaint();
+    }
+  });
 
   btnSignOut.addEventListener('click', function () {
     if (!window.MailMassGraph) {

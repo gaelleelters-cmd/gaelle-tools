@@ -144,23 +144,71 @@ function Build-MessageHtml([string]$greeting, [string]$firstName, [string]$messa
   return $parts.ToString()
 }
 
+function Unwrap-SafeLink([string]$href) {
+  if ([string]::IsNullOrWhiteSpace($href)) { return $href }
+  $raw = $href.Replace('&amp;', '&')
+  try {
+    $u = [Uri]$raw
+    if ($u.Host -notmatch '(?i)safelinks\.protection\.outlook\.com$') { return $href }
+    $query = $u.Query.TrimStart('?')
+    foreach ($part in $query.Split('&')) {
+      $eq = $part.IndexOf('=')
+      if ($eq -lt 1) { continue }
+      $key = $part.Substring(0, $eq)
+      if ($key -ne 'url') { continue }
+      $val = [Uri]::UnescapeDataString($part.Substring($eq + 1))
+      if (-not [string]::IsNullOrWhiteSpace($val)) { return $val }
+    }
+  } catch {}
+  return $href
+}
+
+function Normalize-SignatureHtml([string]$html) {
+  if ([string]::IsNullOrWhiteSpace($html)) { return '' }
+  $body = $html
+  if ($html -match '(?is)<body[^>]*>(.*)</body>') {
+    $body = $Matches[1]
+  }
+  $body = [regex]::Replace($body, '(?is)<!--\[if[\s\S]*?<!\[endif\]-->', '')
+  $body = [regex]::Replace($body, '(?is)<!--[\s\S]*?-->', '')
+  $body = [regex]::Replace($body, '(?is)<p[^>]*>\s*(?:&nbsp;|&#160;|</?o:p[^>]*>|\s|<br\s*/?>)*\s*</p>\s*', '')
+  $body = [regex]::Replace($body, '(?is)</?o:p[^>]*>', '')
+  $hrefRe = [regex]'(?is)href\s*=\s*(["''])(.*?)\1'
+  $body = $hrefRe.Replace($body, {
+    param($m)
+    if ($null -eq $m) { $m = $args[0] }
+    $q = $m.Groups[1].Value
+    $href = Unwrap-SafeLink $m.Groups[2].Value
+    return "href=$q$href$q"
+  })
+  # Outlook COM HTMLBody ignores MsoNormal { margin:0 } from the .htm <head>.
+  # Each leftover <p> becomes a blank line, so join signature lines with <br>.
+  $body = [regex]::Replace($body, '(?is)\s+title\s*=\s*(["''])(?:(?!\1).)*safelinks\.protection\.outlook\.com(?:(?!\1).)*\1', '')
+  $body = [regex]::Replace($body, '(?is)</p>\s*<p[^>]*>', '<br>')
+  $body = [regex]::Replace($body, '(?is)</?p[^>]*>', '')
+  $compact = 'margin:0;padding:0;line-height:14pt;mso-margin-top-alt:0;mso-margin-bottom-alt:0;'
+  $body = [regex]::Replace($body, '(?i)<div(\s[^>]*)?>', "<div style=""$compact""`$1>")
+  return $body.Trim()
+}
+
 function Wrap-MailHtml([string]$inner, [string]$signatureHtml) {
   $sig = ''
   if (-not [string]::IsNullOrWhiteSpace($signatureHtml)) {
-    $sigBody = $signatureHtml
-    if ($signatureHtml -match '(?is)<body[^>]*>(.*)</body>') {
-      $sigBody = $Matches[1]
+    $sigBody = Normalize-SignatureHtml $signatureHtml
+    if (-not [string]::IsNullOrWhiteSpace($sigBody)) {
+      # Exactly one blank line between body and signature
+      $sig = '<p style="margin:0;line-height:12pt;font-size:11pt;">&nbsp;</p>' +
+        '<div class="mailmass-sig" style="margin:0;padding:0;line-height:14pt;font-family:Aptos,Calibri,sans-serif;font-size:12pt;">' + $sigBody + '</div>'
     }
-    # Trim leading blank lines / empty paragraphs from signature
-    $sigBody = [regex]::Replace($sigBody, '(?is)^(\s|<br\s*/?>|&nbsp;|<p[^>]*>\s*(&nbsp;|\s|<br\s*/?>)*\s*</p>)+', '')
-    # Exactly one blank line between body and signature
-    $sig = '<p style="margin:0;line-height:12pt;font-size:11pt;">&nbsp;</p>' + $sigBody
   }
 
   return @"
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style>
+.mailmass-sig p, .mailmass-sig div { margin:0; padding:0; line-height:14pt; }
+</style>
 </head>
 <body style="font-family:Calibri,Arial,sans-serif;font-size:11pt;">
 $inner
@@ -457,7 +505,7 @@ function Read-HttpRequest([System.Net.Sockets.NetworkStream]$stream) {
 
 
 # TcpListener avoids Windows HttpListener URLACL (no admin needed).
-$HelperVersion = 12
+$HelperVersion = 13
 $tcp = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
 
 try {
