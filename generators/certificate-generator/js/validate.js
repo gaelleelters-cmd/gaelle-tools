@@ -44,7 +44,7 @@
 
     (rows || []).forEach(function (row, index) {
       var mappedCols = mapped.map(function (field) { return field.excelColumn; });
-      if (CertGen.Excel.isEmptyRow(row, mappedCols.length ? mappedCols : columns)) {
+      if (CertGen.Excel.isEmptyRow(row, columns)) {
         emptySkipped += 1;
         return;
       }

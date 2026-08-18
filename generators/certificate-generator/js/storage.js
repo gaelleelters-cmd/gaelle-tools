@@ -72,9 +72,11 @@
       name: String(payload.name || 'Certificate setup').trim() || 'Certificate setup',
       savedAt: Date.now(),
       template: payload.template,
+      reference: payload.reference || null,
       fields: payload.fields || [],
       filenamePattern: payload.filenamePattern || '{Name}_Certificate',
-      outputFormat: payload.outputFormat || 'pdf'
+      outputFormat: payload.outputFormat || 'pdf',
+      outputQuality: payload.outputQuality || 'print'
     };
     return withStore('readwrite', function (store) {
       return store.put(record);

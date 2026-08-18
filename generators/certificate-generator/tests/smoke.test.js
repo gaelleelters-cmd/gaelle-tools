@@ -26,22 +26,45 @@ test('certificate app shell exposes workflow controls and cache-busted scripts',
   for (const id of [
     'stepper',
     'template-input',
+    'reference-input',
     'excel-input',
+    'excel-paste',
+    'btn-paste-excel',
+    'btn-download-combined',
+    'design-mode',
     'sheet-select',
     'btn-add-field',
     'field-form',
     'field-column',
+    'style-reference',
+    'style-custom',
+    'map-dialog',
+    'map-preview',
+    'stage-hits',
+    'btn-open-blank',
     'filename-pattern',
     'output-format',
     'btn-generate',
+    'output-quality',
+    'btn-preview-generate',
+    'canvas-pager',
+    'print-pill',
     'results-table',
     'stage',
+    'ref-stage',
     'fields-layer',
     'btn-undo',
     'btn-redo',
   ]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
+
+  assert.match(html, /data-step="6"/);
+  assert.match(html, /Generated certificate/);
+  assert.match(html, /Blank template \+ example/);
+  assert.match(html, /Connect data/);
+  assert.match(html, /panel-continue/);
+  assert.match(html, /Match Reference Certificate/);
 
   assert.match(html, /css\/style\.css\?v=/);
   const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((match) => match[1]);
@@ -57,6 +80,7 @@ test('certificate app shell exposes workflow controls and cache-busted scripts',
     'js/excel.js',
     'js/validate.js',
     'js/history.js',
+    'js/reference.js',
     'js/template.js',
     'js/storage.js',
     'js/generate.js',
@@ -74,6 +98,7 @@ test('live server serves certificate project pages and app assets', async (t) =>
     'http://127.0.0.1:8765/projects/certificate-generator.html',
     'http://127.0.0.1:8765/generators/certificate-generator/index.html',
     'http://127.0.0.1:8765/generators/certificate-generator/js/app.js',
+    'http://127.0.0.1:8765/generators/certificate-generator/js/reference.js',
     'http://127.0.0.1:8765/generators/certificate-generator/css/style.css',
   ];
   let first;

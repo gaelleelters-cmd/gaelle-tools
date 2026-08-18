@@ -14,6 +14,8 @@ desktop.ini
 .vscode/
 
 # Env / local
+.tmp-test/
+.tmp-*/
 .env
 .env.*
 *.log

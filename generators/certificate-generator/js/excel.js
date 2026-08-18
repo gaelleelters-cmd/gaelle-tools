@@ -82,12 +82,7 @@
     };
   }
 
-  function parseWorkbook(buffer, fileName) {
-    var XLSX = global.XLSX;
-    if (!XLSX) {
-      throw new Error('Spreadsheet library failed to load. Check your internet connection and try again.');
-    }
-    var wb = XLSX.read(buffer, { type: 'array', cellDates: true, cellNF: true });
+  function workbookFromXlsx(wb, fileName) {
     if (!wb.SheetNames || !wb.SheetNames.length) {
       throw new Error('The spreadsheet has no sheets.');
     }
@@ -100,6 +95,88 @@
       sheetNames: wb.SheetNames.slice(),
       sheets: sheets
     };
+  }
+
+  function parseWorkbook(buffer, fileName) {
+    var XLSX = global.XLSX;
+    if (!XLSX) {
+      throw new Error('Spreadsheet library failed to load. Check your internet connection and try again.');
+    }
+    return workbookFromXlsx(XLSX.read(buffer, { type: 'array', cellDates: true, cellNF: true }), fileName);
+  }
+
+  function splitCsvLine(line, delimiter) {
+    if (delimiter === '\t') return String(line).split('\t');
+    var out = [];
+    var current = '';
+    var quoted = false;
+    var i;
+    for (i = 0; i < line.length; i += 1) {
+      var ch = line.charAt(i);
+      if (ch === '"') {
+        if (quoted && line.charAt(i + 1) === '"') {
+          current += '"';
+          i += 1;
+        } else {
+          quoted = !quoted;
+        }
+      } else if (ch === delimiter && !quoted) {
+        out.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    out.push(current);
+    return out;
+  }
+
+  function parsePlainTable(text, fileName) {
+    var raw = String(text == null ? '' : text).replace(/^\uFEFF/, '');
+    var lines = raw.split(/\r\n|\n|\r/).filter(function (line) {
+      return String(line).trim() !== '';
+    });
+    if (lines.length < 2) {
+      throw new Error('Paste at least a header row and one data row.');
+    }
+    var delimiter = lines[0].indexOf('\t') >= 0 ? '\t' : ',';
+    var columns = uniqueHeaders(splitCsvLine(lines[0], delimiter).map(function (cell) {
+      return String(cell || '').trim();
+    }));
+    var rows = [];
+    var r;
+    for (r = 1; r < lines.length; r += 1) {
+      var cells = splitCsvLine(lines[r], delimiter);
+      var obj = { __excelRow: r + 1 };
+      var empty = true;
+      columns.forEach(function (col, i) {
+        var value = cells[i] != null ? String(cells[i]).trim() : '';
+        obj[col] = value;
+        if (value) empty = false;
+      });
+      if (!empty) rows.push(obj);
+    }
+    if (!rows.length) throw new Error('No data rows were found in the pasted cells.');
+    var sheet = { columns: columns, rows: rows, preview: rows.slice(0, 8), total: rows.length };
+    return {
+      fileName: fileName || 'pasted-data.csv',
+      sheetNames: ['Sheet1'],
+      sheets: { Sheet1: sheet }
+    };
+  }
+
+  function parseTableText(text, fileName) {
+    var raw = String(text == null ? '' : text).replace(/^\uFEFF/, '').trim();
+    if (!raw) throw new Error('Paste the spreadsheet cells first.');
+    var XLSX = global.XLSX;
+    if (XLSX) {
+      try {
+        return workbookFromXlsx(XLSX.read(raw, { type: 'string' }), fileName || 'pasted-data.csv');
+      } catch (err) {
+        return parsePlainTable(raw, fileName);
+      }
+    }
+    return parsePlainTable(raw, fileName);
   }
 
   function getSheet(workbook, sheetName) {
@@ -119,6 +196,7 @@
 
   CertGen.Excel = {
     parseWorkbook: parseWorkbook,
+    parseTableText: parseTableText,
     getSheet: getSheet,
     isEmptyRow: isEmptyRow,
     readSheet: readSheet,

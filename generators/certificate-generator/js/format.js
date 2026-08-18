@@ -15,7 +15,9 @@
     { id: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
     { id: 'DD MMM YYYY', label: 'DD MMM YYYY' },
     { id: 'DD MMMM YYYY', label: 'DD MMMM YYYY' },
-    { id: 'MMMM DD, YYYY', label: 'MMMM DD, YYYY' }
+    { id: 'MMMM DD, YYYY', label: 'MMMM DD, YYYY' },
+    { id: 'MMMM YYYY', label: 'MMMM YYYY' },
+    { id: 'DD MMMM', label: 'DD MMMM' }
   ];
 
   var INVALID_FILENAME = /[<>:"/\\|?*\u0000-\u001f]/g;
@@ -115,15 +117,67 @@
       return Number.isNaN(namedUsDate.getTime()) ? null : namedUsDate;
     }
 
+    var monthYear = text.match(/^([A-Za-z]+)\s+(\d{4})$/);
+    if (monthYear) {
+      var monthYearIdx = monthIndex(monthYear[1]);
+      if (monthYearIdx >= 0) {
+        return new Date(Date.UTC(Number(monthYear[2]), monthYearIdx, 1));
+      }
+    }
+
+    var dayMonth = text.match(/^(\d{1,2})\s+([A-Za-z]+)$/);
+    if (dayMonth) {
+      var dayMonthIdx = monthIndex(dayMonth[2]);
+      if (dayMonthIdx >= 0) {
+        var yearNow = new Date().getUTCFullYear();
+        return new Date(Date.UTC(yearNow, dayMonthIdx, Number(dayMonth[1])));
+      }
+    }
+
     return null;
   }
 
+  function editDistance(a, b) {
+    var left = String(a || '');
+    var right = String(b || '');
+    var rows = [];
+    var i;
+    var j;
+    for (i = 0; i <= left.length; i += 1) {
+      rows[i] = [i];
+    }
+    for (j = 0; j <= right.length; j += 1) rows[0][j] = j;
+    for (i = 1; i <= left.length; i += 1) {
+      for (j = 1; j <= right.length; j += 1) {
+        var cost = left.charAt(i - 1) === right.charAt(j - 1) ? 0 : 1;
+        rows[i][j] = Math.min(rows[i - 1][j] + 1, rows[i][j - 1] + 1, rows[i - 1][j - 1] + cost);
+      }
+    }
+    return rows[left.length][right.length];
+  }
+
   function monthIndex(name) {
-    var lower = String(name || '').toLowerCase();
+    var lower = String(name || '').toLowerCase().replace(/[^a-z]/g, '');
+    if (!lower) return -1;
     var i;
     for (i = 0; i < MONTHS_FULL.length; i += 1) {
       if (MONTHS_FULL[i].toLowerCase() === lower || MONTHS_SHORT[i].toLowerCase() === lower) return i;
     }
+    if (lower.length < 3) return -1;
+    var best = -1;
+    var bestDist = 99;
+    for (i = 0; i < MONTHS_FULL.length; i += 1) {
+      var full = MONTHS_FULL[i].toLowerCase();
+      var short = MONTHS_SHORT[i].toLowerCase();
+      var dist = Math.min(editDistance(lower, full), editDistance(lower, short));
+      if (full.indexOf(lower) === 0 && lower.length >= 3) dist = Math.min(dist, 1);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    }
+    if (bestDist <= 1) return best;
+    if (bestDist === 2 && lower.length >= 6) return best;
     return -1;
   }
 
@@ -144,6 +198,10 @@
         return d + ' ' + MONTHS_FULL[m] + ' ' + y;
       case 'MMMM DD, YYYY':
         return MONTHS_FULL[m] + ' ' + d + ', ' + y;
+      case 'MMMM YYYY':
+        return MONTHS_FULL[m] + ' ' + y;
+      case 'DD MMMM':
+        return d + ' ' + MONTHS_FULL[m];
       case 'DD/MM/YYYY':
       default:
         return pad2(d) + '/' + pad2(m + 1) + '/' + y;
@@ -222,22 +280,26 @@
   function formatFieldValue(value, field) {
     var type = (field && field.type) || 'text';
     if (isBlank(value)) return '';
+    var out = '';
     if (type === 'date') {
       var formatted = formatDate(value, (field && field.dateFormat) || 'DD MMMM YYYY');
-      return formatted == null ? stringifyValue(value) : formatted;
-    }
-    if (type === 'number') {
+      out = formatted == null ? stringifyValue(value) : formatted;
+    } else if (type === 'number') {
       var asNumber = formatNumber(value, field && field.numberDecimals);
-      return asNumber == null ? stringifyValue(value) : asNumber;
-    }
-    if (type === 'currency') {
+      out = asNumber == null ? stringifyValue(value) : asNumber;
+    } else if (type === 'currency') {
       var asMoney = formatCurrency(value, {
         currency: (field && field.currency) || 'USD',
         decimals: field && field.numberDecimals != null ? field.numberDecimals : 0
       });
-      return asMoney == null ? stringifyValue(value) : asMoney;
+      out = asMoney == null ? stringifyValue(value) : asMoney;
+    } else {
+      out = stringifyValue(value);
     }
-    return stringifyValue(value);
+    if (CertGen.Reference && CertGen.Reference.applyCapitalization) {
+      return CertGen.Reference.applyCapitalization(out, field && field.capitalization);
+    }
+    return out;
   }
 
   function sanitizeFilename(name) {

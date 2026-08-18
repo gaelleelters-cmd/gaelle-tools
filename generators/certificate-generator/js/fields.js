@@ -64,7 +64,19 @@
       currency: 'USD',
       coverExistingText: false,
       coverColor: '#ffffff',
-      required: true
+      required: true,
+      styleSource: 'custom',
+      referenceText: '',
+      referenceItemId: '',
+      capitalization: 'as-is',
+      rotation: 0,
+      lineHeight: 1.2,
+      letterSpacing: 0,
+      referenceStyle: null,
+      coverX: null,
+      coverY: null,
+      coverWidth: null,
+      coverHeight: null
     };
   }
 
