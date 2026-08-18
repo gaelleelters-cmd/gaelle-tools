@@ -152,7 +152,14 @@
     if (cc.length) message.ccRecipients = cc;
     if (bcc.length) message.bccRecipients = bcc;
 
-    if (sharedAttachment && sharedAttachment.contentBytes) {
+    if (mail.fileAttachment && mail.fileAttachment.contentBytes) {
+      message.attachments = [{
+        '@odata.type': '#microsoft.graph.fileAttachment',
+        name: mail.fileAttachment.name,
+        contentType: mail.fileAttachment.contentType || 'application/octet-stream',
+        contentBytes: mail.fileAttachment.contentBytes
+      }];
+    } else if (sharedAttachment && sharedAttachment.contentBytes) {
       message.attachments = [{
         '@odata.type': '#microsoft.graph.fileAttachment',
         name: sharedAttachment.name,

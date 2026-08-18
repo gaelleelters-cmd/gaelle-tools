@@ -20,6 +20,7 @@
   var colSubject = $('col-subject');
   var colCc = $('col-cc');
   var colBcc = $('col-bcc');
+  var colAttach = $('col-attach');
   var colMessage = $('col-message');
   var attachFile = $('attach-file');
   var greeting = $('greeting');
@@ -102,7 +103,7 @@
             ? MailMassSheetRich.themeFromWorkbook(wb)
             : null;
 
-          function finish(finalTheme) {
+          function finish(finalTheme, oleMap) {
             var json = (window.MailMassSheetRich && MailMassSheetRich.sheetToRichJson)
               ? MailMassSheetRich.sheetToRichJson(sheet, { defval: '', theme: finalTheme })
               : XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
@@ -110,22 +111,32 @@
               reject(new Error('Sheet is empty'));
               return;
             }
+            if (window.MailMassSheetRich && MailMassSheetRich.applyOleMapToRows) {
+              MailMassSheetRich.applyOleMapToRows(sheet, json, oleMap || {});
+            }
             resolve({ headers: Object.keys(json[0]), rows: json });
           }
 
-          if (window.MailMassSheetRich && MailMassSheetRich.extractRichHtmlMap) {
-            MailMassSheetRich.extractRichHtmlMap(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength), theme)
-              .then(function (result) {
-                MailMassSheetRich.applyRichHtmlMap(sheet, result.map);
-                finish(result.theme || theme);
-              })
-              .catch(function () {
-                // Fall back to SheetJS HTML if ZIP color extraction fails
-                finish(theme);
-              });
-            return;
-          }
-          finish(theme);
+          var zipBuf = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+          var richPromise = (window.MailMassSheetRich && MailMassSheetRich.extractRichHtmlMap)
+            ? MailMassSheetRich.extractRichHtmlMap(zipBuf, theme).catch(function () {
+              return { map: null, theme: theme };
+            })
+            : Promise.resolve({ map: null, theme: theme });
+          var olePromise = (window.MailMassSheetRich && MailMassSheetRich.extractOleCellMap)
+            ? MailMassSheetRich.extractOleCellMap(zipBuf).catch(function () { return {}; })
+            : Promise.resolve({});
+
+          Promise.all([richPromise, olePromise]).then(function (parts) {
+            var rich = parts[0] || {};
+            if (rich.map && window.MailMassSheetRich && MailMassSheetRich.applyRichHtmlMap) {
+              MailMassSheetRich.applyRichHtmlMap(sheet, rich.map);
+            }
+            finish(rich.theme || theme, parts[1] || {});
+          }).catch(function () {
+            finish(theme, {});
+          });
+          return;
         } catch (err) {
           reject(err);
         }
@@ -165,6 +176,7 @@
     fillSelect(colSubject, headers, true);
     fillSelect(colCc, headers, true);
     fillSelect(colBcc, headers, true);
+    if (colAttach) fillSelect(colAttach, headers, true);
     fillSelect(colMessage, headers, false);
 
     colEmail.value = guessCol(headers, ['email', 'e-mail', 'mail']) || headers[1] || headers[0];
@@ -172,11 +184,22 @@
     colSubject.value = guessCol(headers, ['subject', 'subj', 'title']) || '';
     colCc.value = guessCol(headers, ['cc']) || '';
     colBcc.value = guessCol(headers, ['bcc']) || '';
+    if (colAttach) {
+      colAttach.value = guessCol(headers, ['attachment path', 'attach path', 'attachment', 'attach']) || '';
+    }
     colMessage.value = guessCol(headers, ['message', 'body', 'text', 'content', 'custom']) || headers[0];
 
     renderParams();
     updatePreview();
     refreshButtons();
+    var oleCount = 0;
+    rows.forEach(function (row) {
+      if (!row.__oleByHeader) return;
+      oleCount += Object.keys(row.__oleByHeader).length;
+    });
+    if (oleCount) {
+      toast(oleCount + ' embedded file' + (oleCount === 1 ? '' : 's') + ' ready from the sheet');
+    }
   }
 
   function clearSheet() {
@@ -421,6 +444,57 @@
       .replace(/"/g, '&quot;');
   }
 
+  function guessContentType(name) {
+    var n = String(name || '').toLowerCase();
+    if (/\.pdf$/.test(n)) return 'application/pdf';
+    if (/\.txt$/.test(n)) return 'text/plain';
+    if (/\.docx$/.test(n)) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (/\.xlsx$/.test(n)) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if (/\.doc$/.test(n)) return 'application/msword';
+    if (/\.xls$/.test(n)) return 'application/vnd.ms-excel';
+    if (/\.png$/.test(n)) return 'image/png';
+    if (/\.jpe?g$/.test(n)) return 'image/jpeg';
+    return 'application/octet-stream';
+  }
+
+  function u8ToBase64(u8) {
+    var s = '';
+    var chunk = 0x8000;
+    var i;
+    for (i = 0; i < u8.length; i += chunk) {
+      s += String.fromCharCode.apply(null, u8.subarray(i, i + chunk));
+    }
+    return btoa(s);
+  }
+
+  function oleToMailAttachment(ole) {
+    if (!ole || !ole.bytes || !ole.bytes.length) return null;
+    return {
+      name: ole.name || 'attachment.bin',
+      contentType: guessContentType(ole.name),
+      contentBytes: u8ToBase64(ole.bytes)
+    };
+  }
+
+  function cellToAttachPath(raw) {
+    var s = String(raw == null ? '' : raw).trim();
+    if (!s) return '';
+    if (/EMBED\s*\(/i.test(s) || /Packager Shell Object/i.test(s)) return '';
+    var href = s.match(/\bhref\s*=\s*["']([^"']+)["']/i);
+    if (href && href[1]) s = href[1];
+    s = s.replace(/<[^>]+>/g, ' ');
+    s = s.replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&quot;/gi, '"');
+    s = s.replace(/\s+/g, ' ').trim();
+    s = s.replace(/^["']+|["']+$/g, '');
+    if (/^file:/i.test(s)) {
+      try { s = decodeURIComponent(s); } catch (e) {}
+      s = s.replace(/^file:\/\//i, '');
+      s = s.replace(/^\/+([A-Za-z]:)/, '$1');
+      s = s.replace(/\//g, '\\');
+    }
+    return s.trim();
+  }
+
   function applyMerge(template, row, asHtml) {
     return String(template || '').replace(/\{([^}]+)\}/g, function (_, key) {
       var k = key.trim();
@@ -442,6 +516,11 @@
     var cc = colCc.value ? String(row[colCc.value] || '').trim() : '';
     var bcc = colBcc.value ? String(row[colBcc.value] || '').trim() : '';
     var subject = colSubject.value ? String(row[colSubject.value] || '').trim() : '';
+    var attach = (colAttach && colAttach.value) ? cellToAttachPath(row[colAttach.value]) : '';
+    var fileAttachment = null;
+    if (colAttach && colAttach.value && row.__oleByHeader && row.__oleByHeader[colAttach.value]) {
+      fileAttachment = oleToMailAttachment(row.__oleByHeader[colAttach.value]);
+    }
     if (!subject) subject = 'Document Attached';
 
     var messageIsHtml = false;
@@ -476,6 +555,8 @@
       cc: cc,
       bcc: bcc,
       subject: subject,
+      attach: attach,
+      fileAttachment: fileAttachment,
       bodyText: bodyText,
       message: message,
       messageIsHtml: messageIsHtml,
@@ -554,13 +635,16 @@
       return;
     }
     var mail = buildRow(rows[0]);
+    var attachLabel = (mail.fileAttachment && mail.fileAttachment.name) ||
+      mail.attach ||
+      (sharedAttachment ? sharedAttachment.name : '');
     previewWho.textContent = (mail.first || 'Row 1') + (mail.email ? ' · ' + mail.email : '');
     previewMeta.textContent =
       'To: ' + (mail.email || '') + '\n' +
       (mail.cc ? 'CC: ' + mail.cc + '\n' : '') +
       (mail.bcc ? 'BCC: ' + mail.bcc + '\n' : '') +
       'Subject: ' + mail.subject +
-      (sharedAttachment ? '\nAttachment: ' + sharedAttachment.name : '');
+      (attachLabel ? '\nAttachment: ' + attachLabel : '');
     previewMail.innerHTML = buildPreviewHtml(mail);
   }
 
@@ -788,13 +872,20 @@
   }
 
   function sendViaHelper(prepared) {
+    var hasOle = prepared.some(function (m) {
+      return m.fileAttachment && m.fileAttachment.contentBytes;
+    });
+    if (hasOle && helperVersion < 12) {
+      return Promise.reject(new Error('Reconnect Outlook in step 1 so files inserted in Excel can be sent.'));
+    }
     var payload = {
       displayOnly: '0',
       mails: prepared.map(function (m) {
         return {
           first: m.first,
           email: m.email,
-          attach: '',
+          attach: m.fileAttachment ? '' : (m.attach || ''),
+          fileAttachment: m.fileAttachment || undefined,
           cc: m.cc,
           bcc: m.bcc,
           subject: m.subject,
@@ -990,8 +1081,9 @@
     });
   });
 
-  [colEmail, colFirst, colSubject, colCc, colBcc, colMessage, greeting]
+  [colEmail, colFirst, colSubject, colCc, colBcc, colAttach, colMessage, greeting]
     .forEach(function (el) {
+      if (!el) return;
       el.addEventListener('input', function () { updatePreview(); refreshButtons(); });
       el.addEventListener('change', function () { updatePreview(); refreshButtons(); });
     });

@@ -170,6 +170,62 @@ $sig
 "@
 }
 
+function Resolve-RowAttachPath([string]$raw) {
+  if ([string]::IsNullOrWhiteSpace($raw)) { return '' }
+  $p = $raw.Trim()
+  $href = [regex]::Match($p, '(?i)\bhref\s*=\s*["'']([^"'']+)["'']')
+  if ($href.Success) { $p = $href.Groups[1].Value }
+  $p = [regex]::Replace($p, '<[^>]+>', ' ')
+  $p = $p.Replace('&nbsp;', ' ').Replace('&amp;', '&').Replace('&quot;', '"')
+  $p = $p.Trim().Trim('"').Trim("'")
+  if ($p -match '(?i)^file:') {
+    try { $p = [Uri]::UnescapeDataString($p) } catch {}
+    $p = $p -replace '(?i)^file://+', ''
+    if ($p -match '^/+([A-Za-z]:)') { $p = $Matches[1] + $p.Substring($Matches[0].Length) }
+  }
+  $p = $p -replace '/', '\'
+  if ([string]::IsNullOrWhiteSpace($p)) { return '' }
+  if (Test-Path -LiteralPath $p -PathType Leaf) {
+    return (Resolve-Path -LiteralPath $p).Path
+  }
+
+  $roots = New-Object System.Collections.Generic.List[string]
+  $candidates = @(
+    [Environment]::GetFolderPath('Desktop'),
+    [Environment]::GetFolderPath('MyDocuments'),
+    (Join-Path $env:USERPROFILE 'Downloads'),
+    (Join-Path $env:USERPROFILE 'Desktop'),
+    (Join-Path $env:USERPROFILE 'Documents')
+  )
+  foreach ($od in @($env:OneDrive, $env:OneDriveCommercial, $env:OneDriveConsumer)) {
+    if ($od) {
+      $candidates += @(
+        (Join-Path $od 'Desktop'),
+        (Join-Path $od 'Downloads'),
+        (Join-Path $od 'Documents')
+      )
+    }
+  }
+  foreach ($folder in $candidates) {
+    if ($folder -and (Test-Path -LiteralPath $folder)) { [void]$roots.Add($folder) }
+  }
+
+  $leaf = [IO.Path]::GetFileName($p)
+  if ([string]::IsNullOrWhiteSpace($leaf)) { return $p }
+  foreach ($root in ($roots | Select-Object -Unique)) {
+    foreach ($candidate in @(
+      (Join-Path $root $p),
+      (Join-Path $root $leaf),
+      (Join-Path (Join-Path $root 'Certificates') $leaf)
+    )) {
+      if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+        return (Resolve-Path -LiteralPath $candidate).Path
+      }
+    }
+  }
+  return $p
+}
+
 function Resolve-SharedAttachmentPath($payload) {
   $shared = $payload.attachment
   if (-not $shared) { return $null }
@@ -208,44 +264,66 @@ function Send-MailBatch($payload) {
 
     foreach ($m in $mails) {
       $email = [string]$m.email
-      $attach = [string]$m.attach
-      if ($attach.Length -ge 2 -and $attach.StartsWith('"') -and $attach.EndsWith('"')) {
-        $attach = $attach.Substring(1, $attach.Length - 2)
-      }
-      if ([string]::IsNullOrWhiteSpace($attach) -and $tempAttach) { $attach = $tempAttach }
-      if ([string]::IsNullOrWhiteSpace($email)) { $skipped++; continue }
-      if ($attach -and -not (Test-Path -LiteralPath $attach)) { $skipped++; continue }
-
-      $isHtml = $true
+      $attach = ''
+      $rowDir = $null
       try {
-        if ($m.PSObject.Properties.Name -contains 'messageIsHtml') {
-          $flag = $m.messageIsHtml
-          if ($flag -eq $false -or [string]$flag -eq '0' -or [string]$flag -eq 'False') {
+        $embedded = $null
+        try {
+          if ($m.PSObject.Properties.Name -contains 'fileAttachment') { $embedded = $m.fileAttachment }
+        } catch {}
+        if ($embedded -and -not [string]::IsNullOrWhiteSpace([string]$embedded.contentBytes)) {
+          $safeName = [IO.Path]::GetFileName([string]$embedded.name)
+          if ([string]::IsNullOrWhiteSpace($safeName)) { $safeName = 'attachment.bin' }
+          $rowDir = Join-Path $env:TEMP ('MailMassRowAttach_' + [Guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $rowDir -Force | Out-Null
+          $attach = Join-Path $rowDir $safeName
+          [IO.File]::WriteAllBytes($attach, [Convert]::FromBase64String([string]$embedded.contentBytes))
+        } else {
+          $attach = Resolve-RowAttachPath ([string]$m.attach)
+          if ([string]::IsNullOrWhiteSpace($attach) -and $tempAttach) { $attach = $tempAttach }
+        }
+
+        if ([string]::IsNullOrWhiteSpace($email) -or ($attach -and -not (Test-Path -LiteralPath $attach))) {
+          $skipped++
+        } else {
+          $isHtml = $true
+          try {
+            if ($m.PSObject.Properties.Name -contains 'messageIsHtml') {
+              $flag = $m.messageIsHtml
+              if ($flag -eq $false -or [string]$flag -eq '0' -or [string]$flag -eq 'False') {
+                $isHtml = Test-LooksLikeHtml ([string]$m.message)
+              }
+            }
+          } catch {
             $isHtml = Test-LooksLikeHtml ([string]$m.message)
           }
+
+          $inner = Build-MessageHtml ([string]$m.greeting) ([string]$m.first) ([string]$m.message) $isHtml
+          $fullHtml = Wrap-MailHtml $inner $signatureHtml
+
+          # NEVER call GetInspector — Word-as-email-editor turns HTML into visible source text.
+          $mail = $outlook.CreateItem(0)
+          $mail.BodyFormat = 2
+          $mail.To = $email
+          if ($m.cc) { $mail.CC = [string]$m.cc }
+          if ($m.bcc) { $mail.BCC = [string]$m.bcc }
+          $subject = [string]$m.subject
+          if ([string]::IsNullOrWhiteSpace($subject)) { $subject = 'Document Attached' }
+          $mail.Subject = $subject
+          $mail.HTMLBody = $fullHtml
+          if ($attach) { [void]$mail.Attachments.Add($attach) }
+
+          if ($displayOnly) { $mail.Display() } else { $mail.Send() }
+          $sent++
+          Start-Sleep -Milliseconds 400
         }
       } catch {
-        $isHtml = Test-LooksLikeHtml ([string]$m.message)
+        $skipped++
+      } finally {
+        if ($rowDir -and (Test-Path -LiteralPath $rowDir)) {
+          try { Remove-Item -LiteralPath $rowDir -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+        }
       }
-
-      $inner = Build-MessageHtml ([string]$m.greeting) ([string]$m.first) ([string]$m.message) $isHtml
-      $fullHtml = Wrap-MailHtml $inner $signatureHtml
-
-      # NEVER call GetInspector — Word-as-email-editor turns HTML into visible source text.
-      $mail = $outlook.CreateItem(0)
-      $mail.BodyFormat = 2
-      $mail.To = $email
-      if ($m.cc) { $mail.CC = [string]$m.cc }
-      if ($m.bcc) { $mail.BCC = [string]$m.bcc }
-      $subject = [string]$m.subject
-      if ([string]::IsNullOrWhiteSpace($subject)) { $subject = 'Document Attached' }
-      $mail.Subject = $subject
-      $mail.HTMLBody = $fullHtml
-      if ($attach) { [void]$mail.Attachments.Add($attach) }
-
-      if ($displayOnly) { $mail.Display() } else { $mail.Send() }
-      $sent++
-      Start-Sleep -Milliseconds 400
     }
   } finally {
     if ($tempDir -and (Test-Path -LiteralPath $tempDir)) {
@@ -379,7 +457,7 @@ function Read-HttpRequest([System.Net.Sockets.NetworkStream]$stream) {
 
 
 # TcpListener avoids Windows HttpListener URLACL (no admin needed).
-$HelperVersion = 10
+$HelperVersion = 12
 $tcp = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
 
 try {

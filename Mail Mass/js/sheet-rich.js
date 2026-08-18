@@ -335,7 +335,10 @@
         if (val !== '' && val != null) empty = false;
         row[headers[c - range.s.c]] = val;
       }
-      if (!empty) rows.push(row);
+      if (!empty) {
+        Object.defineProperty(row, '__sheetRow', { value: r, enumerable: false });
+        rows.push(row);
+      }
     }
     return rows;
   }
@@ -449,6 +452,350 @@
     return Promise.resolve('');
   }
 
+  function readZipBytes(entry) {
+    if (!entry) return Promise.resolve(null);
+    if (entry.method === 0) return Promise.resolve(entry.data);
+    if (entry.method === 8) return inflate(entry.data);
+    return Promise.resolve(null);
+  }
+
+  function toU8(content) {
+    if (!content) return new Uint8Array(0);
+    if (content instanceof Uint8Array) return content;
+    if (ArrayBuffer.isView(content)) {
+      return new Uint8Array(content.buffer, content.byteOffset, content.byteLength);
+    }
+    if (content instanceof ArrayBuffer) return new Uint8Array(content);
+    return new Uint8Array(content);
+  }
+
+  function sanitizeFilename(name) {
+    var s = String(name || '').replace(/\\/g, '/');
+    var slash = s.lastIndexOf('/');
+    if (slash >= 0) s = s.slice(slash + 1);
+    s = s.replace(/[<>:"|?*\u0000-\u001f]/g, '_').trim();
+    if (!s || s === '.' || s === '..') return 'attachment.bin';
+    return s.slice(0, 180);
+  }
+
+  function encodeCell(r, c) {
+    if (global.XLSX && XLSX.utils && XLSX.utils.encode_cell) {
+      return XLSX.utils.encode_cell({ r: r, c: c });
+    }
+    var s = '';
+    var n = c + 1;
+    while (n > 0) {
+      var m = (n - 1) % 26;
+      s = String.fromCharCode(65 + m) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s + (r + 1);
+  }
+
+  function parseRels(xml) {
+    var map = {};
+    var re = /<Relationship\b([^>]*)\/?>/gi;
+    var m;
+    while ((m = re.exec(xml || ''))) {
+      var id = /\bId="([^"]+)"/i.exec(m[1]);
+      var target = /\bTarget="([^"]+)"/i.exec(m[1]);
+      if (id && target) map[id[1]] = String(target[1]).replace(/\\/g, '/');
+    }
+    return map;
+  }
+
+  function resolveRel(fromPath, target) {
+    if (!target) return '';
+    var t = String(target).replace(/\\/g, '/').replace(/^\//, '');
+    if (/^xl\//i.test(t)) return t;
+    var from = String(fromPath || '').replace(/\/[^/]+$/, '');
+    var parts = (from + '/' + t).split('/');
+    var out = [];
+    parts.forEach(function (p) {
+      if (!p || p === '.') return;
+      if (p === '..') out.pop();
+      else out.push(p);
+    });
+    return out.join('/');
+  }
+
+  function parseOleObjects(sheetXml) {
+    var list = [];
+    var seen = {};
+    var re = /<oleObject\b([^>]*)\/?>/gi;
+    var m;
+    while ((m = re.exec(sheetXml || ''))) {
+      var attrs = m[1];
+      var shape = /shapeId="([^"]+)"/i.exec(attrs);
+      var rid = /\br:id="([^"]+)"/i.exec(attrs);
+      if (!rid) continue;
+      var item = { shapeId: shape ? String(shape[1]) : '', rid: rid[1] };
+      if (seen[item.rid]) continue;
+      seen[item.rid] = true;
+      list.push(item);
+    }
+    return list;
+  }
+
+  function parseVmlAnchors(vml) {
+    var map = {};
+    var re = /<v:shape\b([^>]*)>([\s\S]*?)<\/v:shape>/gi;
+    var m;
+    while ((m = re.exec(vml || ''))) {
+      var idAttr = /\bid="([^"]+)"/i.exec(m[1]);
+      var anchor = /<x:Anchor>([\s\S]*?)<\/x:Anchor>/i.exec(m[2]);
+      if (!idAttr || !anchor) continue;
+      var parts = anchor[1].split(',').map(function (s) { return parseInt(String(s).trim(), 10); });
+      if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[2])) continue;
+      var pos = { c: parts[0], r: parts[2] };
+      var id = idAttr[1];
+      var shapeId = String(id).replace(/^.*s/i, '');
+      map[shapeId] = pos;
+      map[id] = pos;
+    }
+    return map;
+  }
+
+  function parseEmbedFormulaCells(sheetXml) {
+    var cells = [];
+    var re = /<c\b([^>]*)>([\s\S]*?)<\/c>/gi;
+    var m;
+    while ((m = re.exec(sheetXml || ''))) {
+      var r = /(?:^|\s)r="([^"]+)"/.exec(m[1]);
+      if (!r) continue;
+      if (/EMBED\s*\(/i.test(m[2]) || /Packager Shell Object/i.test(m[2])) {
+        cells.push(r[1]);
+      }
+    }
+    return cells;
+  }
+
+  function cellAddressForOle(ole, index, anchors, embedCells) {
+    if (ole && ole.shapeId && anchors) {
+      var pos = anchors[String(ole.shapeId)] || anchors['_x0000_s' + ole.shapeId];
+      if (pos) return encodeCell(pos.r, pos.c);
+    }
+    if (embedCells && embedCells[index]) return embedCells[index];
+    return '';
+  }
+
+  function readAsciiZ(u8, offset) {
+    var start = offset;
+    while (offset < u8.length && u8[offset] !== 0) offset += 1;
+    var chars = [];
+    var i;
+    for (i = start; i < offset; i += 1) chars.push(u8[i]);
+    return {
+      value: String.fromCharCode.apply(null, chars),
+      offset: offset < u8.length ? offset + 1 : offset
+    };
+  }
+
+  function parseOle10Native(bytes) {
+    var u8 = toU8(bytes);
+    if (u8.length < 6) return null;
+    var view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    var offset = 0;
+    var declared = view.getUint32(0, true);
+    var verAt0 = view.getUint16(0, true);
+    var verAt4 = u8.length >= 6 ? view.getUint16(4, true) : 0;
+    if (verAt0 !== 2 && verAt4 === 2 && declared > 0 && declared + 4 <= u8.length) {
+      offset = 4;
+    }
+    if (offset + 2 > u8.length) return null;
+    var version = view.getUint16(offset, true);
+    offset += 2;
+    if (version !== 2 && version !== 0) {
+      return fallbackEmbeddedFile(u8, 'attachment.bin');
+    }
+    var label = readAsciiZ(u8, offset);
+    offset = label.offset;
+    var src = readAsciiZ(u8, offset);
+    offset = src.offset;
+    var name = sanitizeFilename(src.value || label.value || 'attachment.bin');
+    if (offset + 8 > u8.length) return fallbackEmbeddedFile(u8, name);
+    offset += 4;
+    var pathLen = view.getUint32(offset, true);
+    offset += 4;
+    if (pathLen < 0 || offset + pathLen > u8.length) return fallbackEmbeddedFile(u8, name);
+    offset += pathLen;
+    if (offset + 4 > u8.length) return fallbackEmbeddedFile(u8, name);
+    var dataLen = view.getUint32(offset, true);
+    offset += 4;
+    if (dataLen <= 0 || offset + dataLen > u8.length) return fallbackEmbeddedFile(u8, name);
+    return {
+      name: name,
+      bytes: u8.slice(offset, offset + dataLen)
+    };
+  }
+
+  function fallbackEmbeddedFile(u8, name) {
+    var pdf = indexOfBytes(u8, [0x25, 0x50, 0x44, 0x46, 0x2d]);
+    if (pdf < 0) return null;
+    var end = u8.length;
+    var eof = indexOfBytes(u8, [0x25, 0x25, 0x45, 0x4f, 0x46]);
+    if (eof >= pdf) {
+      end = eof + 5;
+      if (end < u8.length && u8[end] === 0x0d) end += 1;
+      if (end < u8.length && u8[end] === 0x0a) end += 1;
+    }
+    return {
+      name: /\.pdf$/i.test(name) ? name : 'attachment.pdf',
+      bytes: u8.slice(pdf, end)
+    };
+  }
+
+  function indexOfBytes(u8, seq) {
+    var i;
+    var j;
+    outer: for (i = 0; i <= u8.length - seq.length; i += 1) {
+      for (j = 0; j < seq.length; j += 1) {
+        if (u8[i + j] !== seq[j]) continue outer;
+      }
+      return i;
+    }
+    return -1;
+  }
+
+  function parseOlePackage(bin) {
+    var u8 = toU8(bin);
+    if (!u8.length) return null;
+    var XLSX = global.XLSX;
+    if (XLSX && XLSX.CFB && typeof XLSX.CFB.read === 'function') {
+      try {
+        var cfb = XLSX.CFB.read(u8, { type: 'array' });
+        var files = (cfb && cfb.FileIndex) || [];
+        var native = files.filter(function (entry) {
+          return entry && /Ole10Native/i.test(entry.name || '') && entry.content;
+        })[0];
+        if (native) {
+          var parsed = parseOle10Native(native.content);
+          if (parsed) return parsed;
+        }
+        var pkg = files.filter(function (entry) {
+          return entry && /Package/i.test(entry.name || '') && entry.content && entry.content.length > 20;
+        })[0];
+        if (pkg) {
+          return { name: 'attachment.bin', bytes: toU8(pkg.content) };
+        }
+      } catch (err) {}
+    }
+    return parseOle10Native(u8);
+  }
+
+  function firstSheetPath(files, workbookXml, workbookRelsXml) {
+    var rels = parseRels(workbookRelsXml || '');
+    var m = /<sheet\b([^>]*)\/?>/i.exec(workbookXml || '');
+    if (m) {
+      var rid = /\br:id="([^"]+)"/i.exec(m[1]);
+      if (rid && rels[rid[1]]) {
+        var target = rels[rid[1]].replace(/^\//, '');
+        if (!/^xl\//i.test(target)) target = 'xl/' + target;
+        return target.replace(/\\/g, '/');
+      }
+    }
+    var names = Object.keys(files || {}).filter(function (n) {
+      return /^xl\/worksheets\/sheet\d+\.xml$/i.test(n);
+    }).sort();
+    return names[0] || '';
+  }
+
+  function extractOleCellMap(arrayBuffer) {
+    var files = findZipLocalFiles(arrayBuffer);
+    return Promise.all([
+      readZipText(files['xl/workbook.xml']),
+      readZipText(files['xl/_rels/workbook.xml.rels'])
+    ]).then(function (wbParts) {
+      var sheetPath = firstSheetPath(files, wbParts[0], wbParts[1]);
+      if (!sheetPath || !files[sheetPath]) return {};
+      var relsPath = sheetPath.replace(/^(.*)\/([^/]+)$/, '$1/_rels/$2.rels');
+      return Promise.all([
+        readZipText(files[sheetPath]),
+        readZipText(files[relsPath])
+      ]).then(function (sheetParts) {
+        var sheetXml = sheetParts[0] || '';
+        var rels = parseRels(sheetParts[1] || '');
+        var oleTags = parseOleObjects(sheetXml);
+        if (!oleTags.length) return {};
+        var embedCells = parseEmbedFormulaCells(sheetXml);
+        var vmlRid = '';
+        var legacy = /<legacyDrawing\b([^>]*)\/?>/i.exec(sheetXml);
+        if (legacy) {
+          var vid = /\br:id="([^"]+)"/i.exec(legacy[1]);
+          if (vid) vmlRid = vid[1];
+        }
+        var vmlPath = vmlRid && rels[vmlRid] ? resolveRel(sheetPath, rels[vmlRid]) : '';
+        var vmlPromise = vmlPath && files[vmlPath] ? readZipText(files[vmlPath]) : Promise.resolve('');
+        return vmlPromise.then(function (vml) {
+          var anchors = parseVmlAnchors(vml);
+          var map = {};
+          var chain = Promise.resolve();
+          oleTags.forEach(function (ole, i) {
+            chain = chain.then(function () {
+              var target = rels[ole.rid];
+              if (!target) return;
+              var binPath = resolveRel(sheetPath, target);
+              if (!files[binPath]) return;
+              return readZipBytes(files[binPath]).then(function (bin) {
+                var parsed = parseOlePackage(bin);
+                if (!parsed || !parsed.bytes || !parsed.bytes.length) return;
+                var addr = cellAddressForOle(ole, i, anchors, embedCells);
+                if (addr) map[addr] = parsed;
+              });
+            });
+          });
+          return chain.then(function () { return map; });
+        });
+      });
+    }).catch(function () {
+      return {};
+    });
+  }
+
+  function applyOleMapToRows(sheet, rows, oleMap) {
+    if (!sheet || !rows || !oleMap) return 0;
+    var addrs = Object.keys(oleMap);
+    if (!addrs.length) return 0;
+    var XLSX = global.XLSX;
+    if (!XLSX || !XLSX.utils || !sheet['!ref']) return 0;
+    var range = XLSX.utils.decode_range(sheet['!ref']);
+    var headerRow = range.s.r;
+    var headers = [];
+    var c;
+    for (c = range.s.c; c <= range.e.c; c++) {
+      var hAddr = XLSX.utils.encode_cell({ r: headerRow, c: c });
+      var hCell = sheet[hAddr];
+      var hVal = '';
+      if (hCell) {
+        if (hCell.w != null) hVal = String(hCell.w);
+        else if (hCell.v != null) hVal = String(hCell.v);
+      }
+      headers.push(hVal !== '' ? hVal : 'Column' + (c + 1));
+    }
+    var count = 0;
+    rows.forEach(function (row, i) {
+      var r = row.__sheetRow != null ? row.__sheetRow : (headerRow + 1 + i);
+      var byHeader = {};
+      var any = false;
+      for (c = range.s.c; c <= range.e.c; c++) {
+        var addr = XLSX.utils.encode_cell({ r: r, c: c });
+        if (oleMap[addr] && oleMap[addr].bytes && oleMap[addr].bytes.length) {
+          byHeader[headers[c - range.s.c]] = oleMap[addr];
+          any = true;
+        }
+      }
+      if (any) {
+        Object.defineProperty(row, '__oleByHeader', {
+          value: byHeader,
+          enumerable: false,
+          configurable: true
+        });
+        count += 1;
+      }
+    });
+    return count;
+  }
+
   /**
    * Build addr → HTML map with real Excel colors from the xlsx ZIP.
    */
@@ -496,7 +843,14 @@
     themeFromWorkbook: themeFromWorkbook,
     parseThemeXml: parseThemeXml,
     applyRichHtmlMap: applyRichHtmlMap,
-    extractRichHtmlMap: extractRichHtmlMap
+    extractRichHtmlMap: extractRichHtmlMap,
+    parseOle10Native: parseOle10Native,
+    parseOleObjects: parseOleObjects,
+    parseVmlAnchors: parseVmlAnchors,
+    parseEmbedFormulaCells: parseEmbedFormulaCells,
+    cellAddressForOle: cellAddressForOle,
+    extractOleCellMap: extractOleCellMap,
+    applyOleMapToRows: applyOleMapToRows
   };
 
   if (typeof module !== 'undefined' && module.exports) {
