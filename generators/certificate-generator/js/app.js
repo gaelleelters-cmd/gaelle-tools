@@ -770,8 +770,12 @@
         String(item.filename || '').toLowerCase().indexOf(q) >= 0;
     });
     els.resultsBlock.hidden = state.results.length === 0;
+    var pdfCount = state.results.filter(function (item) { return item.ok && item.pdfBlob; }).length;
     if (els.btnDownloadCombined) {
-      els.btnDownloadCombined.hidden = !state.combinedBlob;
+      els.btnDownloadCombined.hidden = pdfCount === 0;
+    }
+    if (els.btnDownloadExcel) {
+      els.btnDownloadExcel.hidden = state.results.length === 0;
     }
     var body = els.resultsTable.querySelector('tbody');
     body.innerHTML = rows.map(function (item) {
@@ -827,7 +831,7 @@
       } else {
         revokeUrls();
         state.results = results;
-        state.combinedBlob = results.combinedBlob || null;
+        state.combinedBlob = null;
       }
       var all = state.results;
       var ok = all.filter(function (item) { return item.ok; }).length;
@@ -1349,6 +1353,7 @@
       resultsSearch: $('results-search'),
       resultsTable: $('results-table'),
       btnDownloadCombined: $('btn-download-combined'),
+      btnDownloadExcel: $('btn-download-excel'),
       zoomLabel: $('zoom-label'),
       blankPaneLabel: $('blank-pane-label'),
       mapDialog: $('map-dialog'),
@@ -1518,11 +1523,22 @@
     });
     if ($('btn-download-combined')) {
       $('btn-download-combined').addEventListener('click', function () {
-        if (!state.combinedBlob) {
-          toast('Generate certificates first to download them as one PDF.', true);
-          return;
+        G.Generate.zipPdfFolder(state.results).then(function (zip) {
+          G.Generate.saveBlob(zip.blob, zip.name);
+        }).catch(function (err) {
+          toast(err.message || 'Unable to create the PDF folder.', true);
+        });
+      });
+    }
+    if ($('btn-download-excel')) {
+      $('btn-download-excel').addEventListener('click', function () {
+        try {
+          var packed = G.Excel.rowsWithAttachments(state.columns, state.rows, state.results);
+          var blob = G.Excel.workbookBlob(packed.columns, packed.rows, state.sheetName || 'Certificates');
+          G.Generate.saveBlob(blob, 'Certificates.xlsx');
+        } catch (err) {
+          toast(err && err.message ? err.message : 'Unable to create the Excel file.', true);
         }
-        G.Generate.saveBlob(state.combinedBlob, 'Certificates.pdf');
       });
     }
     els.resultsSearch.addEventListener('input', function () {

@@ -542,3 +542,28 @@ test('Ambassador-size JPGs become A4 print PDFs at 300 DPI, not 96 DPI screen po
   const screenExport = { widthPx: 794, heightPx: 1123, dpi: 96 };
   assert.ok(Math.abs(G.Generate.outputScale(screenExport, 'print') - 3) < 0.01);
 });
+
+test('attachment Excel keeps original rows and points at each PDF in the Certificates folder', () => {
+  const G = loadModules();
+  assert.equal(G.Generate.pdfFilenameFor('Gaelle_El_Ters_Certificate.png'), 'Gaelle_El_Ters_Certificate.pdf');
+  assert.equal(G.Generate.pdfFilenameFor('Joelle_El_Feghaly_Certificate.pdf'), 'Joelle_El_Feghaly_Certificate.pdf');
+
+  const columns = ['name', 'date'];
+  const rows = [
+    { name: 'Gaelle el ters', date: '20 augusyt', __excelRow: 2 },
+    { name: 'Joelle el feghaly', date: '21 augusyt', __excelRow: 3 },
+    { name: '', date: '22 augusyt', __excelRow: 4 },
+  ];
+  const results = [
+    { ok: true, excelRow: 2, index: 0, pdfFilename: 'Gaelle_El_Ters_Certificate.pdf' },
+    { ok: true, excelRow: 3, index: 1, pdfFilename: 'Joelle_El_Feghaly_Certificate.pdf' },
+  ];
+  const packed = G.Excel.rowsWithAttachments(columns, rows, results);
+  assert.equal(packed.attachmentColumn, 'Attachment');
+  assert.deepEqual(packed.columns, ['name', 'date', 'Attachment']);
+  assert.equal(packed.rows.length, 3);
+  assert.equal(packed.rows[0].Attachment, 'Certificates/Gaelle_El_Ters_Certificate.pdf');
+  assert.equal(packed.rows[1].Attachment, 'Certificates/Joelle_El_Feghaly_Certificate.pdf');
+  assert.equal(packed.rows[2].Attachment, '');
+  assert.equal(packed.rows[0].name, 'Gaelle el ters');
+});

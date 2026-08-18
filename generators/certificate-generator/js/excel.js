@@ -194,6 +194,62 @@
     });
   }
 
+  function attachmentColumnName(columns) {
+    var used = Object.create(null);
+    (columns || []).forEach(function (col) { used[String(col)] = true; });
+    var names = ['Attachment', 'PDF path', 'Certificate PDF'];
+    var i;
+    for (i = 0; i < names.length; i += 1) {
+      if (!used[names[i]]) return names[i];
+    }
+    return 'Attachment_2';
+  }
+
+  function rowsWithAttachments(columns, sourceRows, results) {
+    var attachmentCol = attachmentColumnName(columns);
+    var byExcelRow = Object.create(null);
+    var byIndex = Object.create(null);
+    (results || []).forEach(function (item) {
+      if (!item) return;
+      if (item.excelRow != null) byExcelRow[item.excelRow] = item;
+      if (item.index != null) byIndex[item.index] = item;
+    });
+    var outColumns = (columns || []).concat([attachmentCol]);
+    var outRows = (sourceRows || []).map(function (row, i) {
+      var copy = {};
+      (columns || []).forEach(function (col) { copy[col] = row[col]; });
+      var item = (row && row.__excelRow != null ? byExcelRow[row.__excelRow] : null) || byIndex[i];
+      var path = '';
+      if (item && item.ok) {
+        var file = item.pdfFilename || (CertGen.Generate && CertGen.Generate.pdfFilenameFor
+          ? CertGen.Generate.pdfFilenameFor(item.filename)
+          : item.filename);
+        path = file ? ('Certificates/' + file) : '';
+      }
+      copy[attachmentCol] = path;
+      return copy;
+    });
+    return { columns: outColumns, rows: outRows, attachmentColumn: attachmentCol };
+  }
+
+  function workbookBlob(columns, rows, sheetName) {
+    var XLSX = global.XLSX;
+    if (!XLSX || !XLSX.utils) {
+      throw new Error('Excel export failed to load. Check your internet connection and try again.');
+    }
+    var headers = columns || [];
+    var data = [headers].concat((rows || []).map(function (row) {
+      return headers.map(function (col) {
+        return Format().stringifyValue(row[col]);
+      });
+    }));
+    var sheet = XLSX.utils.aoa_to_sheet(data);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, sheetName || 'Certificates');
+    var buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+
   CertGen.Excel = {
     parseWorkbook: parseWorkbook,
     parseTableText: parseTableText,
@@ -201,7 +257,10 @@
     isEmptyRow: isEmptyRow,
     readSheet: readSheet,
     uniqueHeaders: uniqueHeaders,
-    cellToValue: cellToValue
+    cellToValue: cellToValue,
+    attachmentColumnName: attachmentColumnName,
+    rowsWithAttachments: rowsWithAttachments,
+    workbookBlob: workbookBlob
   };
   global.CertGen = CertGen;
   if (typeof module !== 'undefined' && module.exports) module.exports = CertGen.Excel;

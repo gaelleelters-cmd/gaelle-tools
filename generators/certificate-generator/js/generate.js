@@ -463,7 +463,6 @@
     var onProgress = options.onProgress || function () {};
     var usedNames = Object.create(null);
     var ext = format === 'png' ? 'png' : (format === 'jpg' || format === 'jpeg' ? 'jpg' : 'pdf');
-    var combinedPdf = null;
 
     return waitForFonts().then(function () {
       return CertGen.Template.loadImageFromUrl(template.previewUrl);
@@ -474,11 +473,6 @@
       function next() {
         if (index >= items.length) {
           onProgress(items.length, items.length);
-          var combinedBlob = null;
-          if (combinedPdf) {
-            try { combinedBlob = combinedPdf.output('blob'); } catch (err) { combinedBlob = null; }
-          }
-          results.combinedBlob = combinedBlob;
           return Promise.resolve(results);
         }
         var current = items[index];
@@ -510,15 +504,21 @@
         }
 
         return exportCanvas(canvas, template, format, quality).then(function (blob) {
-          combinedPdf = appendCombinedPage(combinedPdf, canvas, template, quality, index);
-          results.push({
-            ok: true,
-            index: current.index,
-            excelRow: current.excelRow,
-            name: display,
-            filename: filename,
-            blob: blob,
-            row: row
+          var pdfDone = ext === 'pdf'
+            ? Promise.resolve(blob)
+            : canvasToPdfBlob(canvas, template, quality);
+          return pdfDone.then(function (pdfBlob) {
+            results.push({
+              ok: true,
+              index: current.index,
+              excelRow: current.excelRow,
+              name: display,
+              filename: filename,
+              pdfFilename: pdfFilenameFor(filename),
+              blob: blob,
+              pdfBlob: pdfBlob,
+              row: row
+            });
           });
         }).catch(function () {
           results.push({
@@ -541,6 +541,29 @@
       }
 
       return next();
+    });
+  }
+
+  function pdfFilenameFor(filename) {
+    return String(filename || 'Certificate').replace(/\.[A-Za-z0-9]+$/, '') + '.pdf';
+  }
+
+  function zipPdfFolder(results, zipName) {
+    var JSZip = global.JSZip;
+    if (!JSZip) {
+      return Promise.reject(new Error('ZIP download failed to load. Check your internet connection and try again.'));
+    }
+    var zip = new JSZip();
+    var folder = zip.folder('Certificates');
+    var ok = (results || []).filter(function (item) { return item.ok && item.pdfBlob; });
+    if (!ok.length) {
+      return Promise.reject(new Error('There are no PDF certificates to download yet.'));
+    }
+    ok.forEach(function (item) {
+      folder.file(item.pdfFilename || pdfFilenameFor(item.filename), item.pdfBlob);
+    });
+    return zip.generateAsync({ type: 'blob' }).then(function (blob) {
+      return { blob: blob, name: zipName || zipFileName() };
     });
   }
 
@@ -598,6 +621,8 @@
     measureRow: measureRow,
     generateAll: generateAll,
     zipResults: zipResults,
+    zipPdfFolder: zipPdfFolder,
+    pdfFilenameFor: pdfFilenameFor,
     zipFileName: zipFileName,
     saveBlob: saveBlob,
     BATCH: BATCH
