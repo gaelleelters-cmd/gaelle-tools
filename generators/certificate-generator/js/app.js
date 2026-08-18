@@ -1532,13 +1532,18 @@
     }
     if ($('btn-download-excel')) {
       $('btn-download-excel').addEventListener('click', function () {
-        try {
-          var packed = G.Excel.rowsWithAttachments(state.columns, state.rows, state.results);
-          var blob = G.Excel.workbookBlob(packed.columns, packed.rows, state.sheetName || 'Certificates');
-          G.Generate.saveBlob(blob, 'Certificates.xlsx');
-        } catch (err) {
+        var packed = G.Excel.rowsWithAttachments(state.columns, state.rows, state.results);
+        G.Excel.workbookWithAttachmentsZip(
+          packed.columns,
+          packed.rows,
+          packed.attachmentColumn,
+          state.results,
+          state.sheetName || 'Certificates'
+        ).then(function (out) {
+          G.Generate.saveBlob(out.blob, out.name);
+        }).catch(function (err) {
           toast(err && err.message ? err.message : 'Unable to create the Excel file.', true);
-        }
+        });
       });
     }
     els.resultsSearch.addEventListener('input', function () {

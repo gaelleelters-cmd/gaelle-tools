@@ -68,6 +68,9 @@ test('certificate app shell exposes workflow controls and cache-busted scripts',
   assert.match(html, /Match Reference Certificate/);
 
   assert.match(html, /css\/style\.css\?v=/);
+  const appJs = fs.readFileSync(path.join(APP_DIR, 'js/app.js'), 'utf8');
+  assert.match(appJs, /workbookWithAttachmentsZip/);
+  assert.match(appJs, /btn-download-excel/);
   const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual(scripts.map((src) => src.split('?')[0]), [
     '../../js/embed.js',

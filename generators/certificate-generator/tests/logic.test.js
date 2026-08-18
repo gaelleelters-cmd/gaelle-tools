@@ -566,4 +566,8 @@ test('attachment Excel keeps original rows and points at each PDF in the Certifi
   assert.equal(packed.rows[1].Attachment, 'Certificates/Joelle_El_Feghaly_Certificate.pdf');
   assert.equal(packed.rows[2].Attachment, '');
   assert.equal(packed.rows[0].name, 'Gaelle el ters');
+  assert.equal(
+    G.Excel.attachmentLinkTarget(packed.rows[0].Attachment),
+    'Certificates/Gaelle_El_Ters_Certificate.pdf',
+  );
 });

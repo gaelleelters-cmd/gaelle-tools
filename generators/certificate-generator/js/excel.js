@@ -232,7 +232,25 @@
     return { columns: outColumns, rows: outRows, attachmentColumn: attachmentCol };
   }
 
-  function workbookBlob(columns, rows, sheetName) {
+  function attachmentLinkTarget(path) {
+    return String(path || '').trim().replace(/\\/g, '/');
+  }
+
+  function addAttachmentHyperlinks(sheet, headers, rows, attachmentColumn) {
+    var XLSX = global.XLSX;
+    var colIndex = (headers || []).indexOf(attachmentColumn);
+    if (!sheet || colIndex < 0) return;
+    (rows || []).forEach(function (row, i) {
+      var target = attachmentLinkTarget(row && row[attachmentColumn]);
+      if (!target) return;
+      var addr = XLSX.utils.encode_cell({ r: i + 1, c: colIndex });
+      var cell = sheet[addr];
+      if (!cell) return;
+      cell.l = { Target: target, Tooltip: 'Open certificate' };
+    });
+  }
+
+  function workbookBlob(columns, rows, sheetName, options) {
     var XLSX = global.XLSX;
     if (!XLSX || !XLSX.utils) {
       throw new Error('Excel export failed to load. Check your internet connection and try again.');
@@ -244,10 +262,70 @@
       });
     }));
     var sheet = XLSX.utils.aoa_to_sheet(data);
+    var attachmentColumn = options && options.attachmentColumn;
+    if (attachmentColumn) {
+      addAttachmentHyperlinks(sheet, headers, rows, attachmentColumn);
+    }
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, sheet, sheetName || 'Certificates');
     var buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+
+  function pdfFileForResult(item) {
+    if (!item) return '';
+    if (item.pdfFilename) return item.pdfFilename;
+    if (CertGen.Generate && CertGen.Generate.pdfFilenameFor) {
+      return CertGen.Generate.pdfFilenameFor(item.filename);
+    }
+    return item.filename || '';
+  }
+
+  function asZipBytes(data) {
+    if (!data) return Promise.resolve(null);
+    if (data instanceof Uint8Array) return Promise.resolve(data);
+    if (typeof ArrayBuffer !== 'undefined' && data instanceof ArrayBuffer) {
+      return Promise.resolve(new Uint8Array(data));
+    }
+    if (typeof data.arrayBuffer === 'function') {
+      return data.arrayBuffer().then(function (buf) { return new Uint8Array(buf); });
+    }
+    return Promise.resolve(data);
+  }
+
+  function workbookWithAttachmentsZip(columns, rows, attachmentColumn, results, sheetName) {
+    var JSZip = global.JSZip;
+    if (!JSZip) {
+      return Promise.reject(new Error('ZIP download failed to load. Check your internet connection and try again.'));
+    }
+    var xlsxBlob = workbookBlob(columns, rows, sheetName, { attachmentColumn: attachmentColumn });
+    var zip = new JSZip();
+    var folder = zip.folder('Certificates');
+    var jobs = [];
+    jobs.push(asZipBytes(xlsxBlob).then(function (bytes) {
+      zip.file('Certificates.xlsx', bytes);
+    }));
+    var added = 0;
+    (results || []).forEach(function (item) {
+      if (!item || !item.ok || !item.pdfBlob) return;
+      var file = pdfFileForResult(item);
+      if (!file) return;
+      added += 1;
+      jobs.push(asZipBytes(item.pdfBlob).then(function (bytes) {
+        folder.file(file, bytes);
+      }));
+    });
+    if (!added) {
+      return Promise.reject(new Error('There are no PDF certificates to attach yet.'));
+    }
+    return Promise.all(jobs).then(function () {
+      return zip.generateAsync({ type: 'uint8array' });
+    }).then(function (bytes) {
+      return {
+        blob: new Blob([bytes], { type: 'application/zip' }),
+        name: 'Certificates_with_attachments.zip'
+      };
+    });
   }
 
   CertGen.Excel = {
@@ -259,8 +337,10 @@
     uniqueHeaders: uniqueHeaders,
     cellToValue: cellToValue,
     attachmentColumnName: attachmentColumnName,
+    attachmentLinkTarget: attachmentLinkTarget,
     rowsWithAttachments: rowsWithAttachments,
-    workbookBlob: workbookBlob
+    workbookBlob: workbookBlob,
+    workbookWithAttachmentsZip: workbookWithAttachmentsZip
   };
   global.CertGen = CertGen;
   if (typeof module !== 'undefined' && module.exports) module.exports = CertGen.Excel;
