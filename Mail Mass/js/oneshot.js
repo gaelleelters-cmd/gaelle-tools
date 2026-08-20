@@ -210,7 +210,7 @@
       '    Else',
       '      openLine = HtmlEsc(firstName) & ","',
       '    End If',
-      '    html = html & "<p class=MsoNormal style=\'margin:0 0 8pt 0;\'>" & openLine & "</p>"',
+      '    html = html & "<p class=MsoNormal style=\'margin:0;\'>" & openLine & "<br>&nbsp;</p>"',
       '  End If',
       '  isHtml = False',
       '  If InStr(1, LCase(messageText & ""), "<") > 0 Then',

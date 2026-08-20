@@ -419,7 +419,90 @@
       p.setAttribute('style', 'margin:0;line-height:12pt;font-size:11pt;');
     });
 
+    wrapOrphanBlocks(cleaned);
+    ensureBlankLineAfterSalutation(cleaned);
+
     return cleaned.innerHTML.trim();
+  }
+
+  function wrapOrphanBlocks(root) {
+    Array.prototype.slice.call(root.childNodes).forEach(function (n) {
+      if (n.nodeType === 3 && String(n.nodeValue || '').replace(/\s/g, '')) {
+        var p = document.createElement('p');
+        p.setAttribute('style', 'margin:0 0 8pt 0;');
+        root.insertBefore(p, n);
+        p.appendChild(n);
+      }
+    });
+  }
+
+  function salutationText(el) {
+    var t = String((el && el.textContent) || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!t || t.length > 90) return '';
+    if (!/^(dear|hello|hi|good morning|good afternoon|assalam(?:\s+aalaykom)?)\b.*,$/i.test(t)) {
+      return '';
+    }
+    return t;
+  }
+
+  function greetingHasOutlookBreak(p) {
+    return /<br\s*\/?>\s*(?:&nbsp;|&#160;|\u00a0)\s*$/i.test(p.innerHTML || '');
+  }
+
+  function addOutlookBreak(p) {
+    if (greetingHasOutlookBreak(p)) return;
+    p.insertAdjacentHTML('beforeend', '<br>&nbsp;');
+    var st = p.getAttribute('style') || '';
+    if (/margin\s*:/i.test(st)) {
+      p.setAttribute('style', st.replace(/margin\s*:[^;]+;?/i, 'margin:0;'));
+    } else {
+      p.setAttribute('style', 'margin:0;' + st);
+    }
+  }
+
+  function isSpacerPara(p) {
+    if (!p || !p.tagName || p.tagName.toLowerCase() !== 'p') return false;
+    if (p.querySelector && p.querySelector('img')) return false;
+    return !String(p.textContent || '').replace(/\u00a0/g, ' ').trim();
+  }
+
+  function ensureBlankLineAfterSalutation(root) {
+    var paras = Array.prototype.slice.call(root.children).filter(function (el) {
+      return el.tagName && el.tagName.toLowerCase() === 'p';
+    });
+    paras.forEach(function (p) {
+      var html = p.innerHTML || '';
+      var br = html.match(/^([\s\S]*?)<br\s*\/?>([\s\S]*)$/i);
+      if (!br) return;
+      var probe = document.createElement('div');
+      probe.innerHTML = br[1];
+      if (!salutationText(probe)) return;
+      var rest = br[2].replace(/^(?:\s|&nbsp;|&#160;|\u00a0|<br\s*\/?>)+/i, '');
+      p.innerHTML = br[1];
+      if (rest.replace(/<[^>]+>/g, '').replace(/&nbsp;|&#160;|\u00a0/gi, '').trim() || /<img/i.test(rest)) {
+        var next = document.createElement('p');
+        next.setAttribute('style', 'margin:0 0 8pt 0;');
+        next.innerHTML = rest;
+        if (p.parentNode) p.parentNode.insertBefore(next, p.nextSibling);
+      }
+    });
+
+    paras = Array.prototype.slice.call(root.children).filter(function (el) {
+      return el.tagName && el.tagName.toLowerCase() === 'p';
+    });
+    paras.forEach(function (p) {
+      if (!salutationText(p)) return;
+      addOutlookBreak(p);
+      var next = p.nextElementSibling;
+      while (isSpacerPara(next)) {
+        var gone = next;
+        next = next.nextElementSibling;
+        gone.remove();
+      }
+    });
   }
 
   function insertHtmlAtCursor(html) {
@@ -742,6 +825,10 @@
     } else {
       message = applyMerge(getBodyHtml(), row, true).trim();
       messageIsHtml = true;
+      var mergedWrap = document.createElement('div');
+      mergedWrap.innerHTML = message;
+      ensureBlankLineAfterSalutation(mergedWrap);
+      message = mergedWrap.innerHTML;
     }
 
     var custom = msgMode() === 'custom';
@@ -804,8 +891,7 @@
       wrapOpen +=
         '<p style="' + greetStyle + '"><span style="' + greetStyle + '">' +
         open.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
-        '</span></p>' +
-        '<p style="margin:0;line-height:12pt;font-size:11pt;">&nbsp;</p>';
+        '</span><br>&nbsp;</p>';
     }
     if (mail.messageIsHtml) {
       return wrapOpen + mail.message + '</div>';
@@ -1307,6 +1393,8 @@
       updatePreview();
     });
   }
+
+  try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) {}
 
   bodyEl.addEventListener('input', function () { updatePreview(); refreshButtons(); });
   bodyEl.addEventListener('keyup', function () { updatePreview(); });

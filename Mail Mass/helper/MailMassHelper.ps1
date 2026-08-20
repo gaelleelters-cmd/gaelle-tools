@@ -124,9 +124,7 @@ function Build-MessageHtml([string]$greeting, [string]$firstName, [string]$messa
     }
 
     $greetStyle = Get-GreetingFontStyle $message
-    [void]$parts.Append("<p style=""$greetStyle""><span style=""$greetStyle"">$open</span></p>")
-    # Exactly one blank line between greeting and body
-    [void]$parts.Append('<p style="margin:0;line-height:12pt;font-size:11pt;">&nbsp;</p>')
+    [void]$parts.Append("<p style=""$greetStyle""><span style=""$greetStyle"">$open</span><br>&nbsp;</p>")
   }
 
   if ($messageIsHtml -or (Test-LooksLikeHtml $message)) {
@@ -505,7 +503,7 @@ function Read-HttpRequest([System.Net.Sockets.NetworkStream]$stream) {
 
 
 # TcpListener avoids Windows HttpListener URLACL (no admin needed).
-$HelperVersion = 13
+$HelperVersion = 14
 $tcp = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
 
 try {
