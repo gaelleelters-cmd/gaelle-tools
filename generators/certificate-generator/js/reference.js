@@ -842,7 +842,6 @@
     }
     if (!grown) return null;
     var box = {
-      id: 'hit_click',
       text: '',
       x: grown.left / w * 100,
       y: grown.top / h * 100,
@@ -863,6 +862,7 @@
       box.height = 14;
     }
     if (box.y + box.height > 96) box.height = 96 - box.y;
+    box.id = stableHitId('hit_click', box);
     var style = styleFromBox(box);
     box.fontFamily = style.fontFamily;
     box.fontWeight = style.fontWeight;
@@ -885,6 +885,23 @@
     return box;
   }
 
+  function stableHitId(prefix, box) {
+    return prefix + '_' + [box.x, box.y, box.width, box.height].map(function (n) {
+      return Math.round(Number(n) * 10) / 10;
+    }).join('_');
+  }
+
+  function existingFieldForHit(fields, hit) {
+    var list = fields || [];
+    var i;
+    for (i = 0; i < list.length; i += 1) {
+      var field = list[i];
+      if (hit && hit.id && field.referenceItemId && field.referenceItemId === hit.id) return field;
+      if (hit && Math.max(boxesOverlap(field, hit), boxesOverlap(hit, field)) > 0.45) return field;
+    }
+    return null;
+  }
+
   function boxesOverlap(a, b) {
     var x1 = Math.max(a.x, b.x);
     var y1 = Math.max(a.y, b.y);
@@ -904,7 +921,7 @@
     var heightPx = Math.max(1, Math.round(box.height / 100 * h));
     var style = styleFromBox(box);
     var hit = {
-      id: id || 'hit_mark',
+      id: id || stableHitId('hit_mark', box),
       text: '',
       x: box.x,
       y: box.y,
@@ -1043,6 +1060,9 @@
     regionFromClick: regionFromClick,
     refineMark: refineMark,
     padCoverBox: padCoverBox,
+    boxesOverlap: boxesOverlap,
+    existingFieldForHit: existingFieldForHit,
+    stableHitId: stableHitId,
     fieldFromHit: fieldFromHit,
     sampleTextColor: sampleTextColor,
     sampleTextColorFromData: sampleTextColorFromData,

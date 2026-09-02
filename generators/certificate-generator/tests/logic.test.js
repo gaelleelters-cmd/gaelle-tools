@@ -571,3 +571,36 @@ test('attachment Excel keeps original rows and points at each PDF in the Certifi
     'Certificates/Gaelle_El_Ters_Certificate.pdf',
   );
 });
+
+test('clicking the name then the date maps two fields instead of reusing the first click', () => {
+  const G = loadModules();
+  const nameHit = {
+    id: G.Reference.stableHitId('hit_click', { x: 12, y: 40.4, width: 76, height: 9.7 }),
+    x: 12, y: 40.4, width: 76, height: 9.7
+  };
+  const dateHit = {
+    id: G.Reference.stableHitId('hit_click', { x: 43.5, y: 91.8, width: 13, height: 1.6 }),
+    x: 43.5, y: 91.8, width: 13, height: 1.6
+  };
+  assert.notEqual(nameHit.id, dateHit.id);
+  const nameField = G.Reference.fieldFromHit(nameHit, {
+    columns: ['name', 'date'],
+    replaceMode: true,
+    template: { heightPx: 3508 },
+    reference: { heightPx: 3508 }
+  });
+  assert.equal(nameField.referenceItemId, nameHit.id);
+  assert.equal(G.Reference.existingFieldForHit([nameField], nameHit).id, nameField.id);
+  assert.equal(G.Reference.existingFieldForHit([nameField], dateHit), null);
+  const dateField = G.Reference.fieldFromHit(dateHit, {
+    columns: ['name', 'date'],
+    replaceMode: true,
+    template: { heightPx: 3508 },
+    reference: { heightPx: 3508 }
+  });
+  assert.equal(dateField.type, 'date');
+  assert.equal(dateField.dateFormat, 'MMMM YYYY');
+  assert.equal(dateField.fontFamily, 'Arial');
+  assert.equal(dateField.fontWeight, 'bold');
+  assert.equal(nameField.fontFamily, 'Great Vibes');
+});

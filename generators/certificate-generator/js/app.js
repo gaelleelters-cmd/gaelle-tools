@@ -1006,7 +1006,9 @@
 
   function openMapDialog(hit) {
     state.pendingHit = hit;
-    var existing = state.fields.filter(function (field) { return field.referenceItemId === hit.id; })[0];
+    var existing = G.Reference.existingFieldForHit
+      ? G.Reference.existingFieldForHit(state.fields, hit)
+      : state.fields.filter(function (field) { return field.referenceItemId === hit.id; })[0];
     if (existing) {
       selectField(existing.id);
       toast('That reference value is already mapped to “' + existing.label + '”.');
