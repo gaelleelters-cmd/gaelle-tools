@@ -614,3 +614,28 @@ test('styleFromBox copies script names and bold footer dates from the example la
   assert.equal(date.fontFamily, 'Arial');
   assert.equal(date.fontWeight, 'bold');
 });
+
+test('Add dynamic field creates a name first, then a footer date you can rename', () => {
+  const G = loadModules();
+  const columns = ['name', 'date'];
+  const first = G.Fields.suggestAddedField([], columns);
+  assert.equal(first.label, 'Recipient Name');
+  assert.equal(first.type, 'text');
+  assert.equal(first.excelColumn, 'name');
+  assert.ok(first.height >= 12, 'name box must be tall enough for script swashes');
+
+  const nameField = G.Fields.createField(first, 0);
+  const second = G.Fields.suggestAddedField([nameField], columns);
+  assert.equal(second.label, 'Completion Date');
+  assert.equal(second.type, 'date');
+  assert.equal(second.excelColumn, 'date');
+  assert.equal(second.dateFormat, 'MMMM YYYY');
+  assert.ok(second.y >= 80, 'date belongs in the footer, not the name band');
+
+  const leftover = G.Fields.createField({ label: 'Recipient Name', type: 'text', y: 42, height: 8, excelColumn: 'name' });
+  G.Fields.applyTypeChange(leftover, 'date', columns);
+  assert.equal(leftover.label, 'Completion Date');
+  assert.equal(leftover.type, 'date');
+  assert.equal(leftover.excelColumn, 'date');
+  assert.ok(leftover.y >= 80);
+});

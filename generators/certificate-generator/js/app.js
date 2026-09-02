@@ -295,7 +295,13 @@
     var canvas = referenceCanvas();
     var hit = null;
     if (canvas && G.Reference.regionFromClick) {
-      hit = G.Reference.regionFromClick(canvas, field.x + field.width / 2, field.y + field.height / 2);
+      var probeX = field.x + field.width / 2;
+      var probeY = field.y + field.height / 2;
+      if (field.type === 'date' && probeY < 72) {
+        probeX = 50;
+        probeY = 90;
+      }
+      hit = G.Reference.regionFromClick(canvas, probeX, probeY);
     }
     var box = hit || field;
     var guessed = G.Reference.styleFromBox ? G.Reference.styleFromBox(box) : {};
@@ -316,6 +322,7 @@
     var rawSize = hit && hit.fontSize
       ? hit.fontSize
       : Math.max(12, (box.height / 100) * refH * 0.72);
+    if (hit) field._refHit = hit;
     return {
       fontFamily: (hit && hit.fontFamily) || guessed.fontFamily || field.fontFamily || 'Georgia',
       fontSize: Math.max(12, Math.round(rawSize * (blankH / refH))),
@@ -333,6 +340,58 @@
     var captured = captureReferenceStyle(field);
     if (!captured) return false;
     field.referenceStyle = captured;
+    return true;
+  }
+
+  function fitBoxToStyle(field) {
+    if (!field || !state.template) return;
+    var hPx = state.template.heightPx || 3508;
+    var size = Number(field.fontSize) || 28;
+    var script = G.Fields.isScriptFamily && G.Fields.isScriptFamily(field.fontFamily);
+    var neededPct = (size / hPx) * 100 * (script ? 2.15 : 1.4);
+    if (field.height < neededPct) {
+      var extra = neededPct - field.height;
+      field.y = Math.max(1, field.y - extra * 0.55);
+      field.height = Math.min(22, neededPct);
+    }
+    if (script && field.width < 70) {
+      var cx = field.x + field.width / 2;
+      field.width = Math.min(82, Math.max(field.width, 74));
+      field.x = Math.max(8, Math.min(90 - field.width, cx - field.width / 2));
+    }
+  }
+
+  function applyCapturedHit(field) {
+    var hit = field && field._refHit;
+    if (hit) {
+      var alignment = hit.alignment || field.alignment || 'center';
+      if (field.type === 'date') {
+        var mid = hit.x + hit.width / 2;
+        field.width = Math.min(64, Math.max(hit.width + 16, 30));
+        field.x = Math.max(18, Math.min(82 - field.width, mid - field.width / 2));
+        field.y = Math.max(1, hit.y - 1.2);
+        field.height = Math.max(hit.height * 2.1, 4.2);
+        if (hit.text && G.Reference.guessDateFormat) {
+          field.dateFormat = G.Reference.guessDateFormat(hit.text);
+        }
+      } else if (G.Reference.expandFieldBox) {
+        var box = G.Reference.expandFieldBox(hit, alignment, isReplaceMode());
+        field.x = box.x;
+        field.y = box.y;
+        field.width = box.width;
+        field.height = Math.max(box.height, G.Fields.isScriptFamily(field.fontFamily) ? 14 : box.height);
+      }
+    }
+    delete field._refHit;
+    fitBoxToStyle(field);
+  }
+
+  function adoptReferenceLook(field, force) {
+    if (!field || !state.reference) return false;
+    if (force) field.referenceStyle = null;
+    if (!ensureReferenceStyle(field)) return false;
+    restoreReferenceStyle(field);
+    applyCapturedHit(field);
     return true;
   }
 
@@ -412,12 +471,21 @@
   function readFieldForm(commit) {
     var field = selectedField();
     if (!field) return;
+    var previousType = field.type;
+    var nextType = els.fieldType.value;
+    var typeChanged = previousType !== nextType;
     field.label = els.fieldLabel.value.trim() || field.label;
-    field.type = els.fieldType.value;
     field.excelColumn = els.fieldColumn.value;
+    if (typeChanged) {
+      G.Fields.applyTypeChange(field, nextType, state.columns);
+    } else {
+      field.type = nextType;
+    }
     field.styleSource = els.styleReference.checked && field.referenceStyle ? 'reference' : 'custom';
-    if (field.styleSource === 'reference') {
+    if (!typeChanged && field.styleSource === 'reference') {
       restoreReferenceStyle(field);
+    } else if (typeChanged) {
+      /* style is recaptured below for dates; keep custom values until then */
     } else {
       field.fontFamily = els.fieldFont.value;
       field.fontSize = Number(els.fieldSize.value) || field.fontSize;
@@ -429,19 +497,22 @@
     }
     field.autoFit = els.fieldAutofit.checked;
     field.minimumFontSize = Number(els.fieldMin.value) || 14;
-    field.dateFormat = els.fieldDateFormat.value;
+    if (!typeChanged) field.dateFormat = els.fieldDateFormat.value;
     field.numberDecimals = Number(els.fieldDecimals.value) || 0;
     field.currency = els.fieldCurrency.value;
     field.coverExistingText = els.fieldCover.checked;
     field.coverColor = els.fieldCoverColor.value;
     field.required = els.fieldRequired.checked;
-    if (state.template) {
+    if (!typeChanged && state.template) {
       var w = state.template.widthPx;
       var h = state.template.heightPx;
       if (els.fieldX.value !== '') field.x = Number(els.fieldX.value) / w * 100;
       if (els.fieldY.value !== '') field.y = Number(els.fieldY.value) / h * 100;
       if (els.fieldW.value !== '') field.width = Number(els.fieldW.value) / w * 100;
       if (els.fieldH.value !== '') field.height = Number(els.fieldH.value) / h * 100;
+    }
+    if (typeChanged && field.type === 'date') {
+      adoptReferenceLook(field, true);
     }
     applyFields(state.fields, field.id, commit, true);
     G.Editor.setRow(currentRow());
@@ -462,10 +533,17 @@
       toast('Upload a blank certificate template first.', true);
       return;
     }
-    var field = G.Fields.createField({}, state.fields.length);
+    var field = G.Fields.createField(G.Fields.suggestAddedField(state.fields, state.columns), 0);
+    if (state.reference) {
+      field.styleSource = 'reference';
+      adoptReferenceLook(field, true);
+    }
     state.fields.push(field);
     applyFields(state.fields, field.id, true);
     if (state.step < 4 && canVisit(4)) setStep(4);
+    if (field.type === 'date') {
+      toast('Added Completion Date. Rename it under Field name if you like.');
+    }
   }
 
   function removeSelectedField() {
@@ -1307,7 +1385,13 @@
   function bindFieldForm() {
     ['input', 'change'].forEach(function (type) {
       els.fieldForm.addEventListener(type, function (event) {
-        if (event.target.id === 'field-type') syncTypeVisibility();
+        if (event.target.id === 'field-type') {
+          if (type !== 'change') return;
+          syncTypeVisibility();
+          readFieldForm(true);
+          refreshFieldForm();
+          return;
+        }
         if (event.target.id === 'field-cover') syncCoverVisibility();
         if (event.target.name === 'style-source') {
           var field = selectedField();
@@ -1317,13 +1401,13 @@
               toast('Upload a completed example first.', true);
               return;
             }
-            if (!field || !ensureReferenceStyle(field)) {
+            if (!field || !adoptReferenceLook(field, true)) {
               els.styleCustom.checked = true;
               toast('Could not read formatting from the example. Click the name or date on the reference certificate.', true);
               return;
             }
-            restoreReferenceStyle(field);
-            readFieldForm(type === 'change');
+            field.styleSource = 'reference';
+            applyFields(state.fields, field.id, type === 'change');
             refreshFieldForm();
             return;
           }

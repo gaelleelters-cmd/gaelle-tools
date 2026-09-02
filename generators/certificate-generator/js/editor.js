@@ -108,7 +108,11 @@
     el.style.fontSize = size + 'px';
     if (field.autoFit === false) return;
     var guard = 80;
-    while (guard-- && size > min && (label.scrollWidth > el.clientWidth + 1 || label.scrollHeight > el.clientHeight + 1)) {
+    var script = CertGen.Fields && CertGen.Fields.isScriptFamily && CertGen.Fields.isScriptFamily(field.fontFamily);
+    while (guard-- && size > min) {
+      var tooWide = label.scrollWidth > el.clientWidth + 1;
+      var tooTall = !script && label.scrollHeight > el.clientHeight + 1;
+      if (!tooWide && !tooTall) break;
       size -= 0.5;
       el.style.fontSize = size + 'px';
     }

@@ -633,13 +633,13 @@ button { cursor: pointer; }
   pointer-events: none;
   user-select: none;
 }
-.fields-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.fields-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: visible; }
 .cert-field {
   position: absolute;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
   border: 1px dashed rgba(31, 107, 138, 0.55);
   transform-origin: center center;
   cursor: move;
@@ -663,10 +663,10 @@ button { cursor: pointer; }
   z-index: 1;
   display: block;
   width: 100%;
-  padding: 0 4px;
-  line-height: 1.15;
+  padding: 0.35em 8px 0.28em;
+  line-height: 1.7;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
 }
 .cert-field[style*="text-align: left"] { justify-content: flex-start; }
 .cert-field[style*="text-align: right"] { justify-content: flex-end; }

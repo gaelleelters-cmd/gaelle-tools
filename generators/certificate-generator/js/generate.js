@@ -31,6 +31,30 @@
     return style + ' ' + weight + ' ' + size + 'px "' + family + '", Georgia, serif';
   }
 
+  function isScriptFont(field) {
+    return CertGen.Fields && CertGen.Fields.isScriptFamily
+      ? CertGen.Fields.isScriptFamily(field && field.fontFamily)
+      : /vibes|tangerine|script/i.test(String(field && field.fontFamily || ''));
+  }
+
+  function glyphSize(ctx, line, size, field) {
+    var m = ctx.measureText(line);
+    var ascent = m.actualBoundingBoxAscent;
+    var descent = m.actualBoundingBoxDescent;
+    if (!Number.isFinite(ascent) || ascent <= 0) ascent = size * 0.8;
+    if (!Number.isFinite(descent) || descent < 0) descent = size * 0.22;
+    if (isScriptFont(field)) {
+      ascent = Math.max(ascent, size * 1.08);
+      descent = Math.max(descent, size * 0.48);
+    }
+    return {
+      width: m.width,
+      ascent: ascent,
+      descent: descent,
+      height: ascent + descent
+    };
+  }
+
   function wrapLines(ctx, text, maxWidth) {
     var words = String(text == null ? '' : text).split(/\s+/).filter(Boolean);
     if (!words.length) return [''];
@@ -64,13 +88,16 @@
     while (size > min) {
       apply(size);
       var lines = wrapLines(ctx, text, box.w);
-      var lineHeight = size * (Number(field.lineHeight) || 1.2);
-      var totalH = lines.length * lineHeight;
+      var tallest = 0;
       var widest = 0;
       lines.forEach(function (line) {
-        widest = Math.max(widest, ctx.measureText(line).width);
+        var g = glyphSize(ctx, line, size, field);
+        widest = Math.max(widest, g.width);
+        tallest = Math.max(tallest, g.height);
       });
-      if (widest <= box.w + 0.75 && totalH <= box.h + 0.75) {
+      var lineHeight = size * (Number(field.lineHeight) || 1.2);
+      var totalH = Math.max(tallest, lines.length * lineHeight);
+      if (widest <= box.w + 0.75 && (isScriptFont(field) || totalH <= box.h + 0.75)) {
         return { size: size, lines: lines, shrunk: size < start - 0.4 };
       }
       size -= 0.5;
@@ -80,10 +107,13 @@
   }
 
   function drawAlignedText(ctx, lines, field, box, size) {
+    var metrics = lines.map(function (line) { return glyphSize(ctx, line, size, field); });
     var lineHeight = size * (Number(field.lineHeight) || 1.2);
-    var totalH = lines.length * lineHeight;
-    var startY = box.y + (box.h - totalH) / 2 + size * 0.85;
-    if (startY < box.y + size * 0.85) startY = box.y + size * 0.85;
+    var first = metrics[0] || { ascent: size * 0.8, descent: size * 0.2, height: size };
+    var totalH = metrics.length > 1
+      ? (metrics.length - 1) * lineHeight + first.ascent + metrics[metrics.length - 1].descent
+      : first.height;
+    var startY = box.y + (box.h - totalH) / 2 + first.ascent;
     ctx.fillStyle = field.textColor || '#1a1a1a';
     ctx.textBaseline = 'alphabetic';
     if (field.letterSpacing) ctx.letterSpacing = String(field.letterSpacing) + 'px';
@@ -286,9 +316,11 @@
       var text = Format.formatFieldValue(raw, field);
       if (!text) return;
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(box.x, box.y, box.w, box.h);
-      ctx.clip();
+      if (!isScriptFont(field)) {
+        ctx.beginPath();
+        ctx.rect(box.x - 2, box.y - 2, box.w + 4, box.h + 4);
+        ctx.clip();
+      }
       var fitted = fitText(ctx, text, field, box, scale);
       drawAlignedText(ctx, fitted.lines, field, box, fitted.size);
       ctx.restore();

@@ -60,7 +60,7 @@
 
   function expandFieldBox(item, alignment, replaceMode) {
     var cx = item.x + item.width / 2;
-    var height = Math.max(item.height * (replaceMode ? 1.18 : 1.45), 3.2);
+    var height = Math.max(item.height * (replaceMode ? 1.18 : 1.7), 3.6);
     var width;
     var x;
     if (alignment === 'left') {
