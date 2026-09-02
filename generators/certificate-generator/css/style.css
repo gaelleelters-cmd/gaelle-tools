@@ -245,7 +245,9 @@ button { cursor: pointer; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
 .toggle-row, .split-actions { display: flex; gap: 0.55rem; flex-wrap: wrap; margin: 0.35rem 0 0.7rem; }
-.check { display: flex; align-items: center; gap: 0.4rem; margin: 0.35rem 0; font-weight: 600; }
+.check { display: flex; align-items: center; gap: 0.4rem; margin: 0.35rem 0; font-weight: 600; cursor: pointer; }
+.check input { cursor: pointer; flex-shrink: 0; }
+#style-source-set .check { pointer-events: auto; }
 .mode-set {
   border: 1px solid var(--line);
   border-radius: 8px;

@@ -290,11 +290,63 @@
     field.rotation = style.rotation;
   }
 
+  function captureReferenceStyle(field) {
+    if (!field || !state.reference) return null;
+    var canvas = referenceCanvas();
+    var hit = null;
+    if (canvas && G.Reference.regionFromClick) {
+      hit = G.Reference.regionFromClick(canvas, field.x + field.width / 2, field.y + field.height / 2);
+    }
+    var box = hit || field;
+    var guessed = G.Reference.styleFromBox ? G.Reference.styleFromBox(box) : {};
+    var color = (hit && hit.textColor) || '';
+    if (!color && canvas && G.Reference.sampleTextColor) {
+      var w = canvas.width;
+      var h = canvas.height;
+      color = G.Reference.sampleTextColor(
+        canvas,
+        Math.max(0, Math.round(box.x / 100 * w)),
+        Math.max(0, Math.round(box.y / 100 * h)),
+        Math.max(1, Math.round(box.width / 100 * w)),
+        Math.max(1, Math.round(box.height / 100 * h))
+      );
+    }
+    var refH = (state.reference && state.reference.heightPx) || 1;
+    var blankH = (state.template && state.template.heightPx) || refH;
+    var rawSize = hit && hit.fontSize
+      ? hit.fontSize
+      : Math.max(12, (box.height / 100) * refH * 0.72);
+    return {
+      fontFamily: (hit && hit.fontFamily) || guessed.fontFamily || field.fontFamily || 'Georgia',
+      fontSize: Math.max(12, Math.round(rawSize * (blankH / refH))),
+      fontWeight: (hit && hit.fontWeight) || guessed.fontWeight || 'normal',
+      fontStyle: (hit && hit.fontStyle) || guessed.fontStyle || 'normal',
+      alignment: (hit && hit.alignment) || (G.Reference.guessAlignment && G.Reference.guessAlignment(box.x, box.width)) || 'center',
+      textColor: color || field.textColor || '#1a1a1a',
+      capitalization: (hit && hit.capitalization) || guessed.capitalization || 'as-is',
+      rotation: hit && Math.abs(hit.rotation || 0) >= 1 ? hit.rotation : 0
+    };
+  }
+
+  function ensureReferenceStyle(field) {
+    if (field && field.referenceStyle) return true;
+    var captured = captureReferenceStyle(field);
+    if (!captured) return false;
+    field.referenceStyle = captured;
+    return true;
+  }
+
   function syncStyleVisibility() {
     var field = selectedField();
-    var canMatch = !!(field && field.referenceStyle);
-    els.styleReference.disabled = !canMatch;
-    els.customFormatWrap.hidden = els.styleReference.checked && canMatch;
+    var canMatch = !!(state.reference && field);
+    els.styleReference.disabled = false;
+    els.styleReference.removeAttribute('disabled');
+    if (els.styleReference.title !== undefined) {
+      els.styleReference.title = canMatch
+        ? 'Use the font, size and colour from the completed example.'
+        : 'Upload a completed example first.';
+    }
+    els.customFormatWrap.hidden = !!(els.styleReference.checked && field && field.referenceStyle);
   }
 
   function refreshFieldForm() {
@@ -363,7 +415,7 @@
     field.label = els.fieldLabel.value.trim() || field.label;
     field.type = els.fieldType.value;
     field.excelColumn = els.fieldColumn.value;
-    field.styleSource = els.styleCustom.checked || !field.referenceStyle ? 'custom' : 'reference';
+    field.styleSource = els.styleReference.checked && field.referenceStyle ? 'reference' : 'custom';
     if (field.styleSource === 'reference') {
       restoreReferenceStyle(field);
     } else {
@@ -1259,7 +1311,22 @@
         if (event.target.id === 'field-cover') syncCoverVisibility();
         if (event.target.name === 'style-source') {
           var field = selectedField();
-          if (field && event.target.value === 'reference') restoreReferenceStyle(field);
+          if (event.target.value === 'reference') {
+            if (!state.reference) {
+              els.styleCustom.checked = true;
+              toast('Upload a completed example first.', true);
+              return;
+            }
+            if (!field || !ensureReferenceStyle(field)) {
+              els.styleCustom.checked = true;
+              toast('Could not read formatting from the example. Click the name or date on the reference certificate.', true);
+              return;
+            }
+            restoreReferenceStyle(field);
+            readFieldForm(type === 'change');
+            refreshFieldForm();
+            return;
+          }
           syncStyleVisibility();
         }
         readFieldForm(type === 'change');

@@ -604,3 +604,13 @@ test('clicking the name then the date maps two fields instead of reusing the fir
   assert.equal(dateField.fontWeight, 'bold');
   assert.equal(nameField.fontFamily, 'Great Vibes');
 });
+
+test('styleFromBox copies script names and bold footer dates from the example layout', () => {
+  const G = loadModules();
+  const name = G.Reference.styleFromBox({ x: 20, y: 42, width: 60, height: 8 });
+  assert.equal(name.fontFamily, 'Great Vibes');
+  assert.equal(name.capitalization, 'title');
+  const date = G.Reference.styleFromBox({ x: 40, y: 88, width: 20, height: 3 });
+  assert.equal(date.fontFamily, 'Arial');
+  assert.equal(date.fontWeight, 'bold');
+});

@@ -1064,6 +1064,7 @@
     existingFieldForHit: existingFieldForHit,
     stableHitId: stableHitId,
     fieldFromHit: fieldFromHit,
+    styleFromBox: styleFromBox,
     sampleTextColor: sampleTextColor,
     sampleTextColorFromData: sampleTextColorFromData,
     sampleBackgroundColorFromData: sampleBackgroundColorFromData
