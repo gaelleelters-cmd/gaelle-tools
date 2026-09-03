@@ -761,6 +761,48 @@
     return s.trim();
   }
 
+  // Formatted sheet cells arrive as HTML (e.g. <span style="…">x@y.com</span>).
+  // Recipient / name / subject fields must be plain text or Outlook rejects them.
+  // Only strings with known HTML tags go through the DOM, so a plain cell like
+  // "John <john@x.com>" is left untouched.
+  var CELL_HTML_RE = /<\s*\/?\s*(a|span|div|p|b|i|u|em|strong|font|br|sup|sub|ul|ol|li)[\s\/>]/i;
+
+  function stripCellHtml(raw) {
+    var s = String(raw == null ? '' : raw);
+    if (!CELL_HTML_RE.test(s)) {
+      return s
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/\u00a0/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+    var tmp = document.createElement('div');
+    tmp.innerHTML = s.replace(/<br\s*\/?>/gi, ' ');
+    return (tmp.textContent || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function cellToEmails(raw) {
+    var s = String(raw == null ? '' : raw);
+    if (!s.trim()) return '';
+    var mailtos = [];
+    var re = /href\s*=\s*["']mailto:([^"'?]+)/gi;
+    var m;
+    while ((m = re.exec(s))) mailtos.push(m[1]);
+    var text = stripCellHtml(s);
+    if (!/@/.test(text) && mailtos.length) text = mailtos.join('; ');
+    text = text.replace(/^mailto:/i, '');
+    // Multiple bare addresses separated only by spaces → treat spaces as separators
+    var sepRe = (/[<>]/.test(text) || (text.match(/@/g) || []).length < 2) ? /[;,]/ : /[;,\s]+/;
+    return text
+      .split(sepRe)
+      .map(function (p) { return p.trim(); })
+      .filter(Boolean)
+      .join('; ');
+  }
+
   function applyMerge(template, row, asHtml) {
     return String(template || '').replace(/\{([^}]+)\}/g, function (_, key) {
       var k = key.trim();
@@ -794,17 +836,17 @@
   function resolveSubject(row) {
     var typed = mailSubject ? String(mailSubject.value || '').trim() : '';
     var merged = typed ? applyMerge(typed, row || {}, false).trim() : '';
-    var fromSheet = colSubject.value ? String((row || {})[colSubject.value] || '').trim() : '';
+    var fromSheet = colSubject.value ? stripCellHtml((row || {})[colSubject.value]) : '';
     var subject = merged || fromSheet || 'Document Attached';
     if (subjectBoldOn) subject = toMathBold(subject);
     return subject;
   }
 
   function buildRow(row) {
-    var first = String(row[colFirst.value] || '').trim();
-    var email = String(row[colEmail.value] || '').trim();
-    var cc = colCc.value ? String(row[colCc.value] || '').trim() : '';
-    var bcc = colBcc.value ? String(row[colBcc.value] || '').trim() : '';
+    var first = stripCellHtml(row[colFirst.value]);
+    var email = cellToEmails(row[colEmail.value]);
+    var cc = colCc.value ? cellToEmails(row[colCc.value]) : '';
+    var bcc = colBcc.value ? cellToEmails(row[colBcc.value]) : '';
     var subject = resolveSubject(row);
     var attach = (colAttach && colAttach.value) ? cellToAttachPath(row[colAttach.value]) : '';
     var fileAttachment = null;
@@ -853,8 +895,15 @@
       bodyText: bodyText,
       message: message,
       messageIsHtml: messageIsHtml,
-      greeting: greet
+      greeting: greet,
+      __row: row
     };
+  }
+
+  function markMailSent(mail) {
+    if (mail && mail.__row) {
+      try { mail.__row.__mailmassSent = true; } catch (e) {}
+    }
   }
 
   function validSetup() {
@@ -970,7 +1019,10 @@
     if (!opts.mode) opts.mode = 'cors';
     opts.targetAddressSpace = 'loopback';
     return fetch(HELPER_URL + path, opts).catch(function (err) {
-      // Older browsers may reject unknown fetch options — retry without the hint
+      // Older browsers may reject unknown fetch options — retry without the hint.
+      // ONLY for GET: re-POSTing /send would make the helper send every email twice.
+      var method = String((init && init.method) || 'GET').toUpperCase();
+      if (method !== 'GET') throw err;
       var retry = {};
       if (init) {
         for (key in init) {
@@ -1163,16 +1215,19 @@
     });
   }
 
-  function sendViaHelper(prepared) {
-    var hasOle = prepared.some(function (m) {
-      return m.fileAttachment && m.fileAttachment.contentBytes;
-    });
-    if (hasOle && helperVersion < 12) {
-      return Promise.reject(new Error('Reconnect Outlook in step 1 so files inserted in Excel can be sent.'));
-    }
+  // Small chunks: each request returns in seconds, so the browser never gives
+  // up mid-batch on a big sheet (which used to look like "didn't send").
+  var HELPER_CHUNK_SIZE = 5;
+
+  function makeBatchId() {
+    return 'b' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function postHelperChunk(chunk) {
     var payload = {
       displayOnly: '0',
-      mails: prepared.map(function (m) {
+      batchId: makeBatchId(),
+      mails: chunk.map(function (m) {
         return {
           first: m.first,
           email: m.email,
@@ -1203,18 +1258,56 @@
         if (!res.ok || !data.ok) {
           throw new Error((data && data.error) || 'Outlook send failed');
         }
-        return {
-          processed: data.processed,
-          skipped: data.skipped,
-          mode: 'helper'
-        };
+        return data;
       });
+    });
+  }
+
+  function sendViaHelper(prepared, onProgress) {
+    var hasOle = prepared.some(function (m) {
+      return m.fileAttachment && m.fileAttachment.contentBytes;
+    });
+    if (hasOle && helperVersion < 12) {
+      return Promise.reject(new Error('Reconnect Outlook in step 1 so files inserted in Excel can be sent.'));
+    }
+
+    var chunks = [];
+    for (var i = 0; i < prepared.length; i += HELPER_CHUNK_SIZE) {
+      chunks.push(prepared.slice(i, i + HELPER_CHUNK_SIZE));
+    }
+
+    var processed = 0;
+    var skipped = 0;
+    var done = 0;
+    var chain = Promise.resolve();
+    chunks.forEach(function (chunk) {
+      chain = chain.then(function () {
+        return postHelperChunk(chunk).then(function (data) {
+          processed += Number(data.processed) || 0;
+          skipped += Number(data.skipped) || 0;
+          done += chunk.length;
+          chunk.forEach(markMailSent);
+          if (onProgress) onProgress(done, prepared.length);
+        });
+      });
+    });
+
+    return chain.then(function () {
+      return { processed: processed, skipped: skipped, mode: 'helper' };
+    }).catch(function (err) {
+      var base = (err && err.message) || 'Outlook send failed';
+      if (done > 0) {
+        throw new Error('Stopped after ' + done + ' of ' + prepared.length + ' (' + base +
+          '). Press Send again to continue — already-sent rows are skipped automatically.');
+      }
+      throw new Error(base);
     });
   }
 
   function sendViaGraph(prepared) {
     var lastToast = 0;
     return MailMassGraph.sendAll(prepared, sharedAttachment, function (done, total) {
+      if (done >= 1 && prepared[done - 1]) markMailSent(prepared[done - 1]);
       var now = Date.now();
       if (done === total || now - lastToast > 1200) {
         lastToast = now;
@@ -1585,30 +1678,69 @@
     });
   }
 
+  var sendInFlight = false;
+
   btnPrepare.addEventListener('click', function () {
+    if (sendInFlight) return;
     if (!validSetup()) return;
-    var prepared = rows.map(buildRow).filter(function (m) { return m.email; });
-    if (!prepared.length) {
+    var preparedAll = rows.map(buildRow).filter(function (m) { return m.email; });
+    if (!preparedAll.length) {
       toast('No valid email addresses found', true);
       return;
     }
 
+    // Rows already sent in this session are skipped, so a second click after an
+    // interruption resumes instead of duplicating.
+    var prepared = preparedAll.filter(function (m) {
+      return !(m.__row && m.__row.__mailmassSent);
+    });
+    var alreadySent = preparedAll.length - prepared.length;
+    if (!prepared.length) {
+      var again = window.confirm(
+        'All ' + preparedAll.length + ' recipient' + (preparedAll.length === 1 ? '' : 's') +
+        ' in this sheet were already sent from this page.\n\nSend them AGAIN? (This creates duplicate emails.)'
+      );
+      if (!again) return;
+      preparedAll.forEach(function (m) {
+        if (m.__row) { try { delete m.__row.__mailmassSent; } catch (e) {} }
+      });
+      prepared = preparedAll;
+      alreadySent = 0;
+    }
+    if (alreadySent > 0) {
+      toast('Skipping ' + alreadySent + ' already-sent row' + (alreadySent === 1 ? '' : 's') +
+        ' — sending the remaining ' + prepared.length + '.');
+    }
+
+    sendInFlight = true;
     btnPrepare.disabled = true;
     toast('Sending from your Outlook…');
 
+    var lastProgress = 0;
+    function onProgress(done, total) {
+      var now = Date.now();
+      if (done === total || now - lastProgress > 1200) {
+        lastProgress = now;
+        toast('Sending ' + done + ' / ' + total + '…');
+      }
+    }
+
     ensureHelper(8).then(function (ready) {
-      if (ready) return sendViaHelper(prepared);
+      if (ready) return sendViaHelper(prepared, onProgress);
       if (graphReady()) return sendViaGraph(prepared);
       throw new Error('Click «Connect Outlook» in step 1 first (opens the helper — no VBS).');
     }).then(function (data) {
+      sendInFlight = false;
       btnPrepare.disabled = false;
       refreshButtons();
       return refreshAuth().then(function () { return data; });
     }).then(function (data) {
       if (!data) return;
       toast('Sent ' + data.processed + ' email' + (data.processed === 1 ? '' : 's') +
-        (data.skipped ? ' (skipped ' + data.skipped + ')' : '') + ' from your Outlook.');
+        (data.skipped ? ' (skipped ' + data.skipped + ' — missing email or attachment file)' : '') +
+        ' from your Outlook.');
     }).catch(function (err) {
+      sendInFlight = false;
       btnPrepare.disabled = false;
       refreshButtons();
       refreshAuth();

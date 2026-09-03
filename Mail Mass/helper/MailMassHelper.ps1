@@ -86,6 +86,21 @@ function Test-LooksLikeHtml([string]$s) {
   return ($s.IndexOf('<') -ge 0) -or ($s.IndexOf('&nbsp;') -ge 0)
 }
 
+# Formatted sheet cells can arrive as HTML (<span style="...">x@y.com</span>).
+# To/CC/BCC/first name/subject must be plain text or Outlook rejects the mail.
+function Clean-MailField([string]$s) {
+  if ([string]::IsNullOrWhiteSpace($s)) { return '' }
+  $t = $s
+  if ($t -match '(?i)</?(a|span|div|p|b|i|u|em|strong|font|br)\b') {
+    $mailto = [regex]::Match($t, '(?i)href\s*=\s*["'']mailto:([^"''?]+)')
+    $t = [regex]::Replace($t, '<[^>]+>', ' ')
+    if ($t -notmatch '@' -and $mailto.Success) { $t = $mailto.Groups[1].Value }
+  }
+  $t = $t.Replace('&nbsp;', ' ').Replace('&quot;', '"').Replace('&lt;', '<').Replace('&gt;', '>').Replace('&amp;', '&')
+  $t = ($t -replace '\s+', ' ').Trim()
+  return $t
+}
+
 function Get-SignatureHtml {
   try {
     $dir = Join-Path $env:APPDATA 'Microsoft\Signatures'
@@ -309,7 +324,7 @@ function Send-MailBatch($payload) {
     if (-not $outlook) { throw 'Could not start Outlook. Open Outlook and try again.' }
 
     foreach ($m in $mails) {
-      $email = [string]$m.email
+      $email = Clean-MailField ([string]$m.email)
       $attach = ''
       $rowDir = $null
       try {
@@ -344,16 +359,16 @@ function Send-MailBatch($payload) {
             $isHtml = Test-LooksLikeHtml ([string]$m.message)
           }
 
-          $inner = Build-MessageHtml ([string]$m.greeting) ([string]$m.first) ([string]$m.message) $isHtml
+          $inner = Build-MessageHtml ([string]$m.greeting) (Clean-MailField ([string]$m.first)) ([string]$m.message) $isHtml
           $fullHtml = Wrap-MailHtml $inner $signatureHtml
 
           # NEVER call GetInspector — Word-as-email-editor turns HTML into visible source text.
           $mail = $outlook.CreateItem(0)
           $mail.BodyFormat = 2
           $mail.To = $email
-          if ($m.cc) { $mail.CC = [string]$m.cc }
-          if ($m.bcc) { $mail.BCC = [string]$m.bcc }
-          $subject = [string]$m.subject
+          if ($m.cc) { $mail.CC = Clean-MailField ([string]$m.cc) }
+          if ($m.bcc) { $mail.BCC = Clean-MailField ([string]$m.bcc) }
+          $subject = Clean-MailField ([string]$m.subject)
           if ([string]::IsNullOrWhiteSpace($subject)) { $subject = 'Document Attached' }
           $mail.Subject = $subject
           $mail.HTMLBody = $fullHtml
@@ -503,7 +518,9 @@ function Read-HttpRequest([System.Net.Sockets.NetworkStream]$stream) {
 
 
 # TcpListener avoids Windows HttpListener URLACL (no admin needed).
-$HelperVersion = 14
+$HelperVersion = 15
+# Remember processed batch ids so a repeated/retried POST can never send twice.
+$ProcessedBatches = @{}
 $tcp = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
 
 try {
@@ -547,7 +564,24 @@ while ($true) {
 
     if ($method -eq 'POST' -and $path -eq '/send') {
       $payload = $req.Body | ConvertFrom-Json
+
+      $batchId = ''
+      try {
+        if ($payload.PSObject.Properties.Name -contains 'batchId') { $batchId = [string]$payload.batchId }
+      } catch {}
+
+      if ($batchId -and $ProcessedBatches.ContainsKey($batchId)) {
+        $prev = $ProcessedBatches[$batchId]
+        Write-TcpJson $stream 200 @{ ok = $true; processed = $prev.processed; skipped = $prev.skipped; duplicate = $true; version = $HelperVersion }
+        Write-Host ('[{0}] Duplicate batch ignored (already sent {1})' -f (Get-Date -Format 'HH:mm:ss'), $prev.processed)
+        continue
+      }
+
       $result = Send-MailBatch $payload
+      if ($batchId) {
+        if ($ProcessedBatches.Count -ge 500) { $ProcessedBatches.Clear() }
+        $ProcessedBatches[$batchId] = $result
+      }
       Write-TcpJson $stream 200 @{ ok = $true; processed = $result.processed; skipped = $result.skipped; version = $HelperVersion }
       $msg = '[{0}] Sent {1}, skipped {2}' -f (Get-Date -Format 'HH:mm:ss'), $result.processed, $result.skipped
       Write-Host $msg
