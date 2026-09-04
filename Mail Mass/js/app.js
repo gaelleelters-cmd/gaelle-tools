@@ -32,6 +32,7 @@
   var sameWrap = $('same-msg-wrap');
   var customWrap = $('custom-msg-wrap');
   var paramRow = $('param-row');
+  var subjectParamRow = $('subject-param-row');
   var previewMeta = $('preview-meta');
   var previewMail = $('preview-mail');
   var previewWho = $('preview-who');
@@ -215,6 +216,7 @@
     dropFile.classList.add('hidden');
     mapSection.classList.add('hidden');
     paramRow.innerHTML = '';
+    if (subjectParamRow) subjectParamRow.innerHTML = '';
     updatePreview();
     refreshButtons();
   }
@@ -232,6 +234,40 @@
       });
       paramRow.appendChild(btn);
     });
+    renderSubjectParams();
+  }
+
+  function renderSubjectParams() {
+    if (!subjectParamRow) return;
+    subjectParamRow.innerHTML = '';
+    if (!headers.length) return;
+    var lbl = document.createElement('span');
+    lbl.className = 'param-row-label';
+    lbl.textContent = 'Insert variable:';
+    subjectParamRow.appendChild(lbl);
+    headers.forEach(function (h) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'param-chip';
+      btn.textContent = '{' + h + '}';
+      btn.title = 'Insert {' + h + '} into the subject';
+      btn.addEventListener('click', function () {
+        insertAtInputCursor(mailSubject, '{' + h + '}');
+        updatePreview();
+      });
+      subjectParamRow.appendChild(btn);
+    });
+  }
+
+  function insertAtInputCursor(input, text) {
+    if (!input) return;
+    input.focus();
+    var val = String(input.value || '');
+    var start = input.selectionStart == null ? val.length : input.selectionStart;
+    var end = input.selectionEnd == null ? start : input.selectionEnd;
+    input.value = val.slice(0, start) + text + val.slice(end);
+    var pos = start + text.length;
+    try { input.setSelectionRange(pos, pos); } catch (e) {}
   }
 
   function insertAtCursor(editor, text) {

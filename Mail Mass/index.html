@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20260819subj1">
+  <link rel="stylesheet" href="css/style.css?v=20260904subjvar1">
   <link rel="stylesheet" href="../css/tool-align.css?v=20260806home">
 </head>
 <body>
@@ -181,11 +181,12 @@
                 id="mail-subject"
                 type="text"
                 autocomplete="off"
-                placeholder="e.g. Your UNHCR certificate — you can use {First Name}"
+                placeholder="e.g. Thank you {First Name} for your monthly gift"
               >
               <button type="button" class="rte-btn" id="mail-subject-bold" title="Bold" aria-pressed="false" aria-label="Bold subject"><b>B</b></button>
             </div>
-            <p class="hint">Used for every email. Leave blank to use the Subject column from your sheet. You can type {Column Name} tags.</p>
+            <div class="param-row" id="subject-param-row"></div>
+            <p class="hint">Used for every email. Leave blank to use the Subject column from your sheet. Personalise with {Column Name} tags — after you upload a sheet, click a variable chip to insert it.</p>
           </div>
           <div class="field field-full" id="same-msg-wrap">
             <label for="body">Message</label>
@@ -320,6 +321,6 @@
   <script src="js/graph.js?v=20260818ole1"></script>
   <script src="js/connect-launcher.js?v=20260813lna10"></script>
   <script src="js/oneshot.js?v=20260820dear1"></script>
-  <script src="js/app.js?v=20260903send1"></script>
+  <script src="js/app.js?v=20260904subjvar1"></script>
 </body>
 </html>

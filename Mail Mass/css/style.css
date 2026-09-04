@@ -731,8 +731,15 @@ body {
 .param-row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.35rem;
   margin-top: 0.45rem;
+}
+
+.param-row-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-right: 0.15rem;
 }
 
 .param-chip {
