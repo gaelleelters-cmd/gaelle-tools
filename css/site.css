@@ -1018,6 +1018,231 @@ img { max-width: 100%; display: block; }
   transform: translateX(5px);
 }
 
+/* ===== EXPERIENCE / SKILLS (home, from CV) ===== */
+.impact-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  list-style: none;
+  margin: 0.5rem 0 3rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.impact-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1.35rem 1.25rem 1.35rem 0;
+}
+
+.impact-list li + li {
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--line);
+}
+
+.impact-list strong {
+  font-family: var(--display);
+  font-weight: 650;
+  font-size: clamp(1.8rem, 3.6vw, 2.5rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--sea-deep);
+}
+
+.impact-list span {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.cv-timeline {
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.cv-role {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.32fr) 1fr;
+  gap: clamp(1rem, 3vw, 2.5rem);
+  padding: clamp(1.5rem, 3vw, 2.1rem) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cv-role-dates {
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sea);
+}
+
+.cv-role-place {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.cv-role-title {
+  font-family: var(--display);
+  font-weight: 650;
+  font-size: clamp(1.25rem, 2.5vw, 1.6rem);
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.cv-role-title span {
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 0.62em;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+.cv-role-org {
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin: 0.25rem 0 0.85rem;
+}
+
+.cv-role-points {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 68ch;
+}
+
+.cv-role-points li {
+  position: relative;
+  padding-left: 1.1rem;
+  font-size: 0.97rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.cv-role-points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 50%;
+  background: var(--sea);
+}
+
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+
+.skill-group {
+  padding: 1.5rem 1.5rem 1.6rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.skill-group:nth-child(even) {
+  padding-left: 1.5rem;
+  padding-right: 0;
+  border-left: 1px solid var(--line);
+}
+
+.skill-group-title {
+  font-family: var(--display);
+  font-weight: 650;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.85rem;
+}
+
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  list-style: none;
+}
+
+.skill-tags li {
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: var(--sea-deep);
+  background: var(--brand-sea-soft);
+  border: 1px solid rgba(31, 107, 138, 0.14);
+  border-radius: var(--radius-pill);
+  padding: 0.28rem 0.75rem;
+}
+
+.cv-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+.cv-fact-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sea);
+  margin-bottom: 0.4rem;
+}
+
+.cv-fact-value {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.cv-fact-note {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.cv-cta {
+  margin-top: 2.75rem;
+}
+
+@media (max-width: 760px) {
+  .impact-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .impact-list li,
+  .impact-list li + li {
+    padding: 1.1rem 0.9rem;
+    border-left: 0;
+  }
+
+  .impact-list li:nth-child(even) {
+    border-left: 1px solid var(--line);
+  }
+
+  .impact-list li:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+
+  .cv-role,
+  .skill-grid,
+  .cv-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .cv-role {
+    gap: 0.6rem;
+  }
+
+  .skill-group,
+  .skill-group:nth-child(even) {
+    padding: 1.35rem 0;
+    border-left: 0;
+  }
+}
+
 /* ===== PROJECTS GALLERY + DETAIL PAGES ===== */
 .subpage-main {
   padding-top: calc(var(--nav-h) + 0.5rem);
