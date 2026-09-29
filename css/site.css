@@ -555,30 +555,47 @@ img { max-width: 100%; display: block; }
   min-height: 100dvh;
 }
 
+/* Circle portrait with a dashed orbit ring */
 .about-visual {
+  --visual-pad-top: calc(var(--nav-h) + 1.5rem);
+  --visual-pad-bottom: calc(var(--nav-h) + 1.5rem);
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100%;
-  overflow: hidden;
-  padding:
-    calc(var(--nav-h) + clamp(1.5rem, 4vw, 2.75rem))
-    clamp(1.25rem, 3.5vw, 2.75rem)
-    clamp(1.75rem, 4vw, 3rem);
-  background:
-    radial-gradient(ellipse 70% 55% at 40% 45%, rgba(61, 110, 140, 0.22), transparent 70%),
-    linear-gradient(165deg, #101820 0%, var(--brand-night) 55%, #0a1016 100%);
+  padding: var(--visual-pad-top) 2rem var(--visual-pad-bottom);
+  background: transparent;
+}
+
+.about-visual::before {
+  content: "";
+  position: absolute;
+  /* centre on the photo, not the padded box */
+  top: calc(50% + (var(--visual-pad-top) - var(--visual-pad-bottom)) / 2);
+  left: 50%;
+  width: clamp(19.5rem, 35vw, 30.5rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(31, 107, 138, 0.38);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .about-photo {
-  width: min(100%, 22.5rem);
+  position: relative;
+  z-index: 1;
+  width: clamp(16rem, 29vw, 25rem);
   height: auto;
-  max-height: min(62vh, 32rem);
   min-height: 0;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1;
+  border-radius: 50%;
   object-fit: cover;
-  object-position: center 14%;
+  object-position: 50% 30%;
+  box-shadow:
+    0 0 0 10px rgba(255, 255, 255, 0.9),
+    0 0 0 11px rgba(31, 107, 138, 0.22),
+    var(--shadow-lg);
   display: block;
   transform: scale(1.02);
   opacity: 0;
@@ -603,15 +620,6 @@ img { max-width: 100%; display: block; }
     opacity: 1;
     transform: scale(1.03);
   }
-}
-
-.about-visual-shade {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, transparent 40%, rgba(12, 18, 24, 0.08) 100%),
-    linear-gradient(180deg, rgba(12, 18, 24, 0.12) 0%, transparent 35%, rgba(12, 18, 24, 0.28) 100%);
 }
 
 .contact-inner {
@@ -666,8 +674,7 @@ img { max-width: 100%; display: block; }
     calc(var(--nav-h) + clamp(2rem, 5vw, 3.5rem))
     clamp(1.5rem, 5vw, 4rem)
     clamp(2.5rem, 6vw, 4rem);
-  background:
-    linear-gradient(165deg, rgba(247, 250, 252, 0.92) 0%, rgba(238, 242, 245, 0.88) 100%);
+  background: transparent;
 }
 
 .about-brand {
@@ -2183,14 +2190,16 @@ body.has-cookie-banner .help-bot {
   }
 
   .about-visual {
+    --visual-pad-bottom: 1rem;
     min-height: auto;
-    padding-top: calc(var(--nav-h) + 1.25rem);
-    padding-bottom: 1.5rem;
+  }
+
+  .about-visual::before {
+    width: min(73vw, 18.5rem);
   }
 
   .about-photo {
-    width: min(100%, 16.5rem);
-    max-height: min(48vh, 22rem);
+    width: min(60vw, 15rem);
   }
 
   .about-copy {
