@@ -673,9 +673,76 @@ body {
   box-shadow: inset 0 -2px 0 #333;
 }
 
+.rte-blockbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.45rem;
+  padding: 0.4rem 0.5rem;
+  background: #f4f8fb;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+}
+
+.rte-blockbar-title {
+  font-weight: 700;
+  color: var(--unhcr-blue-06);
+}
+
+.rte-blockbar-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.rte-wrap .rte-blockbar input[type="text"] {
+  width: 7.5rem;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.22rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text);
+  box-shadow: none;
+}
+
+.rte-wrap .rte-blockbar input.rte-blockbar-wide {
+  width: 11.5rem;
+}
+
+.rte-wrap .rte-blockbar input[type="range"] {
+  width: 7.5rem;
+  height: 1.4rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.rte-wrap .rte-blockbar input[type="color"] {
+  width: 1.8rem;
+  height: 1.6rem;
+  padding: 0.1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.rte-wrap .rte-blockbar input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
 .rte-editor {
   min-height: 160px;
-  max-height: 320px;
+  max-height: 480px;
   overflow: auto;
   padding: 0.7rem 0.85rem;
   font-family: Calibri, 'Segoe UI', sans-serif;
@@ -683,6 +750,36 @@ body {
   line-height: 1.45;
   color: #000;
   outline: none;
+}
+
+.rte-editor img,
+.preview-mail img {
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+}
+
+.rte-editor img.is-selected {
+  outline: 2px solid #0072bc;
+  outline-offset: 2px;
+  box-shadow: 7px 7px 0 0 #0072bc;
+  cursor: pointer;
+}
+
+.rte-editor table[data-mm="button"] {
+  display: inline-table;
+  border-collapse: separate;
+  margin: 0.35rem 0;
+}
+
+.rte-editor table.is-selected {
+  outline: 2px solid #0072bc;
+  outline-offset: 3px;
+}
+
+body.is-resizing-image {
+  user-select: none;
+  cursor: nwse-resize;
 }
 
 .rte-editor:empty:before {
@@ -787,7 +884,7 @@ body {
 .preview-body {
   margin: 0;
   padding: 0.75rem 0.85rem;
-  max-height: 280px;
+  max-height: 520px;
   overflow: auto;
   background: #fff;
 }
@@ -816,6 +913,7 @@ body {
 .preview-mail p { margin: 0 0 0.55em; }
 .preview-mail ul,
 .preview-mail ol { margin: 0 0 0.55em; padding-left: 1.4em; }
+.preview-mail table { border-collapse: separate; }
 
 .actions {
   display: flex;

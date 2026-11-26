@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20260904subjvar1">
+  <link rel="stylesheet" href="css/style.css?v=20261126banner1">
   <link rel="stylesheet" href="../css/tool-align.css?v=20260806home">
 </head>
 <body>
@@ -240,12 +240,57 @@
                 <button type="button" class="rte-btn" data-cmd="justifyLeft" title="Align left">L</button>
                 <button type="button" class="rte-btn" data-cmd="justifyCenter" title="Align center">C</button>
                 <button type="button" class="rte-btn" data-cmd="justifyRight" title="Align right">R</button>
+                <button type="button" class="rte-btn" id="rte-dir-ltr" title="Left to right">LTR</button>
+                <button type="button" class="rte-btn" id="rte-dir-rtl" title="Right to left — Arabic">RTL</button>
                 <span class="rte-sep" aria-hidden="true"></span>
                 <button type="button" class="rte-btn" data-cmd="insertUnorderedList" title="Bullets">• List</button>
                 <button type="button" class="rte-btn" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
                 <span class="rte-sep" aria-hidden="true"></span>
+                <button type="button" class="rte-btn" id="rte-image" title="Insert picture or banner">Image</button>
+                <button type="button" class="rte-btn" id="rte-button" title="Insert a button">Button</button>
+                <span class="rte-sep" aria-hidden="true"></span>
                 <button type="button" class="rte-btn" data-cmd="removeFormat" title="Clear formatting">Clear</button>
               </div>
+              <div class="rte-blockbar hidden" id="rte-image-bar" role="region" aria-label="Picture settings">
+                <span class="rte-blockbar-title">Picture</span>
+                <label class="rte-blockbar-field">Width
+                  <input type="range" id="rte-img-width" min="80" max="600" step="10" value="600" aria-label="Picture width">
+                  <span id="rte-img-width-val">600px · full</span>
+                </label>
+                <span class="rte-sep" aria-hidden="true"></span>
+                <button type="button" class="rte-btn" data-img-align="left" title="Align left">L</button>
+                <button type="button" class="rte-btn" data-img-align="center" title="Align center">C</button>
+                <button type="button" class="rte-btn" data-img-align="right" title="Align right">R</button>
+                <span class="rte-sep" aria-hidden="true"></span>
+                <label class="rte-blockbar-field">Alt
+                  <input type="text" id="rte-img-alt" maxlength="180" placeholder="Description" aria-label="Picture description">
+                </label>
+                <label class="rte-blockbar-field">Link
+                  <input type="text" class="rte-blockbar-wide" id="rte-img-link" maxlength="500" placeholder="https://" aria-label="Picture link">
+                </label>
+                <label class="rte-blockbar-field">Caption
+                  <input type="text" class="rte-blockbar-wide" id="rte-img-caption" maxlength="240" placeholder="Optional caption" aria-label="Picture caption">
+                </label>
+                <button type="button" class="rte-btn" id="rte-img-replace">Replace</button>
+                <button type="button" class="rte-btn" id="rte-img-remove">Remove</button>
+              </div>
+              <div class="rte-blockbar hidden" id="rte-button-bar" role="region" aria-label="Button settings">
+                <span class="rte-blockbar-title">Button</span>
+                <label class="rte-blockbar-field">Label
+                  <input type="text" id="rte-btn-label" maxlength="80" aria-label="Button label">
+                </label>
+                <label class="rte-blockbar-field">Link
+                  <input type="text" class="rte-blockbar-wide" id="rte-btn-link" maxlength="500" placeholder="https://" aria-label="Button link">
+                </label>
+                <label class="rte-blockbar-field">Color
+                  <input type="color" id="rte-btn-color" value="#0072BC" aria-label="Button color">
+                </label>
+                <button type="button" class="rte-btn" data-btn-align="left" title="Align left">L</button>
+                <button type="button" class="rte-btn" data-btn-align="center" title="Align center">C</button>
+                <button type="button" class="rte-btn" data-btn-align="right" title="Align right">R</button>
+                <button type="button" class="rte-btn" id="rte-btn-remove">Remove</button>
+              </div>
+              <input type="file" id="rte-image-file" accept="image/png,image/jpeg,image/gif,image/webp,.png,.jpg,.jpeg,.gif,.webp" hidden>
               <div
                 id="body"
                 class="rte-editor"
@@ -253,9 +298,10 @@
                 role="textbox"
                 aria-multiline="true"
                 aria-label="Message"
-                data-placeholder="Write the email body here… Use {Column Name} tags from your sheet."
+                data-placeholder="Write the email here… Use Image for a banner, Button for a coloured link, and {Column Name} tags from your sheet."
               ></div>
             </div>
+            <p class="hint">Image adds a picture or banner. Click it, then drag the blue corner or use the width slider to resize it, and set alignment, link, and caption. Button adds a coloured action button. Uploaded pictures are embedded so they show in Outlook.</p>
             <div class="param-row" id="param-row"></div>
           </div>
           <div class="field field-full hidden" id="custom-msg-wrap">
@@ -317,10 +363,10 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
   <script src="js/config.js?v=20260811graph"></script>
-  <script src="js/sheet-rich.js?v=20260818ole2"></script>
-  <script src="js/graph.js?v=20260818ole1"></script>
+  <script src="js/sheet-rich.js?v=20261126arabic1"></script>
+  <script src="js/graph.js?v=20261126banner1"></script>
   <script src="js/connect-launcher.js?v=20260813lna10"></script>
   <script src="js/oneshot.js?v=20260820dear1"></script>
-  <script src="js/app.js?v=20260904subjvar1"></script>
+  <script src="js/app.js?v=20261126arabic1"></script>
 </body>
 </html>

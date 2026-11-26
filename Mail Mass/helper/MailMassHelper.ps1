@@ -1,5 +1,6 @@
 # Mail Mass Helper - local Outlook bridge for the website
 # Listens on http://127.0.0.1:19527 so the web app can send without downloading a file each time.
+# Version 16: pictures in the message are embedded as inline Outlook attachments.
 # Version 4: never opens Inspector (Word editor was showing raw HTML tags as plain text).
 
 $ErrorActionPreference = 'Stop'
@@ -302,6 +303,50 @@ function Resolve-SharedAttachmentPath($payload) {
   return $path
 }
 
+function Add-InlineImages($mail, $images, [string]$html, [string]$dir) {
+  if (-not $images) { return }
+  if ([string]::IsNullOrWhiteSpace($dir)) { return }
+  if (-not (Test-Path -LiteralPath $dir)) {
+    New-Item -ItemType Directory -Path $dir -Force | Out-Null
+  }
+  $wanted = @{}
+  foreach ($cidMatch in [regex]::Matches([string]$html, '(?i)cid:([A-Za-z0-9._@-]+)')) {
+    $wanted[$cidMatch.Groups[1].Value] = $true
+  }
+  if ($wanted.Count -eq 0) { return }
+  foreach ($img in @($images)) {
+    if (-not $img) { continue }
+    $cid = [string]$img.cid
+    $bytes = [string]$img.contentBytes
+    if ([string]::IsNullOrWhiteSpace($cid) -or [string]::IsNullOrWhiteSpace($bytes)) { continue }
+    if (-not $wanted.ContainsKey($cid)) { continue }
+    try {
+      $ext = '.jpg'
+      $ct = [string]$img.contentType
+      if ($ct -match '(?i)png') { $ext = '.png' }
+      elseif ($ct -match '(?i)gif') { $ext = '.gif' }
+      $safe = ($cid -replace '[^A-Za-z0-9._-]', '')
+      if ([string]::IsNullOrWhiteSpace($safe)) { $safe = [Guid]::NewGuid().ToString('N') }
+      $path = Join-Path $dir ($safe + $ext)
+      [IO.File]::WriteAllBytes($path, [Convert]::FromBase64String($bytes))
+      $att = $mail.Attachments.Add($path)
+      try {
+        $att.PropertyAccessor.SetProperty('http://schemas.microsoft.com/mapi/proptag/0x3712001F', $cid)
+      } catch {}
+      if (-not [string]::IsNullOrWhiteSpace($ct)) {
+        try {
+          $att.PropertyAccessor.SetProperty('http://schemas.microsoft.com/mapi/proptag/0x370E001F', $ct)
+        } catch {}
+      }
+      try {
+        $att.PropertyAccessor.SetProperty('http://schemas.microsoft.com/mapi/proptag/0x7FFE000B', $true)
+      } catch {}
+    } catch {
+      Write-Host ('Inline picture skipped: ' + $_.Exception.Message)
+    }
+  }
+}
+
 function Send-MailBatch($payload) {
   $displayOnly = [string]$payload.displayOnly -eq '1' -or $payload.displayOnly -eq $true
   $mails = @($payload.mails)
@@ -309,11 +354,16 @@ function Send-MailBatch($payload) {
   $skipped = 0
   $tempAttach = $null
   $tempDir = $null
+  $inlineRoot = $null
   $signatureHtml = Get-SignatureHtml
 
   try {
     $tempAttach = Resolve-SharedAttachmentPath $payload
     if ($tempAttach) { $tempDir = Split-Path -Parent $tempAttach }
+    if ($payload.PSObject.Properties.Name -contains 'inlineImages' -and $payload.inlineImages) {
+      $inlineRoot = Join-Path $env:TEMP ('MailMassInline_' + [Guid]::NewGuid().ToString('N'))
+      New-Item -ItemType Directory -Path $inlineRoot -Force | Out-Null
+    }
 
     $outlook = $null
     try {
@@ -372,6 +422,11 @@ function Send-MailBatch($payload) {
           if ([string]::IsNullOrWhiteSpace($subject)) { $subject = 'Document Attached' }
           $mail.Subject = $subject
           $mail.HTMLBody = $fullHtml
+          if ($inlineRoot) {
+            $oneDir = Join-Path $inlineRoot ([Guid]::NewGuid().ToString('N'))
+            New-Item -ItemType Directory -Path $oneDir -Force | Out-Null
+            Add-InlineImages $mail $payload.inlineImages $fullHtml $oneDir
+          }
           if ($attach) { [void]$mail.Attachments.Add($attach) }
 
           if ($displayOnly) { $mail.Display() } else { $mail.Send() }
@@ -389,6 +444,9 @@ function Send-MailBatch($payload) {
   } finally {
     if ($tempDir -and (Test-Path -LiteralPath $tempDir)) {
       try { Remove-Item -LiteralPath $tempDir -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+    }
+    if ($inlineRoot -and (Test-Path -LiteralPath $inlineRoot)) {
+      try { Remove-Item -LiteralPath $inlineRoot -Recurse -Force -ErrorAction SilentlyContinue } catch {}
     }
   }
 
@@ -518,7 +576,7 @@ function Read-HttpRequest([System.Net.Sockets.NetworkStream]$stream) {
 
 
 # TcpListener avoids Windows HttpListener URLACL (no admin needed).
-$HelperVersion = 15
+$HelperVersion = 16
 # Remember processed batch ids so a repeated/retried POST can never send twice.
 $ProcessedBatches = @{}
 $tcp = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)

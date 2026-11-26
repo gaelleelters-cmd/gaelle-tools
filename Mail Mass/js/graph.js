@@ -118,7 +118,7 @@
       : htmlEsc(firstName) + ',';
     var html = "<div style=\"font-family:Calibri,sans-serif;font-size:11pt;font-weight:normal;\">" +
       '<p style="margin:0 0 8pt 0;">' + open + '</p>';
-    if (messageIsHtml || /<(p|div|span|br|b|i|u|strong|em|font|ul|ol|li)\b/i.test(String(message || ''))) {
+    if (messageIsHtml || /<(p|div|span|br|b|i|u|strong|em|font|ul|ol|li|img|table|a)\b/i.test(String(message || ''))) {
       html += String(message || '');
     } else {
       var norm = String(message || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -152,21 +152,33 @@
     if (cc.length) message.ccRecipients = cc;
     if (bcc.length) message.bccRecipients = bcc;
 
-    if (mail.fileAttachment && mail.fileAttachment.contentBytes) {
-      message.attachments = [{
+    var attachments = [];
+    var inline = mail.inlineImages || [];
+    var i;
+    for (i = 0; i < inline.length; i++) {
+      var img = inline[i];
+      if (!img || !img.contentBytes || !img.cid) continue;
+      attachments.push({
         '@odata.type': '#microsoft.graph.fileAttachment',
-        name: mail.fileAttachment.name,
-        contentType: mail.fileAttachment.contentType || 'application/octet-stream',
-        contentBytes: mail.fileAttachment.contentBytes
-      }];
-    } else if (sharedAttachment && sharedAttachment.contentBytes) {
-      message.attachments = [{
-        '@odata.type': '#microsoft.graph.fileAttachment',
-        name: sharedAttachment.name,
-        contentType: sharedAttachment.contentType || 'application/octet-stream',
-        contentBytes: sharedAttachment.contentBytes
-      }];
+        name: img.name || ('image-' + img.cid + '.jpg'),
+        contentType: img.contentType || 'image/jpeg',
+        contentBytes: img.contentBytes,
+        contentId: img.cid,
+        isInline: true
+      });
     }
+    var fileAtt = null;
+    if (mail.fileAttachment && mail.fileAttachment.contentBytes) fileAtt = mail.fileAttachment;
+    else if (sharedAttachment && sharedAttachment.contentBytes) fileAtt = sharedAttachment;
+    if (fileAtt) {
+      attachments.push({
+        '@odata.type': '#microsoft.graph.fileAttachment',
+        name: fileAtt.name,
+        contentType: fileAtt.contentType || 'application/octet-stream',
+        contentBytes: fileAtt.contentBytes
+      });
+    }
+    if (attachments.length) message.attachments = attachments;
 
     return fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
       method: 'POST',

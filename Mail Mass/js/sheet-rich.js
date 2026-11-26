@@ -402,6 +402,13 @@
   }
 
   function u8ToString(u8) {
+    // XML inside xlsx is UTF-8; byte-by-byte fromCharCode reads it as
+    // Latin-1 and garbles Arabic and other multibyte text.
+    if (typeof TextDecoder !== 'undefined') {
+      try {
+        return new TextDecoder('utf-8').decode(u8);
+      } catch (err) {}
+    }
     var out = '';
     var chunk = 0x8000;
     for (var i = 0; i < u8.length; i += chunk) {
